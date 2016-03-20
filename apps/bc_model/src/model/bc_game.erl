@@ -1,10 +1,10 @@
 
 -module(bc_game, [Id, 
-				State::integer(),
-				WinnerId::string(),
-				IsPrivate::boolean(),
-				Created::timestamp(),
-				Modified::timestamp()]).
+			State::integer(),
+			WinnerId::string(),
+			IsPrivate::boolean(),
+			Created::timestamp(),
+			Modified::timestamp()]).
 
 -has({bc_players, many}).
 
