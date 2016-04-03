@@ -10,7 +10,7 @@
 %% API functions
 %%====================================================================
 
--spec are_neighbors(graph(), vertex(), vertex()) -> boolean().
+%% @spec are_neighbors(graph(), vertex(), vertex()) -> boolean().
 are_neighbors(MapGraph, Vertex, Neighbor) ->
 	Row = maps:get(row, Vertex),
 	Col = maps:get(col, Vertex),
@@ -25,7 +25,7 @@ are_neighbors(MapGraph, Vertex, Neighbor) ->
 					maps:get(col, OutNeighbor) =:= Col
 			    end, OutNeighbors).
 
--spec tile_inside_collision(dims(), collision(), integer(), integer()) -> boolean().
+%% @spec tile_inside_collision(dims(), collision(), integer(), integer()) -> boolean().
 tile_inside_collision(DimMap, CollisionMap, Row, Col) ->
 	MinY = maps:get(y, CollisionMap),
 	MinX = maps:get(x, CollisionMap),
@@ -39,7 +39,7 @@ tile_inside_collision(DimMap, CollisionMap, Row, Col) ->
 					X >= MinX andalso X =< MaxX
 				end, PosList).
 
--spec inside_collision(dims(), [collision()], integer(), integer()) -> boolean().
+%% @spec inside_collision(dims(), [collision()], integer(), integer()) -> boolean().
 inside_collision(DimMap, CollisionMapList, Row, Col) ->
 	lists:any(fun(CollisionMap) -> 
 					  tile_inside_collision(DimMap, CollisionMap, Row, Col) 

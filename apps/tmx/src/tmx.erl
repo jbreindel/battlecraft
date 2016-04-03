@@ -7,28 +7,26 @@
 		 load_graph/1,
 		 load_collision_list/1]).
 
--type dims() :: #{ height :: integer(),
-				   width :: integer(),
-				   tileheight :: integer(),
-				   tilewidth :: width() }
-
--type collision() :: #{ id :: integer(), 
-						name :: string(), 
-						x :: integer(),
-						y :: integer(),
-						height :: integer(),
-						width :: integer() }
-
--type neighbors() :: [vertex()]
-
-%% type exports
--export_types([dims/0, collision/0]).
+%% -type dims() :: #{ height :: integer(),
+%% 				   width :: integer(),
+%% 				   tileheight :: integer(),
+%% 				   tilewidth :: width() }.
+%% 
+%% -type collision() :: #{ id :: integer(), 
+%% 						name :: string(), 
+%% 						x :: integer(),
+%% 						y :: integer(),
+%% 						height :: integer(),
+%% 						width :: integer() }.
+%% 
+%% %% type exports
+%% -export_types([dims/0, collision/0]).
 
 %%====================================================================
 %% API functions
 %%====================================================================
 
--spec load_graph(string()) -> {ok, graph()} || {error, string()}.
+%% @spec load_graph(string()) -> {ok, graph()} || {error, string()}.
 load_graph(TmxFile) ->
 	{ok, Text} = file:read_file(TmxFile),
 	case mochijson2:decode(Text) of
@@ -38,34 +36,34 @@ load_graph(TmxFile) ->
 			{error, "Bad map file format."}
 	end.
 
--spec load_dims(string()) -> {ok, dims()} || {error, string()}.
+%% @spec load_dims(string()) -> {ok, dims()} || {error, string()}.
 load_dims(TmxFile) ->
 	{ok, Text} = file:read_file(TmxFile),
 	case mochijson:decode(Text) of
 		{struct, MapJsonProplist} ->
 			{ok, process_dims(MapJsonProplist)};
-		Json ->
+		_ ->
 			{error, "Cannot decode map file."}
 	end.
 
--spec load_collision_list(string()) -> {ok, [collision()]} || {error, string()}.
+%% @spec load_collision_list(string()) -> {ok, [collision()]} || {error, string()}.
 load_collision_list(TmxFile) -> 
 	{ok, Text} = file:read_file(TmxFile),
 	case mochijson:decode(Text) of
 		{struct, MapJsonProplist} ->
 			CollisionMapList = process_collisions(MapJsonProplist),
 			{ok, lists:flatten(CollisionMapList)};
-		Json ->
+		_ ->
 			{error, "Cannot decode map file."}
 	end.
 
--spec load_base_collision_verticies(string()) -> {ok, [collision()]} || {error, string()}.
+%% @spec load_base_collision_verticies(string()) -> {ok, [collision()]} || {error, string()}.
 load_base_collision_verticies(TmxFile) ->
 	{ok, Text} = file:read_file(TmxFile),
 	case mochijson:decode(Text) of
 		{struct, MapJsonProplist} ->
 			{ok, process_base_collision_vertices(MapJsonProplist)};
-		Json ->
+		_ ->
 			{error, "Cannot decode map file."}
 	end.
 
@@ -114,10 +112,10 @@ water_collisions(MapJsonProplist) ->
 									string:equal(LayerName, "water_collision") 
 			   					end).
 
-base_collisions(MapJsonProplist) ->
-	collisions(MapJsonProplist, fun(LayerName) -> 
-										string:str(LayerName, "base") > 0
-			   					end).
+%% base_collisions(MapJsonProplist) ->
+%% 	collisions(MapJsonProplist, fun(LayerName) -> 
+%% 										string:str(LayerName, "base") > 0
+%% 			   					end).
 
 base1_collisions(MapJsonProplist) ->
 	collisions(MapJsonProplist, fun(LayerName) -> 
@@ -142,16 +140,17 @@ base4_collisions(MapJsonProplist) ->
 collision_verticies(MapGraph, Dims, RawCollisionMaps) ->
 	collision_verticies(MapGraph, Dims, RawCollisionMaps, []).
 
-collision_verticies(MapGraph, Dims, [], Verticies) ->
+collision_verticies(_, _, [], Verticies) ->
 	Verticies;
 collision_verticies(MapGraph, Dims, [RawCollisionMap|RawCollisionMaps], Verticies) ->
-	Verticies ++ lists:filter(fun(Vertex) -> 
-									Row = maps:get(row, Vertex),
-									Col = maps:get(col, Vertex),
-									map_utils:tile_inside_collision(Dims, RawCollisionMap, Row, Col)
-								end, digraph:vertices(MapGraph)).
+	VerticiesAcc = Verticies ++ lists:filter(fun(Vertex) -> 
+												Row = maps:get(row, Vertex),
+												Col = maps:get(col, Vertex),
+												map_utils:tile_inside_collision(Dims, RawCollisionMap, Row, Col)
+											end, digraph:vertices(MapGraph)),
+	collision_verticies(MapGraph, Dims, RawCollisionMaps, VerticiesAcc).
 
-populate_edges(MapGraph, Dims, CollisionMapList, Vertex, []) ->
+populate_edges(MapGraph, _, _, _, []) ->
 	MapGraph;
 populate_edges(MapGraph, Dims, CollisionMapList, Vertex, [Neighbor|Neighbors]) ->
 	NeighborRow = maps:get(row, Neighbor),
@@ -165,7 +164,7 @@ populate_edges(MapGraph, Dims, CollisionMapList, Vertex, [Neighbor|Neighbors]) -
 					NewNeighbor = digraph:add_vertex(MapGraph, Neighbor),
 					digraph:add_edge(MapGraph, Vertex, NewNeighbor),
 					digraph:add_edge(MapGraph, NewNeighbor, Vertex);
-				{V, Label} ->
+				{V, _} ->
 					case map_utils:are_neighbors(MapGraph, V, Vertex) of
 						false ->
 							digraph:add_edge(MapGraph, Vertex, V),
@@ -181,15 +180,15 @@ populate_vertices(MapGraph, Dims, CollisionMapList, Vertex) ->
 	Row = maps:get(row, Vertex),
 	Col = maps:get(col, Vertex),
 	Neighbors = [
-				 	Vertex#{row := maps:get(row, Vertex) - 1},
-					Vertex#{col := maps:get(col, Vertex) + 1},
-					Vertex#{row := maps:get(row, Vertex) + 1},
-					Vertex#{row := maps:get(col, Vertex) - 1}
+				 	Vertex#{row := Row - 1},
+					Vertex#{col := Col + 1},
+					Vertex#{row := Row + 1},
+					Vertex#{row := Col - 1}
 			 	],
 	case digraph:vertex(MapGraph, Vertex) of
 		false ->
 			populate_edges(MapGraph, Dims, CollisionMapList, digraph:add_vertex(MapGraph, Vertex), Neighbors);
-		{V, Label} ->
+		{V, _} ->
 			populate_edges(MapGraph, Dims, CollisionMapList, V, Neighbors)
 	end.	
 
