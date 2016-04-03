@@ -1,9 +1,9 @@
 bc_model
 =====
 
-Model modules that will be saved to the database.
+An OTP library
 
 Build
 -----
 
-    $ rebar compile
+    $ rebar3 compile
