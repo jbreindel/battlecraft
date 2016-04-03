@@ -1,11 +1,11 @@
+
 -module(tmx).
 
 %% API exports
 -export([load_dims/1,
 		 load_base_collision_verticies/1,
 		 load_graph/1,
-		 load_collision_list/1, 
-		 tile_inside_collision/4]).
+		 load_collision_list/1]).
 
 -type dims() :: #{ height :: integer(),
 				   width :: integer(),
@@ -21,7 +21,7 @@
 
 -type neighbors() :: [vertex()]
 
-%% exported types
+%% type exports
 -export_types([dims/0, collision/0]).
 
 %%====================================================================
@@ -139,32 +139,6 @@ base4_collisions(MapJsonProplist) ->
 										string:str(LayerName, "base4") >= 0
 			   					end).
 
-tile_endpoints(Dims, Row, Col) ->
-	TileHeight = maps:get(tileheight, Dims),
-	TileWidth = maps:get(tilewidth, Dims),
-	[		
-	   #{y => Row * TileHeight, x => Col * TileWidth},
-	   #{y => Row * TileHeight, x => (Col + 1) * TileWidth},
-	   #{y => (Row + 1) * TileHeight, x => (Col + 1) * TileWidth},
-	   #{y => (Row + 1) * TileHeight, x => Col * TileWidth}
-	].
-
-tile_inside_collision(DimMap, RawCollisionMap, Row, Col) ->
-	MinY = maps:get(y, RawCollisionMap),
-	MinX = maps:get(x, RawCollisionMap),
-	MaxY = MinY + maps:get(height, RawCollisionMap),
-	MaxX = MinX + maps:get(width, RawCollisionMap),
-	PosList = tile_endpoints(DimMap, Row, Col),
-	lists:any(fun(Pos) ->
-					Y = maps:get(y, Pos),
-					X = maps:get(x, Pos),
-					Y >= MinY andalso Y =< MaxY andalso 
-					X >= MinX andalso X =< MaxX
-				end, PosList).
-	
-inside_collision(DimMap, CollisionMapList, Row, Col) ->
-	lists:any(fun(CollisionMap) -> tile_inside_collision(DimMap, CollisionMap, Row, Col) end, CollisionMapList).
-
 collision_verticies(MapGraph, Dims, RawCollisionMaps) ->
 	collision_verticies(MapGraph, Dims, RawCollisionMaps, []).
 
@@ -174,7 +148,7 @@ collision_verticies(MapGraph, Dims, [RawCollisionMap|RawCollisionMaps], Verticie
 	Verticies ++ lists:filter(fun(Vertex) -> 
 									Row = maps:get(row, Vertex),
 									Col = maps:get(col, Vertex),
-									tmx:tile_inside_collision(Dims, RawCollisionMap, Row, Col)
+									map_utils:tile_inside_collision(Dims, RawCollisionMap, Row, Col)
 								end, digraph:vertices(MapGraph)).
 
 populate_edges(MapGraph, Dims, CollisionMapList, Vertex, []) ->
@@ -222,7 +196,7 @@ populate_vertices(MapGraph, Dims, CollisionMapList, Vertex) ->
 do_build_map(MapGraph, Dims, CollisionMapList, Row, Col) ->
 	case maps:get(width, Dims) =:= Col of
 		false ->
-			case inside_collision(Dims, CollisionMapList,  Row, Col) of
+			case map_utils:inside_collision(Dims, CollisionMapList,  Row, Col) of
 				false ->
 					Vertex = #{row => Row, col => Col},
 					populate_vertices(MapGraph, Dims, CollisionMapList, Vertex);
