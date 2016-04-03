@@ -14,6 +14,7 @@ erl_crash.dump
 logs
 _build
 deps
+Mnesia*
 
 ### Eclipse ###
 
