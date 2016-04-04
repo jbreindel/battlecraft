@@ -12,8 +12,8 @@
 %% 				   tileheight :: integer(),
 %% 				   tilewidth :: width() }.
 %% 
-%% -type collision() :: #{ id :: integer(), 
-%% 						name :: string(), 
+%% -type collision() :: #{ id :: integer(),
+%% 						name :: string(),
 %% 						x :: integer(),
 %% 						y :: integer(),
 %% 						height :: integer(),
