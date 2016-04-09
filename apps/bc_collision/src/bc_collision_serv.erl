@@ -29,10 +29,10 @@ start_link(GameRecord) ->
 	Name = name(GameRecord),
 	gen_server:start_link({local, Name}, Name, [], []).
 	
-add_collision(CollisionMap) ->
+add_collision(CollisionName, Verticies) ->
 	gen_server:call(bc_collision_serv, {add_collision, CollisionMap}).
 
-update_collision(CollisionMap) ->
+update_collision(CollisionRecord) ->
 	gen_server:call(bc_collision_serv, {update_collision, CollisionMap}).
 
 query_collision(Id) ->
@@ -46,8 +46,8 @@ query_positions(Verticies) ->
 			gen_server:call(bc_collision_serv, {query_positions, Verticies})
 	end.
 
-remove_collision(CollisionMap) ->
-	gen_server:cast(bc_collision_serv, CollisionMap).
+remove_collision(Id) ->
+	gen_server:cast(bc_collision_serv, id).
 
 %%====================================================================
 %% Gen_server callbacks

@@ -3,22 +3,45 @@
 -include("../include/bc_model.hrl").
 
 %% API exports
--export([init/0, 
-		 init/1, 
-		 migrate/0, 
+-export([init/0,
+		 init/1,
+		 create_tables/2,
+		 migrate/0,
 		 rebuild/0]).
+
+%% Ids - used to track sequence ids
+-record('_ids_', {
+			  %% type of record
+			  type, 
+			  %% id integer
+			  id
+	}).
 
 %%====================================================================
 %% API functions
 %%====================================================================
 
 init() ->
-	init([node()]).
+	init([node()], []).
 
 init(Nodes) ->
 	mnesia:create_schema(Nodes),
 	mnesia:start(),
-	create_tables(Nodes).
+	create_tables(Nodes, [#{
+						   name => '_ids_',
+						   attributes => record_info('_ids_')
+						  }]).
+
+gen_id(Tab) ->
+	mnesia:dirty_update_counter('_ids_', Tab, 1).
+
+create_tables(Nodes, []) ->
+	ok;
+create_tables(Nodes, [Table|Tables]) ->
+	mnesia:create_table(maps:get(name, Table),
+		[{ disc_copies, Nodes },
+		 { attributes, maps:get(attributes, Table) }]),
+	create_tables(Nodes, Tables).
 
 migrate() ->
     mnesia:stop(),
@@ -28,21 +51,3 @@ rebuild() ->
     mnesia:stop(),
     mnesia:delete_schema([node()]),
     init().
-
-%%====================================================================
-%% Internal functions
-%%====================================================================
-
-create_tables(Nodes) ->
-	mnesia:create_table('_ids_',
-		[{ disc_copies, Nodes },
-		 { attributes, record_info(fields, '_ids_') }]),
-	mnesia:create_table(player,
-		[{ disc_copies, Nodes },
-		 { attributes, record_info(fields, player) }]),
-	mnesia:create_table(game,
-		[{ disc_copies, Nodes },
-		 { attributes, record_info(fields, game) }]),
-	mnesia:create_table(gp_assoc,
-		[{ disc_copies, Nodes },
-		 { attributes, record_info(fields, gp_assoc) }]).
