@@ -13,3 +13,12 @@
 		handle_call/3,
 		handle_cast/2).
 
+%%====================================================================
+%% API functions
+%%====================================================================
+
+start_link() ->
+	gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
+
+create_game(Privacy) ->
+	gen_server:call(bc_game_serv, {create_game, Privacy}).

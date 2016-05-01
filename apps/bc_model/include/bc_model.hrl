@@ -2,13 +2,7 @@
 %%%% Record Definitions
 %%%%
 
-%% Ids - used to track sequence ids
--record('_ids_', {
-			  %% type of record
-			  type, 
-			  %% id integer
-			  id
-	}).
+
 
 %% Player - user who plays
 -record(player, {
