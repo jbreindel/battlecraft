@@ -22,3 +22,5 @@ start_link() ->
 
 create_game(Privacy) ->
 	gen_server:call(bc_game_serv, {create_game, Privacy}).
+
+

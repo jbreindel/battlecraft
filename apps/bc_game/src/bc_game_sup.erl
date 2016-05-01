@@ -20,7 +20,7 @@
 %%====================================================================
 
 start_link() ->
-    supervisor:start_link({local, ?SERVER}, ?MODULE, []).
+	supervisor:start_link({local, ?SERVER}, ?MODULE, []).
 
 %%====================================================================
 %% Supervisor callbacks
@@ -28,14 +28,14 @@ start_link() ->
 
 %% Child :: {Id,StartFunc,Restart,Shutdown,Type,Modules}
 init([]) ->
-    {ok, {
-		  {one_for_all, 0, 1}, 
-		  [#{
-			 id => game_serv,
-			 start => {game_serv, start_link, []},
-			 modules => [game_serv]
+	{ok, {
+		{one_for_all, 0, 1}, 
+			[#{
+			   id => game_serv,
+			   start => {game_serv, start_link, []},
+			   modules => [game_serv]
 			}]
-		 }}.
+		}}.
 
 %%====================================================================
 %% Internal functions
