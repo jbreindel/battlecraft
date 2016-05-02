@@ -1,0 +1,5 @@
+-define(CREATED, 0).
+-define(PENDING, 1).
+-define(STARTED, 2).
+-define(QUIT, 3).
+-define(WON, 4).
