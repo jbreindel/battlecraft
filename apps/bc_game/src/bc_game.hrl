@@ -2,8 +2,6 @@
 %%%% Record Definitions
 %%%%
 
-
-
 %% Player - user who plays
 -record(player, {
 			%% id key
@@ -16,7 +14,7 @@
 			created,
 			%% timestamp for last modified
 			modified
-}).
+		}).
 
 %% Game - a game record with multiple players
 -record(game, { 
@@ -40,5 +38,5 @@
 			game_id,
 			%% id for player
 			player_id				   
-}).
+	}).
 

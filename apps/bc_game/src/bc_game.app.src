@@ -1,11 +1,12 @@
 {application, bc_game,
- [{description, "An OTP application"},
+ [{description, "Application to start and join games."},
   {vsn, "0.1.0"},
   {registered, []},
   {mod, { bc_game_app, []}},
   {applications,
    [kernel,
-    stdlib
+    stdlib,
+    bc_model
    ]},
   {env,[]},
   {modules, []},

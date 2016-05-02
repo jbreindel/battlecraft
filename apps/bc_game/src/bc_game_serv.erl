@@ -34,5 +34,5 @@ create_game(Privacy) ->
 %% Gen_server callbacks
 %%====================================================================
 
-%% handle_call({create_game, Privacy}, _From, S = #state{sup = Sup, active_games = Games}) ->
-%% 	{reply, {ok, }}
+handle_call({create_game, Privacy}, _From, S = #state{sup = Sup, active_games = Games}) ->
+	{reply, {ok, }}

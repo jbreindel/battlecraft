@@ -1,6 +1,5 @@
 
 -module(bc_model).
--include("../include/bc_model.hrl").
 
 %% API exports
 -export([init/0,
@@ -27,10 +26,8 @@ init() ->
 init(Nodes) ->
 	mnesia:create_schema(Nodes),
 	mnesia:start(),
-	create_tables(Nodes, [#{
-						   name => '_ids_',
-						   attributes => record_info('_ids_')
-						  }]).
+	create_tables(Nodes, [#{name => '_ids_',
+							attributes => record_info('_ids_')}]).
 
 gen_id(Tab) ->
 	mnesia:dirty_update_counter('_ids_', Tab, 1).
