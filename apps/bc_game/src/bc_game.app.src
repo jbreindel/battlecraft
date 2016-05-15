@@ -5,7 +5,7 @@
   {mod, { bc_game_app, []}},
   {applications,
    [kernel,
-    stdlib,,
+    stdlib,
     mnesia,
     bc_model
    ]},
