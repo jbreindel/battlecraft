@@ -34,9 +34,9 @@
 
 %% gp_assoc - association between games and players
 -record(gp_assoc, {
-			%% id for game
-			game_id,
+			%% id for the rec
+			id,
 			%% id for player
-			player_id				   
+			gp
 	}).
 

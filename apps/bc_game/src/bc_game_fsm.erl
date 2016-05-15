@@ -5,7 +5,7 @@
 -include("bc_game.hrl").
 
 %% exported funcs
--export([start_link/1, player_join/2, player_out/2]).
+-export([start_link/1, player_join/3, player_out/2]).
 -export([init/1, game_created/2, game_pending/2, game_started/2]).
 
 %% state rec
@@ -85,12 +85,12 @@ pending({player_join, #{pid => Pid,
 %% pending({player_quit, {player_id, PlayerId}},
 %% 			 State = state#{game_id = GameId, 
 %% 							players = PlayerDict}) ->
-%% 	case QuitGame:save() of
-%% 		{ok, SavedGame} ->
-%% 			{stop, normal, #state{game = SavedGame}};
-%% 		{error, Error} ->
-%% 			{stop, error, #state{game = QuitGame}}
-%% 	end.
+%% 	UpdatedPlayerDict = dict:erase(PlayerDict, PlayerId),
+%% 	case dict:size(UpdatedPlayerDict) of
+%% 		Length when Length =:= 0 ->
+%% 			case update_game_state(GameId, ?QUIT) of
+%% 				{ok, _} ->
+%% 					{}
 
 %% game_started({player_out, OutPlayer}, State) ->
 %% 	#state{game = Game} = State,
@@ -127,9 +127,9 @@ save_player(GameId, Handle) ->
 					 is_out = false,
 					 created = Now,
 					 modified = Now},
-	GamePlayerAssoc = gp_assoc#{game_id = GameId,
-								player_id = PlayerId},
-	case mnesia:sync_transaction(fun() -> 
+	GamePlayerAssoc = gp_assoc#{id = bc_model:gen_id(),
+								gp = {GameId, PlayerId}},
+	case mnesia:sync_transaction(fun() ->
 										 mnesia:write(Player),
 										 mnesia:write(GamePlayerAssoc)
 								 end) of
@@ -138,6 +138,16 @@ save_player(GameId, Handle) ->
 		{aborted, Reason} ->
 			{error, Reason}
 	end.
+
+remove_Player(PlayerId) ->
+	case mnesia:sync_transaction(fun() -> 
+										 mnesia:delete(player, PlayerId, write),
+										 %%mnesia:delete(gp_assoc, _, _)
+								 end) of
+		{atomic, _} ->
+			ok;
+		{aborted, Reason} ->
+			{error, Reason}
 
 update_game_state(GameId, GameState) ->
 	case mnesia:sync_transaction(fun() -> 
