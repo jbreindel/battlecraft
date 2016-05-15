@@ -36,7 +36,9 @@
 -record(gp_assoc, {
 			%% id for the rec
 			id,
+			%% id for game
+			game_id,
 			%% id for player
-			gp
+			player_id
 	}).
 

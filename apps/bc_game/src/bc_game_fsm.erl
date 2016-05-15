@@ -25,6 +25,10 @@ player_join(GameFsmPid, PlayerPid, Handle) ->
 	gen_fsm:sync_send_event(GameFsmPid, {player_join, #{pid => PlayerPid, 
 														handle => Handle}}).
 
+player_quit(GameFsmPid, PlayerId) ->
+	gen_fsm:send_event(GameFsmPid, {player_quit, #{pid => PlayerPid,
+												   handle => Handle}}).
+
 player_out(GameFsmPid, PlayerId) ->
 	gen_fsm:send_event(GameFsmPid, {player_out, #{player_id => PlayerId}}).
 
@@ -51,7 +55,7 @@ init(Privacy) ->
 
 created({player_join, #{pid => Pid,
 						handle => Handle}}, 
-		State = state#{game_id = GameId, 
+		S = State#state{game_id = GameId, 
 					   players = PlayerDict}) ->
 	case save_player(Handle) of
 		{ok, PlayerId} ->
@@ -62,62 +66,111 @@ created({player_join, #{pid => Pid,
 
 pending({player_join, #{pid => Pid,
 						handle => Handle}},
-		State = state#{game_id = GameId,
+		S = State#state{game_id = GameId,
 					   players = PlayerDict}) ->
 	case save_player(GameId, Handle) of
 		{ok, PlayerId} ->
-			case dict:size(PlayerDict) of
-				Length when Length =:= 3 ->
-					case update_game_state(GameId, ?STARTED) of
-						{ok, _} ->
-							%% TODO propagate game started event
-							{next_state, started, State#state{players = 
-																  dict:store(PlayerId, Pid, PlayerDict)}};
-						{error, Reason} ->
-							{next_state, pending, State}
-					end;
-				_ ->
-					{next_state, pending, State}
-			end;
+			UpdatedPlayerDict = dict:store(PlayerId, Pid, PlayerDict),
+			on_players_changed(GameId, UpdatedPlayerDict);
 		_ ->
 			{next_state, pending, State}
+	end;
+pending({player_quit, {player_id, PlayerId}},
+			 S = State#state{game_id = GameId, 
+							players = PlayerDict}) ->
+	case remove_player(GameId, PlayerId) of
+		ok ->
+			UpdatedPlayerDict = dict:erase(PlayerDict, PlayerId),
+			on_players_changed(GameId, UpdatedPlayerDict);
+		{error, Reason} ->
+			{next_state, pending, State}
 	end.
-%% pending({player_quit, {player_id, PlayerId}},
-%% 			 State = state#{game_id = GameId, 
-%% 							players = PlayerDict}) ->
-%% 	UpdatedPlayerDict = dict:erase(PlayerDict, PlayerId),
-%% 	case dict:size(UpdatedPlayerDict) of
-%% 		Length when Length =:= 0 ->
-%% 			case update_game_state(GameId, ?QUIT) of
-%% 				{ok, _} ->
-%% 					{}
 
-%% game_started({player_out, OutPlayer}, State) ->
-%% 	#state{game = Game} = State,
-%% 	InPlayers = Game:players({out, equals, false}),
-%% 	OutPlayer = Player:set(out, true),
-%% 	OutPlayer:save(),
-%% 	case length(InPlayers) of
-%% 		Length when Length =:= 2 ->
-%% 			[WinningPlayer|_] = lists:filter(
-%% 				fun(Player) ->
-%% 					Player:id() /= QuitPlayer:id()					
-%% 				end, PlayerList),
-%% 			WonGame = Game:set(winner_id, WinningPlayer:id()),
-%% 			UpdatedGame = WonGame:set(state, ?WON),
-%% 			case UpdatedGame:save() of
-%% 				{ok, SavedGame} ->
-%% 					{stop, normal, #state{game = SavedGame}};
-%% 				{error, Error} ->
-%% 					{stop, error, #state{game = UpdatedGame}}
-%% 			end;
-%% 		_ ->
-%% 			{next_state, game_started, State}
-%% 	end.
+started({player_out, OutPlayerId}, 
+		S = State#state{game_id = GameId, players = PlayerDict}) ->
+	case update_out_player(GameId, OutPlayerId) of
+		ok ->
+			on_player_out(GameId, PlayerDict);
+		{error, Reason} ->
+			%% TODO dispatch game error
+			{stop, {error, Reason}, S}
+	end.
+started({player_quit, QuitPlayerId},
+		S = State#state{game_id = GameId, players = PlayerDict}) ->
+	case update_out_player(GameId, QuitPlayerId) of
+		ok ->
+			UpdatedPlayerDict = dict:erase(QuitPlayerId, PlayerDict),
+			on_player_out(GameId, UpdatedPlayerDict);
+		{error, Reason} ->
+			%% TODO dispatch game error
+			{stop, {error, Reason}, S}
+	end.
 
 %%====================================================================
 %% Internal functions
 %%====================================================================
+
+on_players_changed(GameId, UpdatedPlayerDict) ->
+	case dict:size(PlayerDict) of
+		Length when Length =:= 4 ->
+			start_game(GameId, UpdatedPlayerDict);
+		Length when Length =:= 0 ->
+			quit_game(GameId, UpdatedPlayerDict);
+		_ ->
+			{next_state, pending, #state{game_id = GameId,
+										 players = UpdatedPlayerDict}}
+	end.
+
+on_player_out(GameId, PlayerDict) ->
+	State = #state{game_id = GameId, players = PlayerDict},
+	InPlayers = in_players(PlayerDict),
+	case length(InPlayers) of
+		Length when Length =:= 1 ->
+			[InPlayer] = InPlayers,
+			case win_game(GameId, InPlayer#player.id) of
+				ok ->
+					%% TODO dispatch game won
+					{stop, ok, State};
+				{error, Reason} ->
+					%% TODO dispatch game error
+					{stop, {error, Reason}, State}
+			end;
+		_ ->
+			{next_state, started, State}
+	end.
+
+start_game(GameId, UpdatedPlayerDict) ->
+	UpdatedState = #state{game_id = GameId, players = UpdatedPlayerDict},
+	case update_game_state(GameId, ?STARTED) of
+		{ok, _} ->
+			%% TODO propagate game started event
+			{next_state, started, UpdatedState};
+		{error, Reason} ->
+			%% TODO dispatch game error
+			{stop, {error, Reason}, UpdatedState}
+	end.
+
+quit_game(GameId, UpdatedPlayerDict) ->
+	UpdatedState = #state{game_id = GameId, players = UpdatedPlayerDict},
+	case update_game_state(GameId, ?QUIT) of
+		{ok, _} ->
+			%% TODO remove from active games
+			{stop, ok, UpdatedState};
+		{error, Reason} ->
+			%% TODO dispatch game error
+			{stop, {error, Reason}, UpdatedState}
+	end.
+
+win_game(GameId, WinnerId) ->
+	case mnesia:sync_transaction(fun() -> 
+									[Game] = mnesia:wread(game, GameId),
+									mnesia:write(Game#game{state = ?WON, winner_id = WinnerId})
+								 end) of
+		{atomic, Result} ->
+			ok;
+		{aborted, Reason} ->
+			{error, Reason}
+	end.
 
 save_player(GameId, Handle) ->
 	Now = now(),
@@ -139,24 +192,49 @@ save_player(GameId, Handle) ->
 			{error, Reason}
 	end.
 
-remove_Player(PlayerId) ->
+update_out_player(GameId, PlayerId) ->
 	case mnesia:sync_transaction(fun() -> 
-										 mnesia:delete(player, PlayerId, write),
-										 %%mnesia:delete(gp_assoc, _, _)
+										 [Player] = mnesia:wread(player, PlayerId),
+										 mnesia:write(Player#player{is_out = true, modified = now()})
+								 end) of
+		{atomic, Result} ->
+			ok;
+		{aborted, Reason} ->
+			{error, Reason}
+	end.
+
+in_players(PlayerDict) ->
+	PlIds = dict:fetch_keys(PlayerDict),
+	MatchSpec = [{{'_',PlId,false,'_','_','_'},[],['$_']} || PlId <- PlIds],
+	mnesia:select(player, MatchSpec).
+		
+remove_player(GameId, PlayerId) ->
+	MatchSpec = ets:fun2ms(fun({_, _, GmId, PlId} = GP) 
+							  when GmId =:= GameId andalso 
+									   PlId =:= PlayerId -> GP end),
+	case mnesia:sync_transaction(fun() ->
+										case mnesia:select(gp_assoc, MatchSpec, 1, read) of
+											{[GPAssoc], 1} ->
+												Id = GPAssoc#gp_assoc.id,
+												mnesia:delete(gp_assoc, Id, write);
+											'$end_of_table' ->
+												ok
+										end,
+										mnesia:delete(player, PlayerId, write)
 								 end) of
 		{atomic, _} ->
 			ok;
 		{aborted, Reason} ->
 			{error, Reason}
+	end.
 
 update_game_state(GameId, GameState) ->
 	case mnesia:sync_transaction(fun() -> 
 										 [Game] = mnesia:wread(game, GameId), 
-										 mnesia:write(Game#game{state = State}) 
+										 mnesia:write(Game#game{state = State, modified = now()}) 
 								 end) of
 		{atomic, Result} ->
 			{ok, GameState};
 		{aborted, Reason} ->
 			{error, Reason}
 	end.
-
