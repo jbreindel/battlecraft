@@ -1,5 +1,5 @@
 
--module(battlecraft_game_fsm).
+-module(bc_game_fsm).
 -behavior(gen_fsm).
 -include("../include/bc_game_state.hrl").
 -include("bc_game.hrl").
