@@ -20,7 +20,7 @@
 
 %% state rec
 -record(state, {
-				sup,
+				game_sup,
 				games
 				}).
 
@@ -56,5 +56,31 @@ remove_game(GameId) ->
 %% Gen_server callbacks
 %%====================================================================
 
-handle_call({create_game, Privacy}, _From, S = #state{sup = Sup, active_games = Games}) ->
-	{reply, {ok, }}
+init(BcGameSup) ->
+	{ok, #state{game_sup = BcGameSup, games = dict:new()}}.
+	
+%% handle_call({create_game, Privacy}, _From, State}) ->
+%% 	case new_game(Privacy) of
+%% 		{ok, GameId} ->
+%% 			bc_game_sup:start_child(bc_game_fsm, )
+
+%%====================================================================
+%% Internal functions
+%%====================================================================
+
+new_game(Privacy) ->
+	Now = now(),
+	GameId = bc_model:gen_id(game),
+	Game = game#{id = GameId,
+				 state = ?CREATED,
+				 winner_id = 0,
+				 is_private = Privacy,
+				 created = Now,
+				 modified = Now},
+	case mnesia:sync_transaction(fun() -> mnesia:write(Game) end) of
+		{atomic, Result} ->
+			{ok, GameId};
+		{aborted, Reason} ->
+			{stop, Reason}
+	end.
+

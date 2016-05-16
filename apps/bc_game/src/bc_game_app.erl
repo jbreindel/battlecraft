@@ -4,7 +4,6 @@
 %%%-------------------------------------------------------------------
 
 -module(bc_game_app).
-
 -behaviour(application).
 
 %% Application callbacks
@@ -17,7 +16,7 @@
 
 start(_StartType, _StartArgs) ->
 	bc_game:init_model(),
-    bc_game_sup:start_link().
+    bc_game_serv_sup:start_link().
 
 %%--------------------------------------------------------------------
 stop(_State) ->

@@ -3,7 +3,7 @@
 %% @end
 %%%-------------------------------------------------------------------
 
--module(bc_game_sup).
+-module(bc_game_serv_sup).
 -behaviour(supervisor).
 
 %% API
@@ -16,8 +16,8 @@
 %% API functions
 %%====================================================================
 
-start() ->
-	supervisor:start({local, ?MODULE}, ?MODULE, []).
+start_link() ->
+	supervisor:start_link({local, ?MODULE}, ?MODULE, []).
 
 %%====================================================================
 %% Supervisor callbacks
@@ -25,12 +25,13 @@ start() ->
 
 %% Child :: {Id,StartFunc,Restart,Shutdown,Type,Modules}
 init([]) ->
+	BcGameSup = bc_game_sup:start_link(),
 	{ok, {
 		{one_for_all, 0, 1}, 
 			[#{
-			   id => bc_game_sup,
-			   start => {},
-			   modules => []
+			   id => bc_game_serv_sup,
+			   start => {bc_game_serv, start_link, [BcGameSup]},
+			   modules => [bc_game_serv]
 			}]
 		}}.
 
