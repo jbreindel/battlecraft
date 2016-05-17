@@ -19,16 +19,16 @@
 %% state rec
 -record(state, {
 				sup,
-				players,
-				state_event_manager
+				game_id,
+				players
 				}).
 
 %%====================================================================
 %% API functions
 %%====================================================================
 
-start_link(BcGameSup) ->
-	gen_server:start_link(?MODULE, [BcGameSup], []).
+start_link(GameId, BcGameSup) ->
+	gen_server:start_link(?MODULE, [GameId, BcGameSup], []).
 
 get_player(GamePid, PlayerId) ->
 	gen_server:call(GamePid, {player, PlayerId}).
@@ -46,13 +46,20 @@ quit(GamePid, PlayerId) ->
 %% Gen_server callbacks
 %%====================================================================
 
-init(BcGameSup) ->
-	{ok, #state{sup = BcGameSup, players = dict:new()}}.
+init(GameId, BcGameSup) ->
+	self() ! {start_game_fsm, GameId, BcGameSup},
+	{ok, #state{sup = BcGameSup, game_id = GameId, players = dict:new()}}.
 	
-%% handle_call({create_game, Privacy}, _From, State}) ->
-%% 	case new_game(Privacy) of
-%% 		{ok, GameId} ->
-%% 			bc_game_sup:start_child(bc_game_fsm, )
+handle_info({start_game_fsm, GameId, BcGameSup}, State) ->
+	{ok, Pid} = supervisor:start_child(BcGameSup, 
+		#{id => GameId,
+			start => {bc_game_fsm, start_link, [GameId]},
+			restart => temporary,
+			shutdown => 10000,
+			type => worker,
+			modules => [bc_game_fsm]}),
+	%% TODO link pid
+	{noreply, State}.
 
 %%====================================================================
 %% Internal functions
