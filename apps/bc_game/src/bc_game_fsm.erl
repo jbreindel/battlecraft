@@ -124,36 +124,6 @@ update_game_state(GameId, GameState) ->
 			{error, Reason}
 	end.
 
-%% save_player(GameId, Handle) ->
-%% 	Now = now(),
-%% 	PlayerId = bc_model:gen_id(),
-%% 	Player = player#{player_id = PlayerId,
-%% 					 handle = Handle,
-%% 					 is_out = false,
-%% 					 created = Now,
-%% 					 modified = Now},
-%% 	GamePlayerAssoc = gp_assoc#{id = bc_model:gen_id(),
-%% 								gp = {GameId, PlayerId}},
-%% 	case mnesia:sync_transaction(fun() ->
-%% 										 mnesia:write(Player),
-%% 										 mnesia:write(GamePlayerAssoc)
-%% 								 end) of
-%% 		{atomic, Result} ->
-%% 			{ok, PlayerId};
-%% 		{aborted, Reason} ->
-%% 			{error, Reason}
-%% 	end.
-%% 
-%% update_out_player(GameId, PlayerId) ->
-%% 	case mnesia:sync_transaction(fun() -> 
-%% 										 [Player] = mnesia:wread(player, PlayerId),
-%% 										 mnesia:write(Player#player{is_out = true, modified = now()})
-%% 								 end) of
-%% 		{atomic, Result} ->
-%% 			ok;
-%% 		{aborted, Reason} ->
-%% 			{error, Reason}
-%% 	end.
 %% 		
 %% remove_player(GameId, PlayerId) ->
 %% 	MatchSpec = ets:fun2ms(fun({_, _, GmId, PlId} = GP) 
