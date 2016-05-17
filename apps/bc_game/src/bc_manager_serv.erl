@@ -6,10 +6,6 @@
 -export([start_link/0,
 		 create_game/1,
 		 get_game/1,
-		 get_player/2,
-		 get_all_players/1,
-		 add_player/3,
-		 remove_player/2,
 		 remove_game/1
 		]).
 
@@ -28,17 +24,17 @@
 %% API functions
 %%====================================================================
 
-start_link() ->
-	gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
+start_link(Name) ->
+	gen_server:start_link({local, Name}, ?MODULE, [], []).
 
-create_game(Privacy) ->
-	gen_server:call(?MODULE, {create_game, Privacy}).
+create_game(Name, Privacy) ->
+	gen_server:call(Name, {create_game, Privacy}).
 
-get_game(GameId) ->
-	gen_server:call(?MODULE, {get_game, GameId}).
+get_game(Name, GameId) ->
+	gen_server:call(Name, {get_game, GameId}).
 
-remove_game(GameId) ->
-	gen_server:cast(?MODULE, {remove_game, GameId}).
+remove_game(Name, GameId) ->
+	gen_server:cast(Name, {remove_game, GameId}).
 
 %%====================================================================
 %% Gen_server callbacks
