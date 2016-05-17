@@ -1,9 +1,9 @@
 %%%-------------------------------------------------------------------
-%% @doc bc_game_serv_sup top level supervisor.
+%% @doc bc_manager_serv_sup top level supervisor.
 %% @end
 %%%-------------------------------------------------------------------
 
--module(bc_game_serv_sup).
+-module(bc_manager_serv_sup).
 -behaviour(supervisor).
 
 %% API
@@ -29,9 +29,9 @@ init([]) ->
 	{ok, {
 		{one_for_all, 0, 1}, 
 			[#{
-			   id => bc_game_serv_sup,
-			   start => {bc_game_serv, start_link, [BcGameSup]},
-			   modules => [bc_game_serv]
+			   id => bc_manager_serv,
+			   start => {bc_manager_serv, start_link, [BcGameSup]},
+			   modules => [bc_manager_serv]
 			}]
 		}}.
 

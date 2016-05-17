@@ -3,14 +3,11 @@
 -behavior(gen_server).
 
 %% api functions
--export([start_link/0,
-		 create_game/1,
-		 get_game/1,
-		 get_player/2,
-		 get_all_players/1,
-		 add_player/3,
-		 remove_player/2,
-		 remove_game/1
+-export([start_link/1,
+		 get_player/1,
+		 get_all_players/0,
+		 join/1,
+		 quit/1
 		]).
 
 %% gen_server callbacks
@@ -20,44 +17,36 @@
 
 %% state rec
 -record(state, {
-				game_sup,
-				games
+				sup,
+				players,
+				state_event_manager
 				}).
 
 %%====================================================================
 %% API functions
 %%====================================================================
 
-start_link() ->
-	gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
+start_link(BcGameSup) ->
+	gen_server:start_link({local, ?MODULE}, ?MODULE, [BcGameSup], []).
 
-create_game(Privacy) ->
-	gen_server:call(?MODULE, {create_game, Privacy}).
+get_player(PlayerId) ->
+	gen_server:call(?MODULE, {player, PlayerId}).
 
-get_game(GameId) ->
-	gen_server:call(?MODULE, {get_game, GameId}).
+get_all_players() ->
+	gen_server:call(?MODULE, all_players).
 
-get_player(GameId, PlayerId) ->
-	gen_server:call(?MODULE, {get_player, GameId, PlayerId}).
+join(PlayerPid, Handle) ->
+	gen_server:call(?MODULE, {join, PlayerPid, Handle}).
 
-get_all_players(GameId) ->
-	gen_server:call(?MODULE, {get_all_players, GameId}).
-
-add_player(GameId, PlayerId, PlayerPid) ->
-	gen_server:call(?MODULE, {add_player, PlayerId, PlayerPid}).
-
-remove_player(GameId, PlayerId) ->
-	gen_server:call(?MODULE, {remove_player, PlayerId}).
-
-remove_game(GameId) ->
-	gen_server:call(?MODULE, {remove_game, GameId}).
+quit(PlayerId) ->
+	gen_server:call(?MODULE, {quit, PlayerId}).
 
 %%====================================================================
 %% Gen_server callbacks
 %%====================================================================
 
 init(BcGameSup) ->
-	{ok, #state{game_sup = BcGameSup, games = dict:new()}}.
+	{ok, #state{sup = BcGameSup, players = dict:new()}}.
 	
 %% handle_call({create_game, Privacy}, _From, State}) ->
 %% 	case new_game(Privacy) of
@@ -68,19 +57,5 @@ init(BcGameSup) ->
 %% Internal functions
 %%====================================================================
 
-new_game(Privacy) ->
-	Now = now(),
-	GameId = bc_model:gen_id(game),
-	Game = game#{id = GameId,
-				 state = ?CREATED,
-				 winner_id = 0,
-				 is_private = Privacy,
-				 created = Now,
-				 modified = Now},
-	case mnesia:sync_transaction(fun() -> mnesia:write(Game) end) of
-		{atomic, Result} ->
-			{ok, GameId};
-		{aborted, Reason} ->
-			{stop, Reason}
-	end.
+
 
