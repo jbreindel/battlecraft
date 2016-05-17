@@ -5,15 +5,16 @@
 %% api functions
 -export([start_link/1,
 		 get_player/1,
-		 get_all_players/0,
-		 join/1,
-		 quit/1
+		 get_all_players/1,
+		 join/2,
+		 quit/2
 		]).
 
 %% gen_server callbacks
--export(init/1,
+-export([init/1,
 		handle_call/3,
-		handle_cast/2).
+		handle_cast/2
+		]).
 
 %% state rec
 -record(state, {
@@ -27,19 +28,19 @@
 %%====================================================================
 
 start_link(BcGameSup) ->
-	gen_server:start_link({local, ?MODULE}, ?MODULE, [BcGameSup], []).
+	gen_server:start_link(?MODULE, [BcGameSup], []).
 
-get_player(PlayerId) ->
-	gen_server:call(?MODULE, {player, PlayerId}).
+get_player(GamePid, PlayerId) ->
+	gen_server:call(GamePid, {player, PlayerId}).
 
-get_all_players() ->
-	gen_server:call(?MODULE, all_players).
+get_all_players(GamePid) ->
+	gen_server:call(GamePid, all_players).
 
-join(PlayerPid, Handle) ->
-	gen_server:call(?MODULE, {join, PlayerPid, Handle}).
+join(GamePid, Handle) ->
+	gen_server:call(GamePid, {join, PlayerPid, Handle}).
 
-quit(PlayerId) ->
-	gen_server:call(?MODULE, {quit, PlayerId}).
+quit(GamePid, PlayerId) ->
+	gen_server:call(GamePid, {quit, PlayerId}).
 
 %%====================================================================
 %% Gen_server callbacks
