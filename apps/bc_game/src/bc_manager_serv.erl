@@ -10,9 +10,10 @@
 		]).
 
 %% gen_server callbacks
--export(init/1,
-		handle_call/3,
-		handle_cast/2).
+-export([init/1,
+		 handle_call/3,
+		 handle_cast/2
+		]).
 
 %% state rec
 -record(state, {
