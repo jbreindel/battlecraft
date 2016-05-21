@@ -16,8 +16,8 @@
 %% API functions
 %%====================================================================
 
-start() ->
-	supervisor:start({local, ?MODULE}, ?MODULE, []).
+start_link() ->
+	supervisor:start_link({local, bc_game_sup}, ?MODULE, []).
 
 %%====================================================================
 %% Supervisor callbacks

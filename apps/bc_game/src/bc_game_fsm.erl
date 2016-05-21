@@ -5,11 +5,13 @@
 -include("bc_game.hrl").
 
 %% exported funcs
--export([start_link/1, player_join/3, player_quit/2, player_out/2]).
+-export([start_link/1, player_join/2, player_quit/2, player_out/2]).
 -export([init/1, created/2, pending/2, started/2]).
 
 %% state rec
--record(state, #{game_id}).
+-record(state, {
+				game_id
+  				}).
 
 %%====================================================================
 %% Public functions
@@ -19,26 +21,26 @@ start_link(GameId) ->
 	gen_fsm:start_link(?MODULE, [GameId], []).
 
 player_join(GameFsmPid, PlayerId) ->
-	gen_fsm:sync_send_event(GameFsmPid, {player_join, #{player_id => PlayerId}}).
+	gen_fsm:sync_send_event(GameFsmPid, {player_join, {player_id, PlayerId}}).
 
 player_quit(GameFsmPid, PlayerId) ->
-	gen_fsm:send_event(GameFsmPid, {player_quit, #{player_id => PlayerId}}).
+	gen_fsm:send_event(GameFsmPid, {player_quit, {player_id, PlayerId}}).
 
 player_out(GameFsmPid, PlayerId) ->
-	gen_fsm:send_event(GameFsmPid, {player_out, #{player_id => PlayerId}}).
+	gen_fsm:send_event(GameFsmPid, {player_out, {player_id, PlayerId}}).
 
 %%====================================================================
 %% Gen_fsm callbacks
 %%====================================================================
 
 init(GameId) ->
-	{ok, created, #state{game_id => GameId}}.
+	{ok, created, #state{game_id = GameId}}.
 
-created({player_join, #{player_id => PlayerId}}, State) ->
-	{ok, pending, S}.
+created({player_join, {player_id, PlayerId}}, State) ->
+	{ok, pending, State}.
 
-pending({_, #{player_id => PlayerId}},
-		S = State#state{game_id = GameId}) ->
+pending({_, {player_id, PlayerId}},
+		S = #state{game_id = GameId}) ->
 	InPlayers = in_players(GameId),
 	case length(InPlayers) of
 		Length when Length =:= 4 ->
@@ -50,7 +52,7 @@ pending({_, #{player_id => PlayerId}},
 	end.
 
 started({_, OutPlayerId}, 
-		S = State#state{game_id = GameId}) ->
+		S = #state{game_id = GameId}) ->
 	InPlayers = in_players(GameId),
 	case length(InPlayers) of
 		Length when Length =:= 1 ->
@@ -65,7 +67,7 @@ started({_, OutPlayerId},
 			end;
 		_ ->
 			{next_state, started, S}
-	end;
+	end.
 
 %%====================================================================
 %% Internal functions
@@ -116,7 +118,7 @@ in_players(GameId) ->
 update_game_state(GameId, GameState) ->
 	case mnesia:sync_transaction(fun() -> 
 										 [Game] = mnesia:wread(game, GameId), 
-										 mnesia:write(Game#game{state = State, modified = now()}) 
+										 mnesia:write(Game#game{state = GameState, modified = now()}) 
 								 end) of
 		{atomic, Result} ->
 			{ok, GameState};
