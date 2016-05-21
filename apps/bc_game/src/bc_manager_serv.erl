@@ -1,18 +1,20 @@
 
 -module(bc_manager_serv).
 -behavior(gen_server).
+-include("../include/bc_game_state.hrl").
+-include("bc_game.hrl").
 
 %% api functions
--export([start_link/0,
-		 create_game/1,
-		 get_game/1,
-		 remove_game/1
+-export([start_link/1,
+		 create_game/2,
+		 get_game/2,
+		 remove_game/2
 		]).
 
 %% gen_server callbacks
 -export([init/1,
 		 handle_call/3,
-		 handle_cast/2
+		 handle_cast/3
 		]).
 
 %% state rec
@@ -45,7 +47,7 @@ init(BcGameSup) ->
 	{ok, #state{game_sup = BcGameSup, games = dict:new()}}.
 	
 handle_call({create_game, Privacy}, _From, 
-		S = #state{game_sup = BcGameSup, games = GameDict}}) ->
+		S = #state{game_sup = BcGameSup, games = GameDict}) ->
 	case new_game(Privacy) of
 		{ok, GameId} ->
 			{ok, BcGameServ} = supervisor:start_child(BcGameSup, #{
@@ -53,7 +55,7 @@ handle_call({create_game, Privacy}, _From,
 			   start => {bc_game_serv, start_link, [BcGameSup]},
 			   modules => [bc_game_serv]
 			}),
-			{reply {ok, GameId, BcGameServ}, S#state{games = dict:store(GameId, BcGameServ, GameDict)}};
+			{reply, {ok, GameId, BcGameServ}, S#state{games = dict:store(GameId, BcGameServ, GameDict)}};
 		{error, Reason} ->
 			{reply, {error, Reason}, S}
 	end;
@@ -78,7 +80,7 @@ handle_cast({remove_game, GameId}, _From, State) ->
 new_game(Privacy) ->
 	Now = now(),
 	GameId = bc_model:gen_id(game),
-	Game = game#{id = GameId,
+	Game = #game{id = GameId,
 				 state = ?CREATED,
 				 winner_id = 0,
 				 is_private = Privacy,

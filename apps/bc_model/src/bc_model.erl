@@ -4,6 +4,7 @@
 %% API exports
 -export([init/0,
 		 init/1,
+		 gen_id/1,
 		 create_tables/2,
 		 migrate/0,
 		 rebuild/0]).
@@ -21,18 +22,18 @@
 %%====================================================================
 
 init() ->
-	init([node()], []).
+	init([node()]).
 
 init(Nodes) ->
 	mnesia:create_schema(Nodes),
 	mnesia:start(),
 	create_tables(Nodes, [#{name => '_ids_',
-							attributes => record_info('_ids_')}]).
+							attributes => record_info(fields, '_ids_')}]).
 
 gen_id(Tab) ->
 	mnesia:dirty_update_counter('_ids_', Tab, 1).
 
-create_tables(Nodes, []) ->
+create_tables(_, []) ->
 	ok;
 create_tables(Nodes, [Table|Tables]) ->
 	mnesia:create_table(maps:get(name, Table),
