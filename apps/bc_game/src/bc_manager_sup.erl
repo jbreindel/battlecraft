@@ -1,9 +1,9 @@
 %%%-------------------------------------------------------------------
-%% @doc bc_manager_serv_sup top level supervisor.
+%% @doc bc_manager_sup top level supervisor.
 %% @end
 %%%-------------------------------------------------------------------
 
--module(bc_manager_serv_sup).
+-module(bc_manager_sup).
 -behaviour(supervisor).
 
 %% API

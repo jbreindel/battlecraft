@@ -27,8 +27,8 @@
 %% API functions
 %%====================================================================
 
-start_link(Name) ->
-	gen_server:start_link({local, Name}, ?MODULE, [], []).
+start_link(BcGameSup) ->
+	gen_server:start_link({local, bc_manager_serv}, ?MODULE, BcGameSup, []).
 
 create_game(Name, Privacy) ->
 	gen_server:call(Name, {create_game, Privacy}).
