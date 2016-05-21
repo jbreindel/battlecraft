@@ -16,7 +16,7 @@
 
 start(_StartType, _StartArgs) ->
 	bc_game:init_model(),
-    bc_game_serv_sup:start_link().
+    bc_manager_sup:start_link().
 
 %%--------------------------------------------------------------------
 stop(_State) ->

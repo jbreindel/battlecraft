@@ -2,6 +2,8 @@
 -module(bc_game).
 -include("bc_game.hrl").
 
+-export([init_model/0]).
+
 init_model() ->
 	Tables = [#{name => player,
 				attributes => record_info(fields, player)},
