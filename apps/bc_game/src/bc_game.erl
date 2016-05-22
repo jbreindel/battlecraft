@@ -5,6 +5,7 @@
 -export([init_model/0]).
 
 init_model() ->
+	bc_model:init(),
 	Tables = [#{name => player,
 				attributes => record_info(fields, player)},
 			  #{name => game,
