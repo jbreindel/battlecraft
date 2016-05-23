@@ -50,12 +50,12 @@ handle_call({create_game, Privacy}, _From,
 		S = #state{game_sup = BcGameSup, games = GameDict}) ->
 	case new_game(Privacy) of
 		{ok, GameId} ->
-			{ok, BcGameServ} = supervisor:start_child(BcGameSup, #{
+			{ok, BcGameFsm} = supervisor:start_child(BcGameSup, #{
 			   id => GameId,
-			   start => {bc_game_serv, start_link, [BcGameSup]},
-			   modules => [bc_game_serv]
+			   start => {bc_game_fsm, start_link, [BcGameSup]},
+			   modules => [bc_game_fsm]
 			}),
-			{reply, {ok, GameId, BcGameServ}, S#state{games = dict:store(GameId, BcGameServ, GameDict)}};
+			{reply, {ok, GameId, BcGameFsm}, S#state{games = dict:store(GameId, BcGameFsm, GameDict)}};
 		{error, Reason} ->
 			{reply, {error, Reason}, S}
 	end;
@@ -63,8 +63,8 @@ handle_call({create_game, Privacy}, _From,
 handle_call({get_game, GameId}, _From, State) ->
 	GameDict = State#state.games,
 	case dict:find(GameId, GameDict) of
-		{ok, BcGameServ} ->
-			{reply, {ok, BcGameServ}, State};
+		{ok, BcGameFsm} ->
+			{reply, {ok, BcGameFsm}, State};
 		error ->
 			{reply, {error, not_found}, State}
 	end.
