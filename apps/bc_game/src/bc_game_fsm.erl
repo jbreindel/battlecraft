@@ -5,12 +5,12 @@
 -include("bc_game.hrl").
 
 %% exported funcs
--export([start_link/1, player_join/2, player_quit/2, player_out/2]).
--export([init/1, created/2, pending/2, started/2]).
+-export([start_link/1, player_join/3, player_quit/2, player_out/2]).
+-export([init/1, pending/2, started/2]).
 
 %% state rec
 -record(state, {
-				game_id
+				game_id,
 				players
   				}).
 
@@ -40,8 +40,8 @@ init(GameId) ->
 	{ok, created, #state{game_id = GameId,
 						 players = dict:new()}}.
 
-pending({player_join, #{player_pid =: PlayerPid, 
-						handle =: Handle}},
+pending({player_join, #{player_pid := PlayerPid, 
+						handle := Handle}},
 		State = #state{game_id = GameId,
 					   players = Players}) ->
 	case save_player(GameId, Handle) of
@@ -50,7 +50,7 @@ pending({player_join, #{player_pid =: PlayerPid,
 			UpdatedPlayers = dict:store(PlayerId, PlayerPid, Players),
 			%% TODO add monitor for player pid
 			UpdatedState = State#state{players = UpdatedPlayers},
-			case pending_players_changed(UpdatedPlayers) of
+			case pending_players_changed(GameId, UpdatedPlayers) of
 				{ok, started} ->
 					{reply, Reply, started, UpdatedState};
 				{ok, pending} ->
@@ -64,12 +64,13 @@ pending({player_join, #{player_pid =: PlayerPid,
 			{reply, Error, pending, State}
 	end;
 pending({player_quit, PlayerId},
-		State = #state{game_id = GameId}) ->
+		State = #state{game_id = GameId,
+					   players = Players}) ->
 	case remove_player(GameId, PlayerId) of
 		ok ->
 			UpdatedPlayers = dict:erase(PlayerId, Players),
 			UpdatedState = State#state{players = UpdatedPlayers},
-			case pending_players_changed(UpdatedPlayers) of
+			case pending_players_changed(GameId, UpdatedPlayers) of
 				{ok, quit} ->
 					{stop, quit, UpdatedState};
 				{ok, pending} ->
@@ -84,24 +85,24 @@ pending({player_quit, PlayerId},
 	end.
 
 started({_, OutPlayerId}, 
-		State = #state{game_id = GameId}) ->
+		State = #state{game_id = GameId,
+					   players = Players}) ->
 	case update_out_player(OutPlayerId) of
 		ok ->
-			UpdatedPlayers = dict:erase(PlayerId, Players),
-			UpdatedState = State#state{players = UpdatedPlayers},
-			case length(UpdatedPlayers) of
+			InPlayers = in_players(GameId),
+			case length(InPlayers) of
 				Length when Length =:= 1 ->
-					[InPlayer] = InPlayers,
+					[InPlayer] = in_players(GameId),
 					case win_game(GameId, InPlayer#player.id) of
 						{ok, won} ->
 							%% TODO dispatch game won
-							{stop, won, UpdatedState};
+							{stop, won, State};
 						{error, Reason} = Error ->
 							%% TODO dispatch game error
-							{stop, Error, UpdatedState}
+							{stop, Error, State}
 					end;
 				_ ->
-					{next_state, started, UpdatedState}
+					{next_state, started, State}
 			end;
 		{error, Reason} = Error ->
 			{stop, Error, State}
@@ -111,7 +112,7 @@ started({_, OutPlayerId},
 %% Internal functions
 %%====================================================================
 
-pending_players_changed(Players) ->
+pending_players_changed(GameId, Players) ->
 	case dict:size(Players) of
 		Length when Length =:= 4 ->
 			start_game(GameId);

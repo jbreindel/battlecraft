@@ -81,13 +81,13 @@ new_game(Privacy) ->
 	Now = now(),
 	GameId = bc_model:gen_id(game),
 	Game = #game{id = GameId,
-				 state = ?CREATED,
+				 state = ?PENDING,
 				 winner_id = 0,
 				 is_private = Privacy,
 				 created = Now,
 				 modified = Now},
 	case mnesia:sync_transaction(fun() -> mnesia:write(Game) end) of
-		{atomic, Result} ->
+		{atomic, _} ->
 			{ok, GameId};
 		{aborted, Reason} ->
 			{error, Reason}
