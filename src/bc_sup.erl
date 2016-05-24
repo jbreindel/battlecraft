@@ -1,9 +1,9 @@
 %%%-------------------------------------------------------------------
-%% @doc battlecraft top level supervisor.
+%% @doc bc top level supervisor.
 %% @end
 %%%-------------------------------------------------------------------
 
--module(battlecraft_sup).
+-module(bc_sup).
 
 -behaviour(supervisor).
 

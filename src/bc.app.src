@@ -2,7 +2,7 @@
  [{description, "A Real Time Strategy Game"},
   {vsn, "0.1.0"},
   {registered, []},
-  {mod, { battlecraft_app, []}},
+  {mod, { bc_app, []}},
   {applications,
    [kernel,
     stdlib

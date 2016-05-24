@@ -3,7 +3,7 @@
 %% @end
 %%%-------------------------------------------------------------------
 
--module(battlecraft_app).
+-module(bc_app).
 
 -behaviour(application).
 
@@ -16,7 +16,7 @@
 %%====================================================================
 
 start(_StartType, _StartArgs) ->
-    battlecraft_sup:start_link().
+    bc_sup:start_link().
 
 %%--------------------------------------------------------------------
 stop(_State) ->
