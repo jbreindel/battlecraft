@@ -1,4 +1,4 @@
-{application, battlecraft,
+{application, bc,
  [{description, "A Real Time Strategy Game"},
   {vsn, "0.1.0"},
   {registered, []},
