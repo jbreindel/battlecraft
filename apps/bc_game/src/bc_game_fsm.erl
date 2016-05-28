@@ -95,10 +95,8 @@ started({_, OutPlayerId},
 					[InPlayer] = in_players(GameId),
 					case win_game(GameId, InPlayer#player.id) of
 						{ok, won} ->
-							%% TODO dispatch game won
 							{stop, won, State};
 						{error, Reason} = Error ->
-							%% TODO dispatch game error
 							{stop, Error, State}
 					end;
 				_ ->
@@ -150,8 +148,10 @@ win_game(GameId, WinnerId) ->
 														   modified = now()})
 								 end) of
 		{atomic, Result} ->
+			%% TODO dispatch game won
 			{ok, won};
 		{aborted, Reason} ->
+			%% TODO dispatch game error
 			{error, Reason}
 	end.
 
