@@ -55,7 +55,7 @@ handle_call({create_game, Privacy}, _From,
 			   start => {bc_game_fsm, start_link, [BcGameSup]},
 			   modules => [bc_game_fsm]
 			}),
-			{reply, {ok, GameId, BcGameFsm}, S#state{games = dict:store(GameId, BcGameFsm, GameDict)}};
+ 			{reply, {ok, GameId, BcGameFsm}, S#state{games = dict:store(GameId, BcGameFsm, GameDict)}};
 		{error, Reason} ->
 			{reply, {error, Reason}, S}
 	end;

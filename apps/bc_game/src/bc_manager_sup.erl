@@ -25,7 +25,7 @@ start_link() ->
 
 %% Child :: {Id,StartFunc,Restart,Shutdown,Type,Modules}
 init([]) ->
-	BcGameSup = bc_game_sup:start_link(),
+	{ok, BcGameSup} = bc_game_sup:start_link(),
 	{ok, {
 		{one_for_all, 0, 1}, 
 			[#{
