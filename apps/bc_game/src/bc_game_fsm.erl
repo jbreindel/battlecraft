@@ -10,6 +10,7 @@
 
 %% state rec
 -record(state, {
+				game_event_pid,
 				game_id,
 				players
   				}).
@@ -37,25 +38,30 @@ player_out(GameFsmPid, PlayerId) ->
 %%====================================================================
 
 init(GameId) ->
-	{ok, created, #state{game_id = GameId,
+	{ok, GameEventPid} = gen_event:start_link(),
+	{ok, created, #state{game_event_pid = GameEventPid,
+						 game_id = GameId,
 						 players = dict:new()}}.
 
 pending({player_join, #{player_pid := PlayerPid, 
 						handle := Handle}},
-		State = #state{game_id = GameId,
+		State = #state{game_event_pid = GameEventPid,
+					   game_id = GameId,
 					   players = Players}) ->
 	case save_player(GameId, Handle) of
 		{ok, PlayerId} = Reply ->
 			%% TODO dispatch player joined event
 			UpdatedPlayers = dict:store(PlayerId, PlayerPid, Players),
-			%% TODO add monitor for player pid
+			%% TODO add event handler and monitor for player pid
 			UpdatedState = State#state{players = UpdatedPlayers},
 			case pending_players_changed(GameId, UpdatedPlayers) of
 				{ok, started} ->
+					%% TODO dispatch game started event
 					{reply, Reply, started, UpdatedState};
 				{ok, pending} ->
 					{reply, Reply, pending, UpdatedState};
 				{error, Reason} = Error ->
+					%% TODO dispatch game error event
 					{stop, Error, Error, UpdatedState};
 				_ ->
 					{stop, illegal_state, {error, illegal_state}, UpdatedState}
@@ -64,18 +70,23 @@ pending({player_join, #{player_pid := PlayerPid,
 			{reply, Error, pending, State}
 	end;
 pending({player_quit, PlayerId},
-		State = #state{game_id = GameId,
+		State = #state{game_event_pid = GameEventPid,
+					   game_id = GameId,
 					   players = Players}) ->
 	case remove_player(GameId, PlayerId) of
 		ok ->
+			%% TODO remove event handler
 			UpdatedPlayers = dict:erase(PlayerId, Players),
+			%% TODO dispatch player quit
 			UpdatedState = State#state{players = UpdatedPlayers},
 			case pending_players_changed(GameId, UpdatedPlayers) of
 				{ok, quit} ->
+					%% TODO dispatch game quit event
 					{stop, quit, UpdatedState};
 				{ok, pending} ->
 					{next_state, pending, UpdatedState};
 				{error, Reason} = Error ->
+					%% TODO dispatch game error event
 					{stop, Error, UpdatedState};
 				_ ->
 					{stop, illegal_state, UpdatedState}
@@ -85,18 +96,22 @@ pending({player_quit, PlayerId},
 	end.
 
 started({_, OutPlayerId}, 
-		State = #state{game_id = GameId,
+		State = #state{game_event_pid = GameEventPid,
+					   game_id = GameId,
 					   players = Players}) ->
 	case update_out_player(OutPlayerId) of
 		ok ->
+			%% TODO dispatch player out event
 			InPlayers = in_players(GameId),
 			case length(InPlayers) of
 				Length when Length =:= 1 ->
 					[InPlayer] = in_players(GameId),
 					case win_game(GameId, InPlayer#player.id) of
 						{ok, won} ->
+							%% TODO dispatch game won event
 							{stop, won, State};
 						{error, Reason} = Error ->
+							%% TODO dispatch game error event
 							{stop, Error, State}
 					end;
 				_ ->
@@ -123,20 +138,16 @@ pending_players_changed(GameId, Players) ->
 start_game(GameId) ->
 	case update_game_state(GameId, ?STARTED) of
 		{ok, _} = Reply ->
-			%% TODO propagate game started event
 			{ok, started};
 		{error, Reason} = Error ->
-			%% TODO dispatch game error
 			Error
 	end.
 
 quit_game(GameId) ->
 	case update_game_state(GameId, ?QUIT) of
 		{ok, _} = Reply ->
-			%% TODO propagate game quit event
 			{ok, quit};
 		{error, Reason} = Error ->
-			%% TODO dispatch game error
 			Error
 	end.
 
@@ -148,10 +159,8 @@ win_game(GameId, WinnerId) ->
 														   modified = now()})
 								 end) of
 		{atomic, Result} ->
-			%% TODO dispatch game won
 			{ok, won};
 		{aborted, Reason} ->
-			%% TODO dispatch game error
 			{error, Reason}
 	end.
 
