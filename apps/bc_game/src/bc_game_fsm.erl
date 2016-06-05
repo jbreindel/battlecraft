@@ -50,18 +50,22 @@ pending({player_join, #{player_pid := PlayerPid,
 					   players = Players}) ->
 	case save_player(GameId, Handle) of
 		{ok, PlayerId} = Reply ->
-			%% TODO dispatch player joined event
+			erlang:monitor(process, PlayerPid),
+			gen_event:notify(GameEventPid, {player_joined, PlayerId, Handle}),
 			UpdatedPlayers = dict:store(PlayerId, PlayerPid, Players),
-			%% TODO add event handler and monitor for player pid
+			gen_event:add_handler(GameEventPid, {bc_game_event, PlayerId}, 
+								  {player_pid, PlayerPid}),
 			UpdatedState = State#state{players = UpdatedPlayers},
 			case pending_players_changed(GameId, UpdatedPlayers) of
 				{ok, started} ->
-					%% TODO dispatch game started event
+					gen_event:notify(GameEventPid, {game_started, dict:to_list(Players)}),
+					gen_event:stop(GameEventPid),
 					{reply, Reply, started, UpdatedState};
 				{ok, pending} ->
 					{reply, Reply, pending, UpdatedState};
 				{error, Reason} = Error ->
-					%% TODO dispatch game error event
+					gen_event:notify(GameEventPid, {game_error, Reason}),
+					gen_event:stop(GameEventPid),
 					{stop, Error, Error, UpdatedState};
 				_ ->
 					{stop, illegal_state, {error, illegal_state}, UpdatedState}
@@ -73,20 +77,22 @@ pending({player_quit, PlayerId},
 		State = #state{game_event_pid = GameEventPid,
 					   game_id = GameId,
 					   players = Players}) ->
+	Player = find_player(PlayerId),
 	case remove_player(GameId, PlayerId) of
 		ok ->
-			%% TODO remove event handler
+			gen_event:delete_handler(GameEventPid, {bc_game_event, PlayerId}, []),
 			UpdatedPlayers = dict:erase(PlayerId, Players),
-			%% TODO dispatch player quit
+			gen_event:notify(GameEventPid, {player_quit, PlayerId, Player#player.handle}),
 			UpdatedState = State#state{players = UpdatedPlayers},
 			case pending_players_changed(GameId, UpdatedPlayers) of
 				{ok, quit} ->
-					%% TODO dispatch game quit event
+					gen_event:stop(GameEventPid),
 					{stop, quit, UpdatedState};
 				{ok, pending} ->
 					{next_state, pending, UpdatedState};
 				{error, Reason} = Error ->
-					%% TODO dispatch game error event
+					gen_event:notify(GameEventPid, {game_error, Reason}),
+					gen_event:stop(GameEventPid),
 					{stop, Error, UpdatedState};
 				_ ->
 					{stop, illegal_state, UpdatedState}
@@ -101,17 +107,22 @@ started({_, OutPlayerId},
 					   players = Players}) ->
 	case update_out_player(OutPlayerId) of
 		ok ->
-			%% TODO dispatch player out event
+			OutPlayer = find_player(OutPlayerId),
+			gen_event:notify(GameEventPid, 
+							 {player_out, OutPlayerId, OutPlayer#player.handle}),
 			InPlayers = in_players(GameId),
 			case length(InPlayers) of
 				Length when Length =:= 1 ->
-					[InPlayer] = in_players(GameId),
+					[InPlayer] = InPlayers,
 					case win_game(GameId, InPlayer#player.id) of
 						{ok, won} ->
-							%% TODO dispatch game won event
+							gen_event:notify(GameEventPid, 
+												  {game_won, InPlayer#player.id, InPlayer#player.handle}),
+							gen_event:stop(GameEventPid),
 							{stop, won, State};
 						{error, Reason} = Error ->
-							%% TODO dispatch game error event
+							gen_event:notify(GameEventPid, {game_error, Reason}),
+							gen_event:stop(GameEventPid),
 							{stop, Error, State}
 					end;
 				_ ->
@@ -120,6 +131,12 @@ started({_, OutPlayerId},
 		{error, Reason} = Error ->
 			{stop, Error, State}
 	end.
+
+%% handle_info({'DOWN', Ref, process, _Pid, _}, #state{game_event_pid = GameEventPid, 
+%% 													game_id = GameId, 
+%% 													players = Players} = State) ->
+%% 	{ok, GameEventPid} = gen_event:start_link(),
+	
 
 %%====================================================================
 %% Internal functions
@@ -196,6 +213,10 @@ save_player(GameId, Handle) ->
 		{aborted, Reason} ->
 			{error, Reason}
 	end.
+
+find_player(PlayerId) ->
+	[Player] = mnesia:wread(player, PlayerId),
+	Player.
 
 player_ids(GameId) ->
 	MatchSpec = ets:fun2ms(fun({_, _, GmId, _} = GpAssoc) 
