@@ -1,0 +1,4 @@
+[{<<"rebar">>,
+  {git,"git://github.com/talentdeficit/jsx.git",
+       {ref,"3074d4865b3385a050badf7828ad31490d860df5"}},
+  0}].
