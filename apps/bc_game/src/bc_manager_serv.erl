@@ -19,7 +19,7 @@
 
 %% state rec
 -record(state, {
-				game_sup,
+				manager_sup,
 				games
 				}).
 
@@ -43,21 +43,26 @@ remove_game(Name, GameId) ->
 %% Gen_server callbacks
 %%====================================================================
 
-init(BcGameSup) ->
-	{ok, #state{game_sup = BcGameSup, games = dict:new()}}.
+init(BcManagerSup) ->
+	{ok, #state{manager_sup = BcManagerSup, games = dict:new()}}.
 	
 handle_call({create_game, Privacy}, _From, 
-		S = #state{game_sup = BcGameSup, games = GameDict}) ->
+	#state{manager_sup = BcManagerSup, games = GameDict} = State) ->
 	case new_game(Privacy) of
 		{ok, GameId} ->
+			{ok, BcGameSup} = supervisor:start_child(BcManagerSup, #{
+				 id => GameId,
+				 start => {bc_game_sup, start_link, []},
+				 modules => [bc_game_sup]
+			}),
 			{ok, BcGameFsm} = supervisor:start_child(BcGameSup, #{
-			   id => GameId,
-			   start => {bc_game_fsm, start_link, [BcGameSup]},
+			   id => bc_game_fsm,
+			   start => {bc_game_fsm, start_link, [GameId]},
 			   modules => [bc_game_fsm]
 			}),
- 			{reply, {ok, GameId, BcGameFsm}, S#state{games = dict:store(GameId, BcGameFsm, GameDict)}};
+ 			{reply, {ok, GameId, BcGameFsm}, State#state{games = dict:store(GameId, BcGameFsm, GameDict)}};
 		{error, Reason} ->
-			{reply, {error, Reason}, S}
+			{reply, {error, Reason}, State}
 	end;
 
 handle_call({get_game, GameId}, _From, State) ->

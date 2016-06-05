@@ -25,12 +25,11 @@ start_link() ->
 
 %% Child :: {Id,StartFunc,Restart,Shutdown,Type,Modules}
 init([]) ->
-	{ok, BcGameSup} = bc_game_sup:start_link(),
 	{ok, {
-		{one_for_all, 0, 1}, 
+		{one_for_one, 0, 1}, 
 			[#{
 			   id => bc_manager_serv,
-			   start => {bc_manager_serv, start_link, [BcGameSup]},
+			   start => {bc_manager_serv, start_link, []},
 			   modules => [bc_manager_serv]
 			}]
 		}}.

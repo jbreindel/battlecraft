@@ -10,7 +10,8 @@
 
 %% state rec
 -record(state, {
-				game_event_pid,
+				game_sup,
+				game_event,
 				game_id,
 				players
   				}).
@@ -19,8 +20,8 @@
 %% Public functions
 %%====================================================================
 
-start_link(GameId) ->
-	gen_fsm:start_link(?MODULE, [GameId], []).
+start_link(GameId, BcGameSup) ->
+	gen_fsm:start_link(?MODULE, [GameId, BcGameSup], []).
 
 player_join(GameFsmPid, PlayerPid, Handle) ->
 	gen_fsm:sync_send_event(GameFsmPid, 
@@ -37,15 +38,21 @@ player_out(GameFsmPid, PlayerId) ->
 %% Gen_fsm callbacks
 %%====================================================================
 
-init(GameId) ->
-	{ok, GameEventPid} = gen_event:start_link(),
-	{ok, created, #state{game_event_pid = GameEventPid,
+init(GameId, BcGameSup) ->
+	{ok, GameEventPid} = supervisor:start_child(BcGameSup, #{
+		id => bc_game_event,
+		start => {gen_event, start_link, []},
+		modules => [gen_event]
+	}),
+	{ok, created, #state{game_sup = BcGameSup,
+						 game_event = GameEventPid,
 						 game_id = GameId,
 						 players = dict:new()}}.
 
 pending({player_join, #{player_pid := PlayerPid, 
 						handle := Handle}},
-		State = #state{game_event_pid = GameEventPid,
+		State = #state{game_sup = BcGameSup,
+					   game_event = GameEventPid,
 					   game_id = GameId,
 					   players = Players}) ->
 	case save_player(GameId, Handle) of
@@ -74,7 +81,8 @@ pending({player_join, #{player_pid := PlayerPid,
 			{reply, Error, pending, State}
 	end;
 pending({player_quit, PlayerId},
-		State = #state{game_event_pid = GameEventPid,
+		State = #state{game_sup = BcGameSup,
+					   game_event = GameEventPid,
 					   game_id = GameId,
 					   players = Players}) ->
 	Player = find_player(PlayerId),
@@ -102,7 +110,8 @@ pending({player_quit, PlayerId},
 	end.
 
 started({_, OutPlayerId}, 
-		State = #state{game_event_pid = GameEventPid,
+		State = #state{game_sup = BcGameSup,
+					   game_event = GameEventPid,
 					   game_id = GameId,
 					   players = Players}) ->
 	case update_out_player(OutPlayerId) of
@@ -132,11 +141,9 @@ started({_, OutPlayerId},
 			{stop, Error, State}
 	end.
 
-%% handle_info({'DOWN', Ref, process, _Pid, _}, #state{game_event_pid = GameEventPid, 
-%% 													game_id = GameId, 
-%% 													players = Players} = State) ->
-%% 	{ok, GameEventPid} = gen_event:start_link(),
-	
+handle_info({'DOWN', Ref, process, Pid, _}, State) ->
+	PlayerId = find_player_id(Pid, Players),
+	started({player_quit, PlayerId}, State).
 
 %%====================================================================
 %% Internal functions
@@ -213,6 +220,11 @@ save_player(GameId, Handle) ->
 		{aborted, Reason} ->
 			{error, Reason}
 	end.
+
+find_player_id(PlayerPid, Players) ->
+	List = dict:to_list(Players),
+	[{Id, Pid}] = lists:filter(fun({_, Pid} = Tuple) when Pid =:= PlayerPid -> Tuple end, List),
+	Id.
 
 find_player(PlayerId) ->
 	[Player] = mnesia:wread(player, PlayerId),
