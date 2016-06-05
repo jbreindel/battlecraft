@@ -5,8 +5,8 @@
 -include("bc_game.hrl").
 
 %% exported funcs
--export([start_link/1, player_join/3, player_quit/2, player_out/2]).
--export([init/1, pending/2, started/2]).
+-export([start_link/2, player_join/3, player_quit/2, player_out/2]).
+-export([init/2, pending/2, started/2]).
 
 %% state rec
 -record(state, {
@@ -142,7 +142,7 @@ started({_, OutPlayerId},
 	end.
 
 handle_info({'DOWN', Ref, process, Pid, _}, State) ->
-	PlayerId = find_player_id(Pid, Players),
+	PlayerId = find_player_id(Pid, State#state.players),
 	started({player_quit, PlayerId}, State).
 
 %%====================================================================

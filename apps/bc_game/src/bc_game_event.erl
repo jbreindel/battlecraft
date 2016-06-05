@@ -28,6 +28,6 @@ handle_event({game_error, Reason},
 handle_event({PlayerEventType, PlayerId, Handle}, 
 			 #state{player_pid = PlayerPid} = State) ->
 	PlayerPid ! {json, #{event => #{type => PlayerEventType,
-									player_id = PlayerId,
+									player_id => PlayerId,
 									handle => Handle}}},
 	{ok, State}.
