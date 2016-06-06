@@ -155,7 +155,7 @@ populate_vertices(MapGraph, Dims, ObjectMapList, Vertex) ->
 do_build_map(MapGraph, Dims, ObjectMapList, Row, Col) ->
 	case maps:get(width, Dims) =:= Col of
 		false ->
-			case bc_map_utils:inside_collision(Dims, ObjectMapList,  Row, Col) of
+			case bc_map_utils:inside_object(Dims, ObjectMapList,  Row, Col) of
 				false ->
 					Vertex = #{row => Row, col => Col},
 					populate_vertices(MapGraph, Dims, ObjectMapList, Vertex);

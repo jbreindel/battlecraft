@@ -3,9 +3,9 @@
 
 %% API exports
 -export([are_neighbors/3,
-		 tile_inside_collision/4, 
-		 inside_collision/4,
-		 collision_verticies]).
+		 tile_inside_object/4, 
+		 inside_object/4,
+		 object_verticies]).
 
 %%====================================================================
 %% API functions
@@ -27,7 +27,7 @@ are_neighbors(MapGraph, Vertex, Neighbor) ->
 			    end, OutNeighbors).
 
 %% @spec tile_inside_collision(dims(), collision(), integer(), integer()) -> boolean().
-tile_inside_collision(DimMap, CollisionMap, Row, Col) ->
+tile_inside_object(DimMap, ObjectMap, Row, Col) ->
 	MinY = maps:get(y, CollisionMap),
 	MinX = maps:get(x, CollisionMap),
 	MaxY = MinY + maps:get(height, CollisionMap),
@@ -41,21 +41,21 @@ tile_inside_collision(DimMap, CollisionMap, Row, Col) ->
 				end, PosList).
 
 %% @spec inside_collision(dims(), [collision()], integer(), integer()) -> boolean().
-inside_collision(DimMap, CollisionMapList, Row, Col) ->
+inside_object(DimMap, ObjectMap, Row, Col) ->
 	lists:any(fun(CollisionMap) -> 
-					  tile_inside_collision(DimMap, CollisionMap, Row, Col) 
+					  tile_inside_object(DimMap, CollisionMap, Row, Col) 
 			  end, CollisionMapList).
 
-collision_verticies(MapGraph, Dims, RawCollisionMaps) ->
-	collision_verticies(MapGraph, Dims, RawCollisionMaps, []).
+object_verticies(MapGraph, Dims, ObjectMaps) ->
+	object_verticies(MapGraph, Dims, ObjectMaps, []).
 
 %%====================================================================
 %% Internal functions
 %%====================================================================
 
-collision_verticies(_, _, [], Verticies) ->
+object_verticies(_, _, [], Verticies) ->
 	Verticies;
-collision_verticies(MapGraph, Dims, [RawCollisionMap|RawCollisionMaps], Verticies) ->
+object_verticies(MapGraph, Dims, [RawCollisionMap|RawCollisionMaps], Verticies) ->
 	VerticiesAcc = Verticies ++ lists:filter(fun(Vertex) -> 
 													Row = maps:get(row, Vertex),
 													Col = maps:get(col, Vertex),
