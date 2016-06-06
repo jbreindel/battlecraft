@@ -2,9 +2,10 @@
 -module(bc_map_utils).
 
 %% API exports
--export([are_neighbors/3, 
+-export([are_neighbors/3,
 		 tile_inside_collision/4, 
-		 inside_collision/4]).
+		 inside_collision/4,
+		 collision_verticies]).
 
 %%====================================================================
 %% API functions
@@ -45,9 +46,22 @@ inside_collision(DimMap, CollisionMapList, Row, Col) ->
 					  tile_inside_collision(DimMap, CollisionMap, Row, Col) 
 			  end, CollisionMapList).
 
+collision_verticies(MapGraph, Dims, RawCollisionMaps) ->
+	collision_verticies(MapGraph, Dims, RawCollisionMaps, []).
+
 %%====================================================================
 %% Internal functions
 %%====================================================================
+
+collision_verticies(_, _, [], Verticies) ->
+	Verticies;
+collision_verticies(MapGraph, Dims, [RawCollisionMap|RawCollisionMaps], Verticies) ->
+	VerticiesAcc = Verticies ++ lists:filter(fun(Vertex) -> 
+													Row = maps:get(row, Vertex),
+													Col = maps:get(col, Vertex),
+													tile_inside_collision(Dims, RawCollisionMap, Row, Col)
+												end, digraph:vertices(MapGraph)),
+	collision_verticies(MapGraph, Dims, RawCollisionMaps, VerticiesAcc).
 
 tile_endpoints(Dims, Row, Col) ->
 	TileHeight = maps:get(tileheight, Dims),

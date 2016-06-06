@@ -2,26 +2,26 @@
 -module(bc_tmx).
 
 %% API exports
--export([load_dims/1,
-		 load_base_collision_verticies/1,
-		 load_graph/1,
-		 load_collision_list/1
+-export([load_graph/1,
+		 load_dims/1,
+		 load_object_list/1,
+		 load_base_collision_verticies/1
 		]).
 
 %% type exports
--export_types([dims/0, collision/0]).
+-export_types([dims/0, object/0]).
 
 -type dims() :: #{height => integer(),
 				  width => integer(),
 				  tileheight => integer(),
 				  tilewidth => integer()}.
 
--type collision() :: #{id => integer(),
-					   name => string(),
-					   x => integer(),
-					   y => integer(),
-					   height => integer(),
-					   width => integer()}.
+-type object() :: #{id => integer(),
+					name => string(),
+					x => integer(),
+					y => integer(),
+					height => integer(),
+					width => integer()}.
 
 %%====================================================================
 %% API functions
@@ -35,12 +35,12 @@ load_graph(TmxJsonMap) ->
 load_dims(TmxJsonMap) ->
 	{ok, process_dims(TmxJsonMap)}.
 
--spec load_collision_list(map()) -> {ok, [collision()]} | {error, string()}.
-load_collision_list(TmxJsonMap) ->
-	CollisionMapList = process_collisions(TmxJsonMap),
-	{ok, lists:flatten(CollisionMapList)}.
+-spec load_object_list(map()) -> {ok, [object()]} | {error, string()}.
+load_object_list(TmxJsonMap) ->
+	ObjectMaps = process_objects(TmxJsonMap),
+	{ok, lists:flatten(ObjectMaps)}.
 
--spec load_base_collision_verticies(map()) -> {ok, [collision()]} | {error, string()}.
+-spec load_base_collision_verticies(map()) -> {ok, [object()]} | {error, string()}.
 load_base_collision_verticies(TmxJsonMap) ->
 	{ok, process_base_collision_vertices(TmxJsonMap)}.
 
@@ -67,70 +67,52 @@ object_layer(ObjectLayerMap) when erlang:is_map(ObjectLayerMap) ->
 object_layer(_) ->
 	false.
 
-collisions(TmxJsonMap, Filter) ->
+objects(TmxJsonMap, Filter) ->
 	case maps:get(<<"layers">>, TmxJsonMap) of
 		LayerList when erlang:is_list(LayerList) ->
-			CollisionLayer = lists:filter(fun(LayerMap) ->
-											   case maps:get(<<"name">>, LayerMap, undefined) of
-												   undefined ->
-													   false;
-												   BinLayerName ->
-													   LayerName = binary:bin_to_list(BinLayerName),
-													   Filter(LayerName)
-											   end
-										   end, LayerList),
-			CollisionObjectMaps = lists:filtermap(fun object_layer/1, CollisionLayer),
-			lists:flatten(CollisionObjectMaps);
+			ObjectLayer = lists:filter(fun(LayerMap) ->
+										   case maps:get(<<"name">>, LayerMap, undefined) of
+											   undefined ->
+												   false;
+											   BinLayerName ->
+												   LayerName = binary:bin_to_list(BinLayerName),
+												   Filter(LayerName)
+										   end
+										end, LayerList),
+			ObjectMaps = lists:filtermap(fun object_layer/1, ObjectLayer),
+			lists:flatten(ObjectMaps);
 		_ ->
-			{error, "Unable to parse water collisions."}
+			{error, "Unable to parse objects."}
 	end.
 
-water_collisions(TmxJsonMap) ->
-	collisions(TmxJsonMap, fun(LayerName) ->
+water_objects(TmxJsonMap) ->
+	objects(TmxJsonMap, fun(LayerName) ->
 								string:str(LayerName, "water_collision") > 0
 			   				end).
 
-%% base_collisions(MapJsonProplist) ->
-%% 	collisions(MapJsonProplist, fun(LayerName) -> 
-%% 										string:str(LayerName, "base") > 0
-%% 			   					end).
+base1_objects(TmxJsonMap) ->
+	objects(TmxJsonMap, fun(LayerName) ->
+							string:str(LayerName, "base1") >= 0 
+		   				end).
 
-base1_collisions(TmxJsonMap) ->
-	collisions(TmxJsonMap, fun(LayerName) ->
-								string:str(LayerName, "base1") >= 0 
-			   				end).
+base2_objects(TmxJsonMap) ->
+	objects(TmxJsonMap, fun(LayerName) -> 
+							string:str(LayerName, "base2") >= 0
+		   				end).
 
-base2_collisions(TmxJsonMap) ->
-	collisions(TmxJsonMap, fun(LayerName) -> 
-								string:str(LayerName, "base2") >= 0
-			   				end).
+base3_objects(TmxJsonMap) ->
+	objects(TmxJsonMap, fun(LayerName) -> 
+							string:str(LayerName, "base3") >= 0
+		   				end).
 
-base3_collisions(TmxJsonMap) ->
-	collisions(TmxJsonMap, fun(LayerName) -> 
-								string:str(LayerName, "base3") >= 0
-			   				end).
+base4_objects(TmxJsonMap) ->
+	objects(TmxJsonMap, fun(LayerName) -> 
+							string:str(LayerName, "base4") >= 0
+		   				end).
 
-base4_collisions(TmxJsonMap) ->
-	collisions(TmxJsonMap, fun(LayerName) -> 
-								string:str(LayerName, "base4") >= 0
-			   				end).
-
-collision_verticies(MapGraph, Dims, RawCollisionMaps) ->
-	collision_verticies(MapGraph, Dims, RawCollisionMaps, []).
-
-collision_verticies(_, _, [], Verticies) ->
-	Verticies;
-collision_verticies(MapGraph, Dims, [RawCollisionMap|RawCollisionMaps], Verticies) ->
-	VerticiesAcc = Verticies ++ lists:filter(fun(Vertex) -> 
-												Row = maps:get(row, Vertex),
-												Col = maps:get(col, Vertex),
-												bc_map_utils:tile_inside_collision(Dims, RawCollisionMap, Row, Col)
-											end, digraph:vertices(MapGraph)),
-	collision_verticies(MapGraph, Dims, RawCollisionMaps, VerticiesAcc).
-
-populate_edges(MapGraph, _, _, _, []) ->
+populate_edges(MapGraph, _, _, []) ->
 	MapGraph;
-populate_edges(MapGraph, Dims, CollisionMapList, Vertex, [Neighbor|Neighbors]) ->
+populate_edges(MapGraph, Dims, Vertex, [Neighbor|Neighbors]) ->
 	NeighborRow = maps:get(row, Neighbor),
 	NeighborCol = maps:get(col, Neighbor),
 	case NeighborRow > 0 andalso NeighborCol > 0 of
@@ -152,9 +134,9 @@ populate_edges(MapGraph, Dims, CollisionMapList, Vertex, [Neighbor|Neighbors]) -
 					end
 			end
 	end,
-	populate_edges(MapGraph, Dims, CollisionMapList, Vertex, Neighbors).
+	populate_edges(MapGraph, Dims, Vertex, Neighbors).
 
-populate_vertices(MapGraph, Dims, CollisionMapList, Vertex) ->
+populate_vertices(MapGraph, Dims, ObjectMapList, Vertex) ->
 	Row = maps:get(row, Vertex),
 	Col = maps:get(col, Vertex),
 	Neighbors = [
@@ -165,36 +147,36 @@ populate_vertices(MapGraph, Dims, CollisionMapList, Vertex) ->
 			 	],
 	case digraph:vertex(MapGraph, Vertex) of
 		false ->
-			populate_edges(MapGraph, Dims, CollisionMapList, digraph:add_vertex(MapGraph, Vertex), Neighbors);
+			populate_edges(MapGraph, Dims, digraph:add_vertex(MapGraph, Vertex), Neighbors);
 		{V, _} ->
-			populate_edges(MapGraph, Dims, CollisionMapList, V, Neighbors)
+			populate_edges(MapGraph, Dims, V, Neighbors)
 	end.
 
-do_build_map(MapGraph, Dims, CollisionMapList, Row, Col) ->
+do_build_map(MapGraph, Dims, ObjectMapList, Row, Col) ->
 	case maps:get(width, Dims) =:= Col of
 		false ->
-			case bc_map_utils:inside_collision(Dims, CollisionMapList,  Row, Col) of
+			case bc_map_utils:inside_collision(Dims, ObjectMapList,  Row, Col) of
 				false ->
 					Vertex = #{row => Row, col => Col},
-					populate_vertices(MapGraph, Dims, CollisionMapList, Vertex);
+					populate_vertices(MapGraph, Dims, ObjectMapList, Vertex);
 				true ->
 					MapGraph
 			end,
-			do_build_map(MapGraph, Dims, CollisionMapList, Row, Col + 1);
+			do_build_map(MapGraph, Dims, ObjectMapList, Row, Col + 1);
 		true ->
-			do_build_map(MapGraph, Dims, CollisionMapList, Row + 1)
+			do_build_map(MapGraph, Dims, ObjectMapList, Row + 1)
 	end.
 	
-do_build_map(MapGraph, Dims, CollisionMapList, Row) ->
+do_build_map(MapGraph, Dims, ObjectMapList, Row) ->
 	case maps:get(height, Dims) =:= Row of
 		false ->
-			do_build_map(MapGraph, Dims, CollisionMapList, Row, 0);
+			do_build_map(MapGraph, Dims, ObjectMapList, Row, 0);
 		true ->
 			MapGraph
 	end.
 	
-do_build_map(MapGraph, Dims, CollisionMapList) ->
-	do_build_map(MapGraph, Dims, CollisionMapList, 0).
+do_build_map(MapGraph, Dims, ObjectMapList) ->
+	do_build_map(MapGraph, Dims, ObjectMapList, 0).
 
 process_dims(TmxJsonMap) ->
 	#{
@@ -207,19 +189,19 @@ process_dims(TmxJsonMap) ->
 process_map(TmxJsonMap) ->
 	MapGraph = digraph:new([cyclic]),
 	Dims = process_dims(TmxJsonMap), 
-	CollisionMapList = water_collisions(TmxJsonMap),
-	do_build_map(MapGraph, Dims, CollisionMapList).
+	ObjectMapList = water_objects(TmxJsonMap),
+	do_build_map(MapGraph, Dims, ObjectMapList).
 
-process_collisions(TmxJsonMap) ->
+process_objects(TmxJsonMap) ->
 	case maps:get(<<"layers">>, TmxJsonMap) of
 		LayerList when erlang:is_list(LayerList) ->
-			CollisionMapList = lists:filtermap(fun object_layer/1, LayerList),
-			lists:flatten(CollisionMapList);
+			ObjectMapList = lists:filtermap(fun object_layer/1, LayerList),
+			lists:flatten(ObjectMapList);
 		_ ->
 			{error, "Unable to parse water collisions."}
 	end.
 
-process_base_collision_vertices(TmxJsonMap) ->
+process_base_collisions(TmxJsonMap) ->
 	MapGraph = process_map(TmxJsonMap),
 	Dims = process_dims(TmxJsonMap),
 	Base1Collisions = base1_collisions(TmxJsonMap),
