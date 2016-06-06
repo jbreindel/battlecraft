@@ -11,7 +11,9 @@
 %% API functions
 %%====================================================================
 
-%% @spec are_neighbors(graph(), vertex(), vertex()) -> boolean().
+-spec are_neighbors(MapGraph :: digraph:graph(), 
+					Vertex :: bc_map_serv:vertex(), 
+					Neighbor:: bc_map_serv:vertex()) -> boolean().
 are_neighbors(MapGraph, Vertex, Neighbor) ->
 	Row = maps:get(row, Vertex),
 	Col = maps:get(col, Vertex),
@@ -26,7 +28,10 @@ are_neighbors(MapGraph, Vertex, Neighbor) ->
 					maps:get(col, OutNeighbor) =:= Col
 			    end, OutNeighbors).
 
-%% @spec tile_inside_collision(dims(), collision(), integer(), integer()) -> boolean().
+-spec tile_inside_object(DimMap :: bc_tmx:dims(), 
+						 ObjectMap :: bc_tmx:object(), 
+						 Row :: integer(), 
+						 Col :: integer()) -> boolean().
 tile_inside_object(DimMap, ObjectMap, Row, Col) ->
 	MinY = maps:get(y, ObjectMap),
 	MinX = maps:get(x, ObjectMap),
@@ -40,14 +45,20 @@ tile_inside_object(DimMap, ObjectMap, Row, Col) ->
 					X >= MinX andalso X =< MaxX
 				end, PosList).
 
-%% @spec inside_collision(dims(), [collision()], integer(), integer()) -> boolean().
+-spec inside_collision(DimMap :: bc_tmx:dims(), 
+					   ObjectMapList :: [bc_tmx:object()], 
+					   Row :: integer(), 
+					   Col :: integer()) -> boolean().
 inside_object(DimMap, ObjectMapList, Row, Col) ->
 	lists:any(fun(ObjectMap) -> 
 					  tile_inside_object(DimMap, ObjectMap, Row, Col) 
 			  end, ObjectMapList).
 
-object_verticies(MapGraph, Dims, ObjectMapList) ->
-	object_verticies(MapGraph, Dims, ObjectMapList, []).
+-spec object_verticies(MapGraph :: digraph:graph(), 
+					   DimMap :: bc_tmx:dims(), 
+					   ObjectMapList :: [bc_tmx:object()]) -> [bc_map_serv:vertex()].
+object_verticies(MapGraph, DimMap, ObjectMapList) ->
+	object_verticies(MapGraph, DimMap, ObjectMapList, []).
 
 %%====================================================================
 %% Internal functions

@@ -10,6 +10,11 @@
 %% gen_server callbacks
 -export([init/1, handle_call/3]).
 
+%% vertex inside the graph
+-type vertex() :: #{row => integer(),
+					col => integer()}.
+
+%% internal state
 -record(state, {map}).
 
 %%====================================================================
@@ -17,43 +22,37 @@
 %%====================================================================
 
 start_link() ->
-	gen_server:start_link({local, bc_map_serv}, bc_map_serv, [], []).
+	gen_server:start_link(?MODULE, bc_map_serv, [], []).
 
-compute_path(Vertex1, Vertex2) ->
-	gen_server:call(bc_map_serv, {path, Vertex1, Vertex2}).
+compute_path(BcMapServ, Vertex1, Vertex2) ->
+	gen_server:call(BcMapServ, {path, Vertex1, Vertex2}).
 
-are_neighbors(Vertex1, Vertex2) ->
-	gen_server:call(bc_map_serv, {neighbors, Vertex1, Vertex2}).
+are_neighbors(BcMapServ, Vertex1, Vertex2) ->
+	gen_server:call(BcMapServ, {neighbors, Vertex1, Vertex2}).
 
 %%====================================================================
 %% Gen_server callbacks
 %%====================================================================
 
-init(_Args) ->
+init() ->
 	MapFileStr = filename:join([code:priv_dir(battlecraft), "map", "map.json"]),
-	MapGraph = tmx:load_graph(MapFileStr),
+	{ok, Json} = file:read_file(MapFileStr),
+	TmxJsonMap = jsx:decode(Json, [return_maps]),
+	MapGraph = bc_tmx:load_graph(TmxJsonMap),
 	{ok, #state{map = MapGraph}}.
 
-handle_call({path, Vertex1, Vertex2}, _From, State) ->
-	#state{map = MapGraph} = State,
-	try digraph:get_path(MapGraph, Vertex1, Vertex2) of
+handle_call({path, Vertex1, Vertex2}, _From, #state{map = MapGraph} = State) ->
+	case digraph:get_path(MapGraph, Vertex1, Vertex2) of
+		Verticies when erlang:is_list(Verticies) ->
+			{reply, {ok, Verticies}, State};
 		false ->
-			{reply, {error, "No such path"}, State};
-		Verticies ->
-			{reply, {ok, Verticies}}
-	catch
-		_ -> 
-			{reply, {error, "Unable to compute path"}, State}
+			{reply, {error, "No such path"}, State}
 	end;
 
-handle_call({neighbors, Vertex1, Vertex2}, _From, State) ->
-	#state{map = MapGraph} = State,
-	try map_utils:are_neighbors(MapGraph, Vertex1, Vertex2) of
+handle_call({neighbors, Vertex1, Vertex2}, _From, #state{map = MapGraph} = State) ->
+	case bc_map_utils:are_neighbors(MapGraph, Vertex1, Vertex2) of
 		true ->
 			{reply, true};
 		false ->
 			{reply, false}
-	catch
-		_ ->
-			{reply, {error, "Unable to determine neighbors"}, State}
 	end.
