@@ -8,39 +8,39 @@
 		 load_collision_list/1
 		]).
 
-%% -type dims() :: #{ height :: integer(),
-%% 				   width :: integer(),
-%% 				   tileheight :: integer(),
-%% 				   tilewidth :: width() }.
-%% 
-%% -type collision() :: #{ id :: integer(),
-%% 						name :: string(),
-%% 						x :: integer(),
-%% 						y :: integer(),
-%% 						height :: integer(),
-%% 						width :: integer() }.
-%% 
-%% %% type exports
-%% -export_types([dims/0, collision/0]).
+%% type exports
+-export_types([dims/0, collision/0]).
+
+-type dims() :: #{height => integer(),
+				  width => integer(),
+				  tileheight => integer(),
+				  tilewidth => integer()}.
+
+-type collision() :: #{id => integer(),
+					   name => string(),
+					   x => integer(),
+					   y => integer(),
+					   height => integer(),
+					   width => integer()}.
 
 %%====================================================================
 %% API functions
 %%====================================================================
 
-%% @spec load_graph(string()) -> {ok, graph()} || {error, string()}.
+-spec load_graph(map()) -> {ok, digraph:graph()} | {error, string()}.
 load_graph(TmxJsonMap) ->
 	{ok, process_map(TmxJsonMap)}.
 
-%% @spec load_dims(string()) -> {ok, dims()} || {error, string()}.
+-spec load_dims(map()) -> {ok, dims()} | {error, string()}.
 load_dims(TmxJsonMap) ->
 	{ok, process_dims(TmxJsonMap)}.
 
-%% @spec load_collision_list(string()) -> {ok, [collision()]} || {error, string()}.
+-spec load_collision_list(map()) -> {ok, [collision()]} | {error, string()}.
 load_collision_list(TmxJsonMap) ->
 	CollisionMapList = process_collisions(TmxJsonMap),
 	{ok, lists:flatten(CollisionMapList)}.
 
-%% @spec load_base_collision_verticies(string()) -> {ok, [collision()]} || {error, string()}.
+-spec load_base_collision_verticies(map()) -> {ok, [collision()]} | {error, string()}.
 load_base_collision_verticies(TmxJsonMap) ->
 	{ok, process_base_collision_vertices(TmxJsonMap)}.
 
@@ -54,7 +54,7 @@ object_layer(ObjectLayerMap) when erlang:is_map(ObjectLayerMap) ->
 			{true, lists:map(fun(ObjectMap) -> 
 								#{
 									id => maps:get(<<"id">>, ObjectMap, 0),
-									name => maps:get(<<"name">>, ObjectMap),
+									name => binary:bin_to_list(maps:get(<<"name">>, ObjectMap)),
 									x => maps:get(<<"x">>, ObjectMap, 0),
 									y => maps:get(<<"y">>, ObjectMap, 0),
 									height => maps:get(<<"height">>, ObjectMap, 0),
