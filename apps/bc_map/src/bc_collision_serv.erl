@@ -16,56 +16,52 @@
 		handle_call/3, 
 		handle_cast/2).
 
--record(state, {collisions}).
+%% public types
+-export_type([collision/0]).
+
+%% collision 
+-type collision() :: #{id => string(),
+					   vertices => [bc_map_serv:vertex()]}.
+
+%% internal state
+-record(state, {coll_tab_id}).
 
 %%====================================================================
 %% API functions
 %%====================================================================
 
-name(GameRecord) ->
-	list_to_atom("bc_collision_serv-" ++ [GameRecord#game.id]).
+start_link() ->
+	gen_server:start_link(?MODULE, Name, [], []).
 
-start_link(GameRecord) ->
-	Name = name(GameRecord),
-	gen_server:start_link({local, Name}, Name, [], []).
-	
-add_collision(CollisionName, Verticies) ->
+add_collision(BcCollisionServ, CollisionMap) ->
 	gen_server:call(bc_collision_serv, {add_collision, CollisionMap}).
 
-update_collision(CollisionRecord) ->
-	gen_server:call(bc_collision_serv, {update_collision, CollisionMap}).
+update_collision(BcCollisionServ, CollisionMap) ->
+	gen_server:call(BcCollisionServ, {update_collision, CollisionMap}).
 
-query_collision(Id) ->
-	gen_server:call(bc_collision_serv, {query_collision, Id}).
+query_collision(BcCollisionServ, Id) ->
+	gen_server:call(BcCollisionServ, {query_collision, Id}).
 
-query_positions(Verticies) ->
-	case is_list(Verticies) of
-		false ->
-			gen_server:call(bc_collision_serv, {query_positions, [Verticies]});
-		true ->
-			gen_server:call(bc_collision_serv, {query_positions, Verticies})
-	end.
+query_positions(BcCollisionServ, Verticies) when erlang:is_list(Vertices) ->
+	gen_server:call(bc_collision_serv, {query_positions, Verticies});
+query_positions(BcCollisionServ, Vertex) when erlang:is_map(Vertex) ->
+	gen_server:call(bc_collision_serv, {query_positions, [Vertex]}).
 
-remove_collision(Id) ->
-	gen_server:cast(bc_collision_serv, id).
+remove_collision(BcCollisionServ, Id) ->
+	gen_server:cast(BcCollisionServ, {remove_collection, Id}).
 
 %%====================================================================
 %% Gen_server callbacks
 %%====================================================================
 
-init(_Args) ->
-	{ok, #state{collisions = orddict:new()}}.
+init(BcGameSup) ->
+	CollTabId = ets:new(collisions, [bag, protected, {heir, BcGameSup}]),
+	{ok, #state{coll_tab_id = CollTabId}}.
 
-handle_call({add_collision, CollisionMap}, _From, State) ->
-	#state{collisions = CollisionOrddict} = State,
+handle_call({add_collision, CollisionMap}, _From, #state{coll_tab_id = CollTabId} = State) ->
 	Id = maps:get(id, CollisionMap),
-	try ordict:store(Id, CollisionMap, CollisionOrddict) of
-		UpdatedCollisionOrddict ->
-			{reply, ok, #state{collisions = UpdatedCollisionOrddict}}
-	catch
-		_ ->
-			{reply, {error, "Unable to add a collision."}, CollisionOrddict}
-	end;
+	Vertices = maps:get(vertices, CollisionMap);
+	%% TODO insert into ets
 
 handle_call({update_collision, CollisionMap}, _From, State) ->
 	#state{collisions = CollisionOrddict} = State,
