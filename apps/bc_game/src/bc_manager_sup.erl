@@ -29,7 +29,7 @@ init([]) ->
 		{one_for_one, 0, 1}, 
 			[#{
 			   id => bc_manager_serv,
-			   start => {bc_manager_serv, start_link, []},
+			   start => {bc_manager_serv, start_link, self(), []},
 			   modules => [bc_manager_serv]
 			}]
 		}}.
