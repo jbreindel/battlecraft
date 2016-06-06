@@ -5,7 +5,7 @@
 -export([are_neighbors/3,
 		 tile_inside_object/4, 
 		 inside_object/4,
-		 object_verticies]).
+		 object_verticies/3]).
 
 %%====================================================================
 %% API functions
@@ -20,7 +20,7 @@ are_neighbors(MapGraph, Vertex, Neighbor) ->
 	lists:any(fun(InNeighbor) -> 
 				maps:get(row, InNeighbor) =:= Row andalso
 				maps:get(col, InNeighbor) =:= Col
-		   end, InNeighbors) andalso
+		   	end, InNeighbors) andalso
 	 lists:any(fun(OutNeighbor) -> 
 					maps:get(row, OutNeighbor) =:= Row andalso
 					maps:get(col, OutNeighbor) =:= Col
@@ -28,10 +28,10 @@ are_neighbors(MapGraph, Vertex, Neighbor) ->
 
 %% @spec tile_inside_collision(dims(), collision(), integer(), integer()) -> boolean().
 tile_inside_object(DimMap, ObjectMap, Row, Col) ->
-	MinY = maps:get(y, CollisionMap),
-	MinX = maps:get(x, CollisionMap),
-	MaxY = MinY + maps:get(height, CollisionMap),
-	MaxX = MinX + maps:get(width, CollisionMap),
+	MinY = maps:get(y, ObjectMap),
+	MinX = maps:get(x, ObjectMap),
+	MaxY = MinY + maps:get(height, ObjectMap),
+	MaxX = MinX + maps:get(width, ObjectMap),
 	PosList = tile_endpoints(DimMap, Row, Col),
 	lists:any(fun(Pos) ->
 					Y = maps:get(y, Pos),
@@ -41,13 +41,13 @@ tile_inside_object(DimMap, ObjectMap, Row, Col) ->
 				end, PosList).
 
 %% @spec inside_collision(dims(), [collision()], integer(), integer()) -> boolean().
-inside_object(DimMap, ObjectMap, Row, Col) ->
-	lists:any(fun(CollisionMap) -> 
-					  tile_inside_object(DimMap, CollisionMap, Row, Col) 
-			  end, CollisionMapList).
+inside_object(DimMap, ObjectMapList, Row, Col) ->
+	lists:any(fun(ObjectMap) -> 
+					  tile_inside_object(DimMap, ObjectMap, Row, Col) 
+			  end, ObjectMapList).
 
-object_verticies(MapGraph, Dims, ObjectMaps) ->
-	object_verticies(MapGraph, Dims, ObjectMaps, []).
+object_verticies(MapGraph, Dims, ObjectMapList) ->
+	object_verticies(MapGraph, Dims, ObjectMapList, []).
 
 %%====================================================================
 %% Internal functions
@@ -55,13 +55,13 @@ object_verticies(MapGraph, Dims, ObjectMaps) ->
 
 object_verticies(_, _, [], Verticies) ->
 	Verticies;
-object_verticies(MapGraph, Dims, [RawCollisionMap|RawCollisionMaps], Verticies) ->
-	VerticiesAcc = Verticies ++ lists:filter(fun(Vertex) -> 
-													Row = maps:get(row, Vertex),
-													Col = maps:get(col, Vertex),
-													tile_inside_collision(Dims, RawCollisionMap, Row, Col)
-												end, digraph:vertices(MapGraph)),
-	collision_verticies(MapGraph, Dims, RawCollisionMaps, VerticiesAcc).
+object_verticies(MapGraph, Dims, [ObjectMap|ObjectMaps], Verticies) ->
+	VerticiesAcc = Verticies ++ lists:filter(fun(Vertex) ->
+												Row = maps:get(row, Vertex),
+												Col = maps:get(col, Vertex),
+												tile_inside_object(Dims, ObjectMap, Row, Col)
+											end, digraph:vertices(MapGraph)),
+	object_verticies(MapGraph, Dims, ObjectMaps, VerticiesAcc).
 
 tile_endpoints(Dims, Row, Col) ->
 	TileHeight = maps:get(tileheight, Dims),

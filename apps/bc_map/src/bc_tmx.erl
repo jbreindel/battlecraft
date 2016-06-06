@@ -42,7 +42,7 @@ load_object_list(TmxJsonMap) ->
 
 -spec load_base_collision_verticies(map()) -> {ok, [object()]} | {error, string()}.
 load_base_collision_verticies(TmxJsonMap) ->
-	{ok, process_base_collision_vertices(TmxJsonMap)}.
+	{ok, process_base_collisions(TmxJsonMap)}.
 
 %%====================================================================
 %% Internal functions
@@ -136,7 +136,7 @@ populate_edges(MapGraph, Dims, Vertex, [Neighbor|Neighbors]) ->
 	end,
 	populate_edges(MapGraph, Dims, Vertex, Neighbors).
 
-populate_vertices(MapGraph, Dims, ObjectMapList, Vertex) ->
+populate_vertices(MapGraph, Dims, Vertex) ->
 	Row = maps:get(row, Vertex),
 	Col = maps:get(col, Vertex),
 	Neighbors = [
@@ -158,7 +158,7 @@ do_build_map(MapGraph, Dims, ObjectMapList, Row, Col) ->
 			case bc_map_utils:inside_object(Dims, ObjectMapList,  Row, Col) of
 				false ->
 					Vertex = #{row => Row, col => Col},
-					populate_vertices(MapGraph, Dims, ObjectMapList, Vertex);
+					populate_vertices(MapGraph, Dims, Vertex);
 				true ->
 					MapGraph
 			end,
@@ -198,19 +198,19 @@ process_objects(TmxJsonMap) ->
 			ObjectMapList = lists:filtermap(fun object_layer/1, LayerList),
 			lists:flatten(ObjectMapList);
 		_ ->
-			{error, "Unable to parse water collisions."}
+			{error, "Unable to parse objects."}
 	end.
 
 process_base_collisions(TmxJsonMap) ->
 	MapGraph = process_map(TmxJsonMap),
 	Dims = process_dims(TmxJsonMap),
-	Base1Collisions = base1_collisions(TmxJsonMap),
-	Base2Collisions = base2_collisions(TmxJsonMap),
-	Base3Collisions = base3_collisions(TmxJsonMap),
-	Base4Collisions = base4_collisions(TmxJsonMap),
+	Base1Objects = base1_objects(TmxJsonMap),
+	Base1Objects = base2_objects(TmxJsonMap),
+	Base1Objects = base3_objects(TmxJsonMap),
+	Base1Objects = base4_objects(TmxJsonMap),
 	#{
-		base1 => collision_verticies(MapGraph, Dims, Base1Collisions),
-		base2 => collision_verticies(MapGraph, Dims, Base2Collisions),
-		base3 => collision_verticies(MapGraph, Dims, Base3Collisions),
-		base4 => collision_verticies(MapGraph, Dims, Base4Collisions)
+		base1 => bc_map_utils:object_verticies(MapGraph, Dims, Base1Objects),
+		base2 => bc_map_utils:object_verticies(MapGraph, Dims, Base1Objects),
+		base3 => bc_map_utils:object_verticies(MapGraph, Dims, Base1Objects),
+		base4 => bc_map_utils:object_verticies(MapGraph, Dims, Base1Objects)
 	}.
