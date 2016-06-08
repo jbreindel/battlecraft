@@ -2,10 +2,10 @@
 -module(bc_collision).
 
 %% ets table options
--define(ETS_OPTIONS(BcGameSup), [set, 
-								 public, 
-								 {heir, BcGameSup, []}, 
-								 {write_concurrency, true}]).
+-define(ETS_OPTIONS(Heir), [set, 
+							public, 
+							{heir, Heir, []}, 
+							{write_concurrency, true}]).
 
 -spec create(BcGameSup :: pid(), 
 			 GameId :: integer()) -> ets:tid().
