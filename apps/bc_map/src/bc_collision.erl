@@ -12,15 +12,9 @@
 create(BcGameSup) ->
 	ets:new(collision, ?ETS_OPTIONS(BcGameSup)).
 
--spec insert(Tab :: ets:tid(),
-			 CollisionMap :: bc_collision_serv:collision()) -> true.
-insert(Tab, CollisionMap) ->
-	Rows = vertex_rows(CollisionMap),
-	ets:insert(Tab, Rows).
-
 -spec insert_new(Tab :: ets:tid(),
 				 CollisionMap :: bc_collision_serv:collision()) -> boolean().
-insert_new(Tab, CollisionMap) ->
+insert(Tab, CollisionMap) ->
 	Rows = vertex_rows(CollisionMap),
 	ets:insert_new(Tab, Rows).
 
