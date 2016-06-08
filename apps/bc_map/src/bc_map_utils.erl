@@ -15,8 +15,8 @@
 					Vertex :: bc_map_serv:vertex(), 
 					Neighbor:: bc_map_serv:vertex()) -> boolean().
 are_neighbors(MapGraph, Vertex, Neighbor) ->
-	Row = maps:get(row, Vertex),
-	Col = maps:get(col, Vertex),
+	Row = maps:get(row, Neighbor),
+	Col = maps:get(col, Neighbor),
 	InNeighbors = digraph:in_neighbours(MapGraph, Vertex),
 	OutNeighbors = digraph:out_neighbours(MapGraph, Vertex),
 	lists:any(fun(InNeighbor) -> 
@@ -45,7 +45,7 @@ tile_inside_object(DimMap, ObjectMap, Row, Col) ->
 					X >= MinX andalso X =< MaxX
 				end, PosList).
 
--spec inside_collision(DimMap :: bc_tmx:dims(), 
+-spec inside_object(DimMap :: bc_tmx:dims(), 
 					   ObjectMapList :: [bc_tmx:object()], 
 					   Row :: integer(), 
 					   Col :: integer()) -> boolean().
