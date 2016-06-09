@@ -48,6 +48,58 @@ load_base_collision_verticies(TmxJsonMap) ->
 %% Internal functions
 %%====================================================================
 
+tile_endpoints(Dims, Row, Col) ->
+	TileHeight = maps:get(tileheight, Dims),
+	TileWidth = maps:get(tilewidth, Dims),
+	[		
+	   #{y => Row * TileHeight, x => Col * TileWidth},
+	   #{y => Row * TileHeight, x => (Col + 1) * TileWidth},
+	   #{y => (Row + 1) * TileHeight, x => (Col + 1) * TileWidth},
+	   #{y => (Row + 1) * TileHeight, x => Col * TileWidth}
+	].
+
+-spec tile_inside_object(DimMap :: bc_tmx:dims(), 
+						 ObjectMap :: bc_tmx:object(), 
+						 Row :: integer(), 
+						 Col :: integer()) -> boolean().
+tile_inside_object(DimMap, ObjectMap, Row, Col) ->
+	MinY = maps:get(y, ObjectMap),
+	MinX = maps:get(x, ObjectMap),
+	MaxY = MinY + maps:get(height, ObjectMap),
+	MaxX = MinX + maps:get(width, ObjectMap),
+	PosList = tile_endpoints(DimMap, Row, Col),
+	lists:any(fun(Pos) ->
+					Y = maps:get(y, Pos),
+					X = maps:get(x, Pos),
+					Y >= MinY andalso Y =< MaxY andalso 
+					X >= MinX andalso X =< MaxX
+				end, PosList).
+
+-spec inside_object(DimMap :: bc_tmx:dims(), 
+					   ObjectMapList :: [bc_tmx:object()], 
+					   Row :: integer(), 
+					   Col :: integer()) -> boolean().
+inside_object(DimMap, ObjectMapList, Row, Col) ->
+	lists:any(fun(ObjectMap) -> 
+					  tile_inside_object(DimMap, ObjectMap, Row, Col) 
+			  end, ObjectMapList).
+
+-spec object_verticies(MapGraph :: digraph:graph(), 
+					   DimMap :: bc_tmx:dims(), 
+					   ObjectMapList :: [bc_tmx:object()]) -> [bc_map_serv:vertex()].
+object_verticies(MapGraph, DimMap, ObjectMapList) ->
+	object_verticies(MapGraph, DimMap, ObjectMapList, []).
+
+object_verticies(_, _, [], Verticies) ->
+	Verticies;
+object_verticies(MapGraph, Dims, [ObjectMap|ObjectMaps], Verticies) ->
+	VerticiesAcc = Verticies ++ lists:filter(fun(Vertex) ->
+												Row = maps:get(row, Vertex),
+												Col = maps:get(col, Vertex),
+												tile_inside_object(Dims, ObjectMap, Row, Col)
+											end, digraph:vertices(MapGraph)),
+	object_verticies(MapGraph, Dims, ObjectMaps, VerticiesAcc).
+
 object_layer(ObjectLayerMap) when erlang:is_map(ObjectLayerMap) ->
 	case maps:get(<<"objects">>, ObjectLayerMap, undefined) of
 		ObjectList when erlang:is_list(ObjectList) ->
@@ -125,7 +177,7 @@ populate_edges(MapGraph, Dims, Vertex, [Neighbor|Neighbors]) ->
 					digraph:add_edge(MapGraph, Vertex, NewNeighbor),
 					digraph:add_edge(MapGraph, NewNeighbor, Vertex);
 				{V, _} ->
-					case bc_map_utils:are_neighbors(MapGraph, V, Vertex) of
+					case bc_map:are_neighbors(MapGraph, V, Vertex) of
 						false ->
 							digraph:add_edge(MapGraph, Vertex, V),
 							digraph:add_edge(MapGraph, V, Vertex);
@@ -155,7 +207,7 @@ populate_vertices(MapGraph, Dims, Vertex) ->
 do_build_map(MapGraph, Dims, ObjectMapList, Row, Col) ->
 	case maps:get(width, Dims) =:= Col of
 		false ->
-			case bc_map_utils:inside_object(Dims, ObjectMapList,  Row, Col) of
+			case inside_object(Dims, ObjectMapList,  Row, Col) of
 				false ->
 					Vertex = #{row => Row, col => Col},
 					populate_vertices(MapGraph, Dims, Vertex);
@@ -209,8 +261,8 @@ process_base_collisions(TmxJsonMap) ->
 	Base1Objects = base3_objects(TmxJsonMap),
 	Base1Objects = base4_objects(TmxJsonMap),
 	#{
-		base1 => bc_map_utils:object_verticies(MapGraph, Dims, Base1Objects),
-		base2 => bc_map_utils:object_verticies(MapGraph, Dims, Base1Objects),
-		base3 => bc_map_utils:object_verticies(MapGraph, Dims, Base1Objects),
-		base4 => bc_map_utils:object_verticies(MapGraph, Dims, Base1Objects)
+		base1 => object_verticies(MapGraph, Dims, Base1Objects),
+		base2 => object_verticies(MapGraph, Dims, Base1Objects),
+		base3 => object_verticies(MapGraph, Dims, Base1Objects),
+		base4 => object_verticies(MapGraph, Dims, Base1Objects)
 	}.
