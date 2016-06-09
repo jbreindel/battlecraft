@@ -3,8 +3,8 @@
 
 %% api exports
 -export([init/1, 
-		 compute_path/2,
-		 are_neighbors/2]).
+		 compute_path/3,
+		 are_neighbors/3]).
 
 %% vertex inside the graph
 -type vertex() :: #{row => integer(),
@@ -29,8 +29,7 @@ compute_path(MapGraph, Vertex1, Vertex2) ->
 -spec are_neighbors(MapGraph :: digraph:graph(), 
 					Vertex :: bc_map_serv:vertex(), 
 					Neighbor:: bc_map_serv:vertex()) -> boolean().
-are_neighbors(MapGraph, #{row := VertexRow, col := VertexCol} = Vertex, 
-			  #{row := NeighborRow, col := NeighborCol} = Neighbor) ->
+are_neighbors(MapGraph, Vertex, #{row := NeighborRow, col := NeighborCol}) ->
 	InNeighbors = digraph:in_neighbours(MapGraph, Vertex),
 	OutNeighbors = digraph:out_neighbours(MapGraph, Vertex),
 	lists:any(fun(InNeighbor) -> 

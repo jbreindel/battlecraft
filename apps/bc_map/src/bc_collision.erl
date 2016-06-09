@@ -14,7 +14,7 @@
 		 delete/2]).
 
 %% type exports
--export_type(collision/0, query_res/0).
+-export_type([collision/0, query_res/0]).
 
 %%
 %% @doc collision map
@@ -83,7 +83,8 @@ delete(Tab, CollisionMap) ->
 %%====================================================================
 
 vertex_rows(#{id := Id, vertices := Vertices} = CollisionMap) when erlang:is_map(CollisionMap) ->
-	vertex_rows(Id, Vertices);
+	vertex_rows(Id, Vertices).
+
 vertex_rows(Id, Vertices) when erlang:is_list(Vertices) ->
 	lists:map(fun(#{row := Row, col := Col}) -> {{Row, Col}, Id} end, Vertices).
 
