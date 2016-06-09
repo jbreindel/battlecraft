@@ -4,7 +4,8 @@
 %% api exports
 -export([init/1, 
 		 compute_path/3,
-		 are_neighbors/3]).
+		 are_neighbors/3,
+		 reaching_neighbors/3]).
 
 %% vertex inside the graph
 -type vertex() :: #{row => integer(),
@@ -27,8 +28,8 @@ compute_path(MapGraph, Vertex1, Vertex2) ->
 	digraph:get_path(MapGraph, Vertex1, Vertex2).
 
 -spec are_neighbors(MapGraph :: digraph:graph(), 
-					Vertex :: bc_map_serv:vertex(), 
-					Neighbor:: bc_map_serv:vertex()) -> boolean().
+					Vertex :: vertex(), 
+					Neighbor:: vertex()) -> boolean().
 are_neighbors(MapGraph, Vertex, #{row := NeighborRow, col := NeighborCol}) ->
 	InNeighbors = digraph:in_neighbours(MapGraph, Vertex),
 	OutNeighbors = digraph:out_neighbours(MapGraph, Vertex),
@@ -41,3 +42,21 @@ are_neighbors(MapGraph, Vertex, #{row := NeighborRow, col := NeighborCol}) ->
 					maps:get(col, OutNeighbor) =:= NeighborCol
 			    end, OutNeighbors).
 
+-spec reaching_neighbors(MapGraph :: digraph:graph(), 
+						 Vertex :: vertex(), 
+						 MaxDist :: integer()) -> [vertex()].
+reaching_neighbors(MapGraph, Vertex, MaxDist) ->
+	Neighbors = reaching_neighbors(MapGraph, [Vertex], MaxDist, []),
+	lists:delete(Vertex, Neighbors).
+
+%%====================================================================
+%% Internal functions
+%%====================================================================
+
+reaching_neighbors(_, _, MaxDist, NeighborAcc) when MaxDist =:= 0 ->
+	NeighborSet = sets:from_list(NeighborAcc),
+	sets:to_list(NeighborSet);
+reaching_neighbors(MapGraph, Vertices, MaxDist, NeighborAcc) ->
+	NeighborLists = lists:map(fun(V) -> digraph:out_neighbours(MapGraph, V) end, Vertices),
+	Neighbors = lists:flatten(NeighborLists),
+	reaching_neighbors(MapGraph, Neighbors, MaxDist -1, NeighborAcc ++ Neighbors).

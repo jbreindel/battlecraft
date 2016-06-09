@@ -30,22 +30,22 @@
 %% Api functions
 %%====================================================================
 
--spec init(BcGameSup :: pid(), 
-			 GameId :: integer()) -> ets:tid().
+-spec init(BcGameSup :: pid()) -> ets:tid().
 init(BcGameSup) ->
 	ets:new(collision, ?ETS_OPTIONS(BcGameSup)).
 
--spec insert_new(Tab :: ets:tid(),
+-spec insert(Tab :: ets:tid(),
 				 CollisionMap :: bc_collision:collision()) -> boolean().
 insert(Tab, CollisionMap) ->
 	Rows = vertex_rows(CollisionMap),
 	ets:insert_new(Tab, Rows).
 
--spec query(Vertices :: [bc_map:vertex()]) -> [query_res()].
+-spec query(Tab :: ets:tid(),
+			Vertices :: [bc_map:vertex()]) -> [query_res()].
 query(Tab, Vertices) ->
 	Ms = collision_ms(Vertices),
 	case ets:select(Tab, Ms) of
-		Results when is_list(Restuls) andalso length(Results) > 0 ->
+		Results when is_list(Results) andalso length(Results) > 0 ->
 			lists:map(fun({{Row, Col}, Id}) -> #{id => Id, 
 												 vertex => #{row => Row, 
 															 col => Col}} end, Results);
@@ -56,7 +56,7 @@ query(Tab, Vertices) ->
 -spec update(Tab :: ets:tid(), 
 			 OriginalCollisionMap :: bc_collision:collision(), 
 			 UpdatedCollisionMap :: bc_collision:collision()) -> ok | {error, Reason :: string()}.
-update(Tab, OriginalCollisionMap, #{id := UpdateId} = UpdatedCollisionMap) ->
+update(Tab, OriginalCollisionMap, UpdatedCollisionMap) ->
 	case difference_vertices(UpdatedCollisionMap, OriginalCollisionMap) of
 		InsertRows when length(InsertRows) > 0 ->
 			case ets:insert_new(Tab, InsertRows) of
