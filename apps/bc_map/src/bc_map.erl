@@ -57,6 +57,13 @@ reaching_neighbors(_, _, MaxDist, NeighborAcc) when MaxDist =:= 0 ->
 	NeighborSet = sets:from_list(NeighborAcc),
 	sets:to_list(NeighborSet);
 reaching_neighbors(MapGraph, Vertices, MaxDist, NeighborAcc) ->
-	NeighborLists = lists:map(fun(V) -> digraph:out_neighbours(MapGraph, V) end, Vertices),
+	NeighborLists = lists:filtermap(fun(V) -> 
+										case digraph:out_neighbours(MapGraph, V) of
+											OutNeighbors when length(OutNeighbors) > 0 ->
+												{true, OutNeighbors};
+											_ ->
+												false
+										end
+									end, Vertices),
 	Neighbors = lists:flatten(NeighborLists),
 	reaching_neighbors(MapGraph, Neighbors, MaxDist -1, NeighborAcc ++ Neighbors).
