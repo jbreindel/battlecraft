@@ -45,7 +45,7 @@ insert(Tab, CollisionMap) ->
 query(Tab, Vertices) ->
 	Ms = collision_ms(Vertices),
 	case ets:select(Tab, Ms) of
-		Results when is_list(Results) andalso length(Results) > 0 ->
+		Results when is_list(Results) ->
 			lists:map(fun({{Row, Col}, Id}) -> #{id => Id, 
 												 vertex => #{row => Row, 
 															 col => Col}} end, Results);
