@@ -3,4 +3,7 @@
 % {HostMatch, list({PathMatch, Handler, Opts})}
 
 % landing controller
-{'_', [{'/', bc_web_landing, []}]}.
+{'_', [
+	{'/', bc_web_landing, []}
+	
+]}.
