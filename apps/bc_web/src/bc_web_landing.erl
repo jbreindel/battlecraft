@@ -18,9 +18,7 @@ handle(Req, State) ->
 			], View, Req),
 			{ok, Req2, State};
 		{error, Reason} ->
-			Req2 = cowboy_req:reply(500, [
-    			{<<"content-type">>, <<"text/plain">>}
-			], <<Reason>>, Req),
+			Req2 = cowboy_req:reply(500, [], <<Reason>>, Req),
 			{shutdown, Req2, no_state}
 	end.
 
