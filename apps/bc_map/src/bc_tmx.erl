@@ -164,12 +164,11 @@ base4_objects(TmxJsonMap) ->
 
 populate_edges(MapGraph, _, _, []) ->
 	MapGraph;
-populate_edges(MapGraph, Dims, Vertex, [Neighbor|Neighbors]) ->
+populate_edges(MapGraph, #{height := Height, width := Width} = Dims, Vertex, [Neighbor|Neighbors]) ->
 	NeighborRow = maps:get(row, Neighbor),
 	NeighborCol = maps:get(col, Neighbor),
-	case NeighborRow > 0 andalso NeighborCol > 0 of
-		false ->
-			ok;
+	case NeighborRow > 0 andalso NeighborCol > 0 andalso 
+			 NeighborRow < Height andalso NeighborCol < Width of
 		true ->
 			case digraph:vertex(MapGraph, Neighbor) of
 				false ->
@@ -184,7 +183,9 @@ populate_edges(MapGraph, Dims, Vertex, [Neighbor|Neighbors]) ->
 						true ->
 							ok
 					end
-			end
+			end;
+		false ->
+			ok
 	end,
 	populate_edges(MapGraph, Dims, Vertex, Neighbors).
 
@@ -195,7 +196,7 @@ populate_vertices(MapGraph, Dims, Vertex) ->
 				 	Vertex#{row := Row - 1},
 					Vertex#{col := Col + 1},
 					Vertex#{row := Row + 1},
-					Vertex#{row := Col - 1}
+					Vertex#{col := Col - 1}
 			 	],
 	case digraph:vertex(MapGraph, Vertex) of
 		false ->
