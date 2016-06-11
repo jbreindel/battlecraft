@@ -1,0 +1,6 @@
+% Routes file.
+% See cowboy routing docs for formatting
+% {HostMatch, list({PathMatch, Handler, Opts})}
+
+% landing controller
+{'_', [{'/', bc_web_landing, []}]}.

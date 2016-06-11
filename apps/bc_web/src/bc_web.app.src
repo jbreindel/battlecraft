@@ -1,11 +1,12 @@
 {application, bc_web,
- [{description, "An OTP application"},
+ [{description, "Web front end for bc"},
   {vsn, "0.1.0"},
   {registered, []},
   {mod, { bc_web_app, []}},
   {applications,
    [kernel,
-    stdlib
+    stdlib,
+    cowboy
    ]},
   {env,[]},
   {modules, []},
