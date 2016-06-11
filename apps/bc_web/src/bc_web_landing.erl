@@ -10,17 +10,13 @@ init(_Type, Req, _Opts) ->
 							 {description, "An online real time strategy simulation game."}]}]),
 	{ok, Req, no_state}.
 
-handle(Req, State) ->
+handle(Req, _State) ->
 	case landing_view:render([]) of
 		{ok, View} ->
-		    Req2 = cowboy_req:reply(200, [
-    			{<<"content-type">>, <<"text/html">>}
-			], View, Req),
-			{ok, Req2, State};
+			{ok, cowboy_req:reply(200, [], View, Req), no_state};
 		{error, Reason} ->
-			Req2 = cowboy_req:reply(500, [], <<Reason>>, Req),
-			{shutdown, Req2, no_state}
+			{shutdown, cowboy_req:reply(500, [], <<Reason>>, Req), no_state}
 	end.
 
-terminate(_Reason, Req, State) ->
+terminate(_Reason, _Req, _State) ->
 	ok.
