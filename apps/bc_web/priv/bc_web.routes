@@ -6,8 +6,5 @@
 {'_', [
 	{"/", bc_web_landing, []},
 	
-	{"/static/[...]", cowboy_static, [
-		{directory, {priv_dir, chat, [<<"static">>]}},
-		{mimetypes, {fun mimetypes:path_to_mimes/2, default}}
-	]}
+	{"/static/[...]", cowboy_static, {priv_dir, bc_web, "static"}}
 ]}.
