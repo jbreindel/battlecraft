@@ -1,0 +1,21 @@
+{
+  "name": "bc_web",
+  "authors": [
+    "jake <jake@diesel>"
+  ],
+  "description": "Web front end for battlecraft",
+  "main": "",
+  "keywords": [
+    "battlecraft"
+  ],
+  "license": "MIT",
+  "homepage": "",
+  "private": true,
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ]
+}
