@@ -15,7 +15,7 @@
 %%====================================================================
 
 start(_StartType, _StartArgs) ->
-	RoutesFile = filename:join([code:priv_dir(bc_web), "bc_web.routes"]),
+	RoutesFile = bc_web_files:routes_file(),
 	{ok, Routes} = file:consult(RoutesFile),
 	Dispatch = cowboy_router:compile(Routes),
 	cowboy:start_http(http, 100,
