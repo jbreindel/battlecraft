@@ -4,6 +4,5 @@
 
 % landing controller
 {'_', [
-	{'/', bc_web_landing, []}
-	
+	{"/", bc_web_landing, []}
 ]}.
