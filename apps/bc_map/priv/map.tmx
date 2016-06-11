@@ -1,22 +1,22 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <map version="1.0" orientation="orthogonal" renderorder="right-down" width="50" height="50" tilewidth="64" tileheight="64" nextobjectid="19">
  <tileset firstgid="1" name="Gelaende_Wiese" tilewidth="64" tileheight="64" tilecount="64" columns="8">
-  <image source="../assets/terrain/Gelaende_Wiese.PNG" width="512" height="512"/>
+  <image source="../../bc_web/priv/static/assets/terrain/Gelaende_Wiese.PNG" width="512" height="512"/>
  </tileset>
  <tileset firstgid="65" name="0_1" tilewidth="64" tileheight="64" tilecount="64" columns="8">
-  <image source="../assets/terrain/water1/0_1.PNG" width="512" height="512"/>
+  <image source="../../bc_web/priv/static/assets/terrain/water1/0_1.PNG" width="512" height="512"/>
  </tileset>
  <tileset firstgid="129" name="pyramid_down" tilewidth="256" tileheight="256" tilecount="1" columns="1">
-  <image source="../assets/environment/pyramid_down.PNG" width="256" height="256"/>
+  <image source="../../bc_web/priv/static/assets/environment/pyramid_down.PNG" width="256" height="256"/>
  </tileset>
  <tileset firstgid="130" name="pyramid_up" tilewidth="256" tileheight="256" tilecount="1" columns="1">
-  <image source="../assets/environment/pyramid_up.PNG" width="256" height="256"/>
+  <image source="../../bc_web/priv/static/assets/environment/pyramid_up.PNG" width="256" height="256"/>
  </tileset>
  <tileset firstgid="131" name="pyramid_right" tilewidth="256" tileheight="256" tilecount="1" columns="1">
-  <image source="../assets/environment/pyramid_right.PNG" width="256" height="256"/>
+  <image source="../../bc_web/priv/static/assets/environment/pyramid_right.PNG" width="256" height="256"/>
  </tileset>
  <tileset firstgid="132" name="pyramid_left" tilewidth="256" tileheight="256" tilecount="1" columns="1">
-  <image source="../assets/environment/pyramid_left.PNG" width="256" height="256"/>
+  <image source="../../bc_web/priv/static/assets/environment/pyramid_left.PNG" width="256" height="256"/>
  </tileset>
  <layer name="water" width="50" height="50">
   <data encoding="csv">

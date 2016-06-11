@@ -60,7 +60,8 @@ handle_call({create_game, Privacy}, _From,
 			   start => {bc_game_fsm, start_link, [GameId]},
 			   modules => [bc_game_fsm]
 			}),
- 			{reply, {ok, GameId, BcGameFsm}, State#state{games = dict:store(GameId, BcGameFsm, GameDict)}};
+ 			{reply, {ok, GameId, BcGameFsm}, 
+			 State#state{games = dict:store(GameId, BcGameFsm, GameDict)}};
 		{error, Reason} ->
 			{reply, {error, Reason}, State}
 	end;

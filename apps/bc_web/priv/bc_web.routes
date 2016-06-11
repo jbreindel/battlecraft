@@ -1,0 +1,13 @@
+% Routes file.
+% See cowboy routing docs for formatting
+% {HostMatch, list({PathMatch, Handler, Opts})}
+
+% landing controller
+{'_', [
+	{"/", bc_web_landing, []},
+	
+	{"/static/[...]", cowboy_static, [
+		{directory, {priv_dir, chat, [<<"static">>]}},
+		{mimetypes, {fun mimetypes:path_to_mimes/2, default}}
+	]}
+]}.
