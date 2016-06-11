@@ -195,7 +195,7 @@ populate_vertices(MapGraph, Dims, Vertex) ->
 				 	Vertex#{row := Row - 1},
 					Vertex#{col := Col + 1},
 					Vertex#{row := Row + 1},
-					Vertex#{row := Col - 1}
+					Vertex#{col := Col - 1}
 			 	],
 	case digraph:vertex(MapGraph, Vertex) of
 		false ->
