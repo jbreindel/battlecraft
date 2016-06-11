@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>{{ title }}</title>
+		<meta name="description" content="{{ description }}">
+		<meta name="viewport" content="width=device-width, height=device-height, initial-scale=1.0, user-scalable=no">
+	</head>
+	<body>
+		<div class="main">
+			<div class="container header-container">
+				<div class="inner-container header">
+					{% block header %}
+						{% include "header.html" %}
+					{% endblock %}
+				</div>
+			</div>
+			<div class="container content-container">
+				<div class="inner-container content">
+					{% block content %}{% endblock %}
+				</div>
+			</div>
+			<div class="container footer-container">
+				<div class="inner-container footer">
+					{% block footer %}
+						{% include "footer.html" %}
+					{% endblock %}
+				</div>
+			</div>
+		</div>
+	</body>
+</html>
