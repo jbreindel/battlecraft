@@ -1,6 +1,7 @@
 
 -module(bc_web_landing).
--behavior(cowboy_handler).
+
+-export([init/3, handle/2, terminate/3]).
 
 init(_Type, Req, _Opts) ->
 	{ok, Req, no_state}.
