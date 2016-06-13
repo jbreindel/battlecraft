@@ -59,9 +59,9 @@ pending({player_join, #{player_pid := PlayerPid,
 		{ok, PlayerId} = Reply ->
 			erlang:monitor(process, PlayerPid),
 			gen_event:notify(GameEventPid, {player_joined, PlayerId, Handle}),
-			UpdatedPlayers = dict:store(PlayerId, PlayerPid, Players),
 			gen_event:add_handler(GameEventPid, {bc_game_event, PlayerId}, 
 								  {player_pid, PlayerPid}),
+			UpdatedPlayers = dict:store(PlayerId, PlayerPid, Players),
 			UpdatedState = State#state{players = UpdatedPlayers},
 			case pending_players_changed(GameId, UpdatedPlayers) of
 				{ok, started} ->
@@ -88,8 +88,8 @@ pending({player_quit, PlayerId},
 	case remove_player(GameId, PlayerId) of
 		ok ->
 			gen_event:delete_handler(GameEventPid, {bc_game_event, PlayerId}, []),
-			UpdatedPlayers = dict:erase(PlayerId, Players),
 			gen_event:notify(GameEventPid, {player_quit, PlayerId, Player#player.handle}),
+			UpdatedPlayers = dict:erase(PlayerId, Players),
 			UpdatedState = State#state{players = UpdatedPlayers},
 			case pending_players_changed(GameId, UpdatedPlayers) of
 				{ok, quit} ->
