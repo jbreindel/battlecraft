@@ -9,12 +9,15 @@
 -export([init/2, pending/2, started/2]).
 
 %% state rec
--record(state, {
-				game_sup,
+-record(state, {game_sup,
+				input_sup,
+				gold_sup,
+				entity_sup,
 				game_event,
 				game_id,
-				players
-  				}).
+				map_graph,
+				collision_tab,
+				players}).
 
 %%====================================================================
 %% Public functions
@@ -39,36 +42,75 @@ player_out(GameFsmPid, PlayerId) ->
 %%====================================================================
 
 init(GameId, BcGameSup) ->
+	{ok, BcInputSup} = supervisor:start_child(BcGameSup, #{
+		id => bc_input_sup,
+		start => {bc_input_serv, start_link, []},
+		modules => [bc_input_serv]													   
+	}),
+	{ok, BcGoldSup} = supervisor:start_child(BcGameSup, #{
+		id => bc_gold_sup,
+		start => {bc_gold_sup, start_link, []},
+		modules => [bc_gold_sup]													  
+	}),
+	{ok, BcEntitySup} = supervisor:start_child(BcGameSup, #{
+		id => bc_entity_sup,
+		start => {bc_entity_sup, start_link, []},
+		modules => [bc_entity_sup]
+	}),
 	{ok, GameEventPid} = supervisor:start_child(BcGameSup, #{
 		id => bc_game_event,
 		start => {gen_event, start_link, []},
 		modules => [gen_event]
 	}),
+	MapGraph = bc_map:init(),
+	CollisionTab = bc_collision:init(BcGameSup),
 	{ok, pending, #state{game_sup = BcGameSup,
+						 input_sup = BcInputSup,
+						 gold_sup = BcGoldSup,
+						 entity_sup = BcEntitySup,
 						 game_event = GameEventPid,
 						 game_id = GameId,
+						 map_graph = MapGraph,
+						 collision_tab = CollisionTab,
 						 players = dict:new()}}.
 
 pending({player_join, #{player_pid := PlayerPid, 
 						handle := Handle}},
-		State = #state{game_sup = BcGameSup,
-					   game_event = GameEventPid,
-					   game_id = GameId,
-					   players = Players}) ->
+			#state{game_sup = BcGameSup,
+				   input_sup = BcInputSup,
+				   gold_sup = BcGoldSup,
+				   entity_sup = BcEntitySup,
+				   game_event = GameEventPid,
+				   game_id = GameId,
+				   map_graph = MapGraph,
+				   collision_tab = CollisionTab,
+				   players = Players} = State) ->
 	case save_player(GameId, Handle) of
-		{ok, PlayerId} = Reply ->
-			erlang:monitor(process, PlayerPid),
+		{ok, PlayerId} ->
 			gen_event:notify(GameEventPid, {player_joined, PlayerId, Handle}),
-			gen_event:add_handler(GameEventPid, {bc_game_event, PlayerId}, 
+			gen_event:add_handler(GameEventPid,
+								  {bc_game_event, PlayerId},
 								  {player_pid, PlayerPid}),
-			UpdatedPlayers = dict:store(PlayerId, PlayerPid, Players),
+			{ok, BcGoldFsm} = supervisor:start_child(BcGoldSup, #{
+				id => PlayerId,
+				start => {bc_gold_fsm, start_link, [PlayerId, PlayerPid]},
+				modules => [bc_gold_fsm]													  
+			}),
+			{ok, BcInputServ} = supervisor:start_child(BcInputSup, #{
+				id => PlayerId,
+				start => {bc_input_serv, start_link, [BcEntitySup, MapGraph, CollisionTab, BcGoldFsm]},
+				modules => [bc_input_serv]							  
+			}),
+			UpdatedPlayers = dict:store(PlayerId,
+										#{pid => PlayerPid,
+										  monitor => erlang:monitor(process, PlayerPid)}, Players),
 			UpdatedState = State#state{players = UpdatedPlayers},
 			case pending_players_changed(GameId, UpdatedPlayers) of
 				{ok, started} ->
-					gen_event:notify(GameEventPid, {game_started, dict:to_list(Players)}),
-					{reply, Reply, started, UpdatedState};
+					%%gen_event:notify(GameEventPid, {game_started, dict:to_list(UpdatedPlayers)}),
+					{reply, {ok, PlayerId, BcInputServ}, started, UpdatedState};
 				{ok, pending} ->
-					{reply, Reply, pending, UpdatedState};
+					{reply, {ok, PlayerId, BcInputServ}, pending, UpdatedState};
 				{error, Reason} = Error ->
 					gen_event:notify(GameEventPid, {game_error, Reason}),
 					gen_event:stop(GameEventPid),
@@ -80,15 +122,20 @@ pending({player_join, #{player_pid := PlayerPid,
 			{reply, Error, pending, State}
 	end;
 pending({player_quit, PlayerId},
-		State = #state{game_sup = BcGameSup,
-					   game_event = GameEventPid,
-					   game_id = GameId,
-					   players = Players}) ->
-	Player = find_player(PlayerId),
+			#state{game_event = GameEventPid,
+				   game_id = GameId,
+				   players = Players} = State) ->
 	case remove_player(GameId, PlayerId) of
 		ok ->
+			QuitPlayer = find_player(PlayerId),
 			gen_event:delete_handler(GameEventPid, {bc_game_event, PlayerId}, []),
-			gen_event:notify(GameEventPid, {player_quit, PlayerId, Player#player.handle}),
+			gen_event:notify(GameEventPid, {player_quit, PlayerId, QuitPlayer#player.handle}),
+			case dict:find(PlayerId, Players) of
+				{ok, #{monitor := Monitor}} ->
+					erlang:demonitor(Monitor);
+				_ ->
+					ok
+			end,
 			UpdatedPlayers = dict:erase(PlayerId, Players),
 			UpdatedState = State#state{players = UpdatedPlayers},
 			case pending_players_changed(GameId, UpdatedPlayers) of
@@ -116,7 +163,7 @@ started({_, OutPlayerId},
 	case update_out_player(OutPlayerId) of
 		ok ->
 			OutPlayer = find_player(OutPlayerId),
-			gen_event:notify(GameEventPid, 
+			gen_event:notify(GameEventPid,
 							 {player_out, OutPlayerId, OutPlayer#player.handle}),
 			InPlayers = in_players(GameId),
 			case length(InPlayers) of
@@ -125,7 +172,7 @@ started({_, OutPlayerId},
 					case win_game(GameId, InPlayer#player.id) of
 						{ok, won} ->
 							gen_event:notify(GameEventPid, 
-												  {game_won, InPlayer#player.id, InPlayer#player.handle}),
+											{game_won, InPlayer#player.id, InPlayer#player.handle}),
 							gen_event:stop(GameEventPid),
 							{stop, won, State};
 						{error, Reason} = Error ->
