@@ -2,7 +2,8 @@
 -module(bc_map).
 
 %% api exports
--export([init/1, 
+-export([init/0,
+		 init/1,
 		 compute_path/3,
 		 are_neighbors/3,
 		 reaching_neighbors/3]).
@@ -15,8 +16,11 @@
 %% API functions
 %%====================================================================
 
+inti() ->
+	MapFile = filename:join([code:priv_dir(bc_map), "map", "map.json"]),
+	init(MapFile).
+
 init(MapFile) ->
-	%% MapFileStr = filename:join([code:priv_dir(battlecraft), "map", "map.json"]),
 	{ok, Json} = file:read_file(MapFile),
 	TmxJsonMap = jsx:decode(Json, [return_maps]),
 	bc_tmx:load_graph(TmxJsonMap).
