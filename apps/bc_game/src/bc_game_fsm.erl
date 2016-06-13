@@ -44,7 +44,7 @@ init(GameId, BcGameSup) ->
 		start => {gen_event, start_link, []},
 		modules => [gen_event]
 	}),
-	{ok, created, #state{game_sup = BcGameSup,
+	{ok, pending, #state{game_sup = BcGameSup,
 						 game_event = GameEventPid,
 						 game_id = GameId,
 						 players = dict:new()}}.
