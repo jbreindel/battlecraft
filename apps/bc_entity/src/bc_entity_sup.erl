@@ -13,7 +13,7 @@
 %%====================================================================
 
 start_link() ->
-	supervisor:start_link({local, ?MODULE}, ?MODULE, []).
+	supervisor:start_link(?MODULE, []).
 
 %%====================================================================
 %% Supervisor callbacks
@@ -25,7 +25,6 @@ init([]) ->
 		{one_for_one, 0, 1}, 
 			[#{
 			   id => bc_entity_sup,
-			   start => {},
 			   modules => []
 			}]
 		}}.
