@@ -89,7 +89,7 @@ vertex_rows(Id, Vertices) when erlang:is_list(Vertices) ->
 	lists:map(fun(#{row := Row, col := Col}) -> {{Row, Col}, Id} end, Vertices).
 
 difference_vertices(#{vertices := Vertices1} = CollisionMap1,
-				  #{vertices := Vertices2} = CollisionMap2) ->
+				    #{vertices := Vertices2} = CollisionMap2) ->
 	Set1 = sets:from_list(Vertices1),
 	Set2 = sets:from_list(Vertices2),
 	DiffSet = sofs:difference(Set1, Set2),
