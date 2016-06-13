@@ -66,7 +66,6 @@ pending({player_join, #{player_pid := PlayerPid,
 			case pending_players_changed(GameId, UpdatedPlayers) of
 				{ok, started} ->
 					gen_event:notify(GameEventPid, {game_started, dict:to_list(Players)}),
-					gen_event:stop(GameEventPid),
 					{reply, Reply, started, UpdatedState};
 				{ok, pending} ->
 					{reply, Reply, pending, UpdatedState};
