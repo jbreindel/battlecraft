@@ -8,20 +8,16 @@
 -export([start_link/1,
 		 create_game/2,
 		 get_game/2,
-		 remove_game/2
-		]).
+		 remove_game/2]).
 
 %% gen_server callbacks
 -export([init/1,
 		 handle_call/3,
-		 handle_cast/3
-		]).
+		 handle_cast/3]).
 
 %% state rec
--record(state, {
-				manager_sup,
-				games
-				}).
+-record(state, {manager_sup,
+				games}).
 
 %%====================================================================
 %% API functions
