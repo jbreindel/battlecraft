@@ -21,8 +21,37 @@ start_link(PlayerId, PlayerPid) ->
 	gen_fsm:start_link(?MODULE, [PlayerId, 
 								 PlayerPid], []).
 
+accrue(BcGoldFsm) ->
+	gen_fsm:send_event(BcGoldFsm, accrue).
+
+subtract(BcGoldFsm, Cost) ->
+	gen_fsm:sync_send_event(BcGoldFsm, {gold_cost, Cost}).
+
+%%====================================================================
+%% Internal functions
+%%====================================================================
+
 init([PlayerId, PlayerPid]) ->
-	%% TODO load gold configuration
+	GoldConfigFile = filename:join([code:priv_dir(bc_entity), "gold.config"]),
+	{ok, [{gold, Gold}, 
+		  {accrue_time, AccrueTime}, 
+		  {accrue_gold, AccrueGold}]} = file:consult(GoldConfigFile),
 	{ok, pending, #state{player_id = PlayerId,
 						 player_pid = PlayerPid}}.
+
+pending(accrue, State) ->
+	gen_fsm:send_event_after(State#state.accrue_time, {gold_accrued}),
+	{next_state, accruing, State}.
+
+accruing({gold_accrued}, State) ->
+	gen_fsm:send_event_after(State#state.accrue_time, {gold_accrued}),
+	Gold = State#state.gold + State#state.accrue_gold,
+	{next_state, accruing, State#state{gold = Gold}};
+accruing({gold_cost, Cost}, State) ->
+	case State#state.gold - Cost of
+		Gold when Gold >= 0 ->
+			{reply, {ok, Gold}, accruing, State#state{gold = Gold}};
+		_ ->
+			{reply, {error, not_enough_gold}, accruing, State}
+	end.
 	
