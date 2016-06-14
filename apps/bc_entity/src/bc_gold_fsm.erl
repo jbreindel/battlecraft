@@ -46,6 +46,7 @@ pending(accrue, State) ->
 accruing({gold_accrued}, State) ->
 	gen_fsm:send_event_after(State#state.accrue_time, {gold_accrued}),
 	Gold = State#state.gold + State#state.accrue_gold,
+	PlayerPid ! #{event => #{type => gold_accrued, gold => Gold}},
 	{next_state, accruing, State#state{gold = Gold}};
 accruing({gold_cost, Cost}, State) ->
 	case State#state.gold - Cost of
