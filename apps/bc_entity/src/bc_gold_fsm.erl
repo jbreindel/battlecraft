@@ -7,8 +7,7 @@
 -export([init/2, pending/2, accrue/2]).
 
 %% state rec
--record(state, {player_id,
-				player_pid,
+-record(state, {player_pid,
 				gold,
 				accrue_time,
 				accrue_gold}).
@@ -17,9 +16,8 @@
 %% Public functions
 %%====================================================================
 
-start_link(PlayerId, PlayerPid) ->
-	gen_fsm:start_link(?MODULE, [PlayerId, 
-								 PlayerPid], []).
+start_link(PlayerPid) ->
+	gen_fsm:start_link(?MODULE, [PlayerPid], []).
 
 accrue(BcGoldFsm) ->
 	gen_fsm:send_event(BcGoldFsm, accrue).
@@ -31,13 +29,12 @@ subtract(BcGoldFsm, Cost) ->
 %% Internal functions
 %%====================================================================
 
-init([PlayerId, PlayerPid]) ->
+init([PlayerPid]) ->
 	GoldConfigFile = filename:join([code:priv_dir(bc_entity), "gold.config"]),
 	{ok, [{gold, Gold}, 
 		  {accrue_time, AccrueTime}, 
 		  {accrue_gold, AccrueGold}]} = file:consult(GoldConfigFile),
-	{ok, pending, #state{player_id = PlayerId,
-						 player_pid = PlayerPid}}.
+	{ok, pending, #state{player_pid = PlayerPid}}.
 
 pending(accrue, State) ->
 	gen_fsm:send_event_after(State#state.accrue_time, {gold_accrued}),

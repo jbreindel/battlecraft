@@ -101,6 +101,8 @@ pending({player_join, #{player_pid := PlayerPid,
 				start => {bc_input_serv, start_link, [BcEntitySup, MapGraph, CollisionTab, BcGoldFsm]},
 				modules => [bc_input_serv]							  
 			}),
+			gen_event:add_handler(GameEventPid, 
+								  {bc_gold_event, PlayerId ++ "-gold"}, {gold_fsm, BcGoldFsm}),
 			UpdatedPlayers = dict:store(PlayerId,
 										#{pid => PlayerPid,
 										  monitor => erlang:monitor(process, PlayerPid)}, Players),
