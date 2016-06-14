@@ -4,9 +4,8 @@
 
 -export([init/1, handle_event/2]).
 
--record(state, {
-				player_pid
-  				}).
+%% internal state
+-record(state, {player_pid}).
 
 %%====================================================================
 %% Public functions
