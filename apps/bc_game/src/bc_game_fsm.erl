@@ -10,13 +10,7 @@
 
 %% state rec
 -record(state, {game_sup,
-				input_sup,
-				gold_sup,
-				entity_sup,
-				game_event,
-				game_id,
-				map_graph,
-				collision_tab,
+				game,
 				players}).
 
 %%
@@ -54,43 +48,19 @@ init(GameId, BcGameSup) ->
 		start => {bc_input_serv, start_link, []},
 		modules => [bc_input_serv]													   
 	}),
-	{ok, BcGoldSup} = supervisor:start_child(BcGameSup, #{
-		id => bc_gold_sup,
-		start => {bc_gold_sup, start_link, []},
-		modules => [bc_gold_sup]													  
-	}),
-	{ok, BcEntitySup} = supervisor:start_child(BcGameSup, #{
-		id => bc_entity_sup,
-		start => {bc_entity_sup, start_link, []},
-		modules => [bc_entity_sup]
-	}),
 	{ok, GameEventPid} = supervisor:start_child(BcGameSup, #{
 		id => bc_game_event,
 		start => {gen_event, start_link, []},
 		modules => [gen_event]
 	}),
-	MapGraph = bc_map:init(),
-	CollisionTab = bc_collision:init(BcGameSup),
 	{ok, pending, #state{game_sup = BcGameSup,
-						 input_sup = BcInputSup,
-						 gold_sup = BcGoldSup,
-						 entity_sup = BcEntitySup,
-						 game_event = GameEventPid,
-						 game_id = GameId,
-						 map_graph = MapGraph,
-						 collision_tab = CollisionTab,
+						 game = BcGame,
 						 players = dict:new()}}.
 
 pending({player_join, #{player_pid := PlayerPid, 
 						handle := Handle}},
 			#state{game_sup = BcGameSup,
-				   input_sup = BcInputSup,
-				   gold_sup = BcGoldSup,
-				   entity_sup = BcEntitySup,
-				   game_event = GameEventPid,
-				   game_id = GameId,
-				   map_graph = MapGraph,
-				   collision_tab = CollisionTab,
+				   game = BcGame,
 				   players = Players} = State) ->
 	case save_player(GameId, Handle) of
 		{ok, PlayerId} ->
