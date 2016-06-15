@@ -53,6 +53,7 @@ init(GameId, BcGameSup) ->
 		start => {gen_event, start_link, []},
 		modules => [gen_event]
 	}),
+	BcGame = bc_game:create(GameId, GameEventPid, self()),
 	{ok, pending, #state{game_sup = BcGameSup,
 						 game = BcGame,
 						 players = dict:new()}}.
