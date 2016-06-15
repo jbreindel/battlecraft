@@ -63,6 +63,7 @@ pending({player_join, #{player_pid := PlayerPid,
 			#state{game_sup = BcGameSup,
 				   game = BcGame,
 				   players = Players} = State) ->
+	GameId = bc_game:id(BcGame),
 	case save_player(GameId, Handle) of
 		{ok, PlayerId} ->
 			gen_event:notify(GameEventPid, {player_joined, PlayerId, Handle}),
