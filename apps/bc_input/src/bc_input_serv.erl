@@ -13,8 +13,7 @@
 
 %% state rec
 -record(state, {input_sup,
-				game_fsm,
-				game_event,
+				game,
 				map_graph}).
 
 %%====================================================================
@@ -22,37 +21,38 @@
 %%====================================================================
 
 -spec start_link(BcInputSup :: pid(), 
-				 BcGameFsm :: pid(), 
-				 GameEventPid :: pid()) -> gen:start_ret().
+				 BcGame :: bc_game:game()) -> gen:start_ret().
 start_link(BcInputSup, BcGameFsm, GameEventPid) ->
 	gen_server:start_link(?MODULE, [BcInputSup, BcGameFsm, GameEventPid], []).
 
 -spec create_player_serv(BcInputServ :: pid(), 
-						 PlayerId :: integer(), 
-						 PlayerPid :: pid()) -> {ok, Pid :: pid()} | {error, Reason :: string()}.
-create_player_serv(BcInputServ, PlayerId, PlayerPid) ->
-	gen_server:call(BcInputServ, {create_player_serv, PlayerId, PlayerPid}).
+						 BcPlayer :: bc_game_fsm:player()) -> {ok, Pid :: pid()} | 
+															  {error, Reason :: string()}.
+create_player_serv(BcInputServ, BcPlayer) ->
+	gen_server:call(BcInputServ, {create_player_serv, BcPlayer}).
 
 %%====================================================================
 %% Gen_server callbacks
 %%====================================================================
 
-init([BcInputSup, BcGameFsm, GameEventPid]) ->
+init([BcInputSup, BcGame]) ->
 	MapGraph = bc_map:init(BcInputSup),
 	{ok, #state{input_sup = BcInputSup,
-		   		game_fsm = BcGameFsm, 
-				game_event = GameEventPid, 
+		   		game = BcGame,
 				map_graph = MapGraph}}.
 
-%% handle_call({create_player_serv, PlayerId, PlayerPid}, _From, 
-%% 	#state{input_sup = BcInputSup,
-%% 		   game_fsm = BcGameFsm, 
-%% 		   game_event = GameEventPid, 
-%% 		   map_graph = MapGraph} = State) ->
-%% 	{ok, BcPlayerSup} = supervisor:start_child(BcInputSup, #{
-%% 		id => PlayerId,
-%% 		start => {bc_player_sup, start_link, []},
-%% 		modules => [bc_player_sup]
-%% 	}),
-%% 	
-	
+handle_call({create_player_serv, BcPlayer}, _From, 
+	#state{input_sup = BcInputSup,
+		   game = BcGame,
+		   map_graph = MapGraph} = State) ->
+	{ok, BcPlayerSup} = supervisor:start_child(BcInputSup, #{
+		id => PlayerId,
+		start => {bc_player_sup, start_link, []},
+		modules => [bc_player_sup]
+	}),
+	{ok, BcPlayerServ} = supervisor:start_child(BcPlayerSup, #{
+		id => player_serv
+		start => {bc_player_serv, start_link, [BcPlayerSup, BcGame, BcPlayer, MapGraph]},
+		modules => [bc_player_serv]
+	}).
+	{reply, {ok, BcPlayerServ}, State}.

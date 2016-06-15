@@ -19,6 +19,13 @@
 				collision_tab,
 				players}).
 
+%%
+%% @doc player map for player indentification
+%%
+-type player() :: #{id => integer(),
+					handle => string(),
+					pid => pid()}.
+
 %%====================================================================
 %% Public functions
 %%====================================================================

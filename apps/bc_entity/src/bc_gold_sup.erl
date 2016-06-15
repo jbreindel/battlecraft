@@ -21,10 +21,4 @@ start_link() ->
 
 %% Child :: {Id,StartFunc,Restart,Shutdown,Type,Modules}
 init([]) ->
-	{ok, {
-		{one_for_one, 0, 1}, 
-			[#{
-			   id => bc_entity_sup,
-			   modules => []
-			}]
-		}}.
+	{ok, {{one_for_one, 0, 1}, []}}.
