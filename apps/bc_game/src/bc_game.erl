@@ -17,14 +17,20 @@
 %% game type
 -export_types([game/0]).
 
+-spec create(Id :: integer(), 
+			 Event :: pid(), 
+			 Fsm :: pid()) -> game().
 create(Id, Event, Fsm) ->
 	#{id => Id, event => Event, fsm => Fsm}.
 
+-spec id(BcGame :: game()) -> integer().
 id(BcGame) ->
 	maps:get(id, BcGame).
 
+-spec event(BcGame :: game()) -> pid().
 event(BcGame) ->
 	maps:get(event, BcGame).
 
+-spec fsm(BcGame :: game()) -> pid().
 fsm(BcGame) ->
 	maps:get(fsm, BcGame).

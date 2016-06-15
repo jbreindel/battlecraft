@@ -13,14 +13,20 @@
 					handle => string(),
 					pid => pid()}.
 
+-spec create(Id :: integer(), 
+			 Handle :: string(), 
+			 PlayerPid :: pid()) -> player().
 create(Id, Handle, PlayerPid) ->
 	#{id => Id, handle => Handle, pid => PlayerPid}.
 
+-spec id(BcPlayer :: player()) -> integer().
 id(BcPlayer) ->
 	maps:get(id, BcPlayer).
 
+-spec handle(BcPlayer :: player()) -> string().
 handle(BcPlayer) ->
 	maps:get(handle, BcPlayer).
 
+-spec pid(BcPlayer :: player()) -> pid().
 pid(BcPlayer) ->
 	maps:get(pid, BcPlayer).
