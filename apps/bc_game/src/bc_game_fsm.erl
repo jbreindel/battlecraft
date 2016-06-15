@@ -13,13 +13,6 @@
 				game,
 				players}).
 
-%%
-%% @doc player map for player indentification
-%%
--type player() :: #{id => integer(),
-					handle => string(),
-					pid => pid()}.
-
 %%====================================================================
 %% Public functions
 %%====================================================================
@@ -66,29 +59,22 @@ pending({player_join, #{player_pid := PlayerPid,
 	GameId = bc_game:id(BcGame),
 	case save_player(GameId, Handle) of
 		{ok, PlayerId} ->
-			gen_event:notify(GameEventPid, {player_joined, PlayerId, Handle}),
+			BcPlayer = bc_player:create(PlayerId, Handle, PlayerPid),
+			GameEventPid = bc_game:event(BcGame),
+			gen_event:notify(GameEventPid, {player_joined, BcPlayer}),
 			gen_event:add_handler(GameEventPid,
 								  {bc_game_event, PlayerId},
-								  {player_pid, PlayerPid}),
-			{ok, BcGoldFsm} = supervisor:start_child(BcGoldSup, #{
-				id => PlayerId,
-				start => {bc_gold_fsm, start_link, [PlayerId, PlayerPid]},
-				modules => [bc_gold_fsm]													  
-			}),
-			{ok, BcInputServ} = supervisor:start_child(BcInputSup, #{
-				id => PlayerId,
-				start => {bc_input_serv, start_link, [BcEntitySup, MapGraph, CollisionTab, BcGoldFsm]},
-				modules => [bc_input_serv]							  
-			}),
-			gen_event:add_handler(GameEventPid, 
-								  {bc_gold_event, PlayerId ++ "-gold"}, {gold_fsm, BcGoldFsm}),
+								  {player, BcPlayer}),
 			UpdatedPlayers = dict:store(PlayerId,
-										#{pid => PlayerPid,
+										#{player => BcPlayer,
 										  monitor => erlang:monitor(process, PlayerPid)}, Players),
 			UpdatedState = State#state{players = UpdatedPlayers},
 			case pending_players_changed(GameId, UpdatedPlayers) of
 				{ok, started} ->
-					%%gen_event:notify(GameEventPid, {game_started, dict:to_list(UpdatedPlayers)}),
+					gen_event:notify(GameEventPid, {game_started, 
+													lists:map(fun({K, V}) -> 
+															  	maps:get(player, V) 
+															  end, dict:to_list(UpdatedPlayers))}),
 					{reply, {ok, PlayerId, BcInputServ}, started, UpdatedState};
 				{ok, pending} ->
 					{reply, {ok, PlayerId, BcInputServ}, pending, UpdatedState};
@@ -103,57 +89,55 @@ pending({player_join, #{player_pid := PlayerPid,
 			{reply, Error, pending, State}
 	end;
 pending({player_quit, PlayerId},
-			#state{game_event = GameEventPid,
-				   game_id = GameId,
+			#state{game_sup = BcGameSup,
+				   game = BcGame,
 				   players = Players} = State) ->
 	case remove_player(GameId, PlayerId) of
 		ok ->
-			QuitPlayer = find_player(PlayerId),
-			gen_event:delete_handler(GameEventPid, {bc_game_event, PlayerId}, []),
-			gen_event:notify(GameEventPid, {player_quit, PlayerId, QuitPlayer#player.handle}),
 			case dict:find(PlayerId, Players) of
-				{ok, #{monitor := Monitor}} ->
-					erlang:demonitor(Monitor);
+				#{player := BcPlayer, monitor := Monitor} ->					
+					gen_event:delete_handler(GameEventPid, {bc_game_event, PlayerId}, []),
+					gen_event:notify(GameEventPid, {player_quit, BcPlayer}),
+					erlang:demonitor(Monitor),
+					UpdatedPlayers = dict:erase(PlayerId, Players),
+					UpdatedState = State#state{players = UpdatedPlayers},
+					case pending_players_changed(GameId, UpdatedPlayers) of
+						{ok, quit} ->
+							gen_event:stop(GameEventPid),
+							{stop, quit, UpdatedState};
+						{ok, pending} ->
+							{next_state, pending, UpdatedState};
+						{error, Reason} = Error ->
+							gen_event:notify(GameEventPid, {game_error, Reason}),
+							gen_event:stop(GameEventPid),
+							{stop, Error, UpdatedState};
+						_ ->
+							{stop, illegal_state, UpdatedState}
+					end;
 				_ ->
-					ok
-			end,
-			UpdatedPlayers = dict:erase(PlayerId, Players),
-			UpdatedState = State#state{players = UpdatedPlayers},
-			case pending_players_changed(GameId, UpdatedPlayers) of
-				{ok, quit} ->
-					gen_event:stop(GameEventPid),
-					{stop, quit, UpdatedState};
-				{ok, pending} ->
-					{next_state, pending, UpdatedState};
-				{error, Reason} = Error ->
-					gen_event:notify(GameEventPid, {game_error, Reason}),
-					gen_event:stop(GameEventPid),
-					{stop, Error, UpdatedState};
-				_ ->
-					{stop, illegal_state, UpdatedState}
+					{stop, Error, State}
 			end;
 		{error, Reason} = Error ->
 			{stop, Error, State}
 	end.
 
 started({_, OutPlayerId}, 
-		State = #state{game_sup = BcGameSup,
-					   game_event = GameEventPid,
-					   game_id = GameId,
-					   players = Players}) ->
+			#state{game_sup = BcGameSup,
+				   game = BcGame,
+				   players = Players} = State) ->
 	case update_out_player(OutPlayerId) of
 		ok ->
-			OutPlayer = find_player(OutPlayerId),
+			#{player := BcPlayer, monitor := Monitor} = dict:fetch(PlayerId, Players),
 			gen_event:notify(GameEventPid,
-							 {player_out, OutPlayerId, OutPlayer#player.handle}),
+							 {player_out, BcPlayer}),
 			InPlayers = in_players(GameId),
 			case length(InPlayers) of
 				Length when Length =:= 1 ->
 					[InPlayer] = InPlayers,
 					case win_game(GameId, InPlayer#player.id) of
 						{ok, won} ->
-							gen_event:notify(GameEventPid, 
-											{game_won, InPlayer#player.id, InPlayer#player.handle}),
+							gen_event:notify(GameEventPid,
+											{game_won, BcPlayer}),
 							gen_event:stop(GameEventPid),
 							{stop, won, State};
 						{error, Reason} = Error ->
@@ -168,9 +152,19 @@ started({_, OutPlayerId},
 			{stop, Error, State}
 	end.
 
-handle_info({'DOWN', Ref, process, Pid, _}, State) ->
-	PlayerId = find_player_id(Pid, State#state.players),
-	started({player_quit, PlayerId}, State).
+handle_info({'DOWN', Ref, process, Pid, _}, 
+		#state{game_sup = BcGameSup,
+			   game = BcGame,
+			   players = Players} = State) ->
+	case lists:filter(fun({K, #{monitor := Monitor}}) -> 
+					  	Monitor =:= Ref
+				 	  end, dict:to_list(Players)) of
+		[BcPlayer] ->
+			PlayerId = bc_player:id(BcPlayer),
+			started({player_quit, PlayerId}, State);
+		_ ->
+			ok
+	end.
 
 %%====================================================================
 %% Internal functions
@@ -252,10 +246,6 @@ find_player_id(PlayerPid, Players) ->
 	List = dict:to_list(Players),
 	[{Id, Pid}] = lists:filter(fun({_, Pid} = Tuple) when Pid =:= PlayerPid -> Tuple end, List),
 	Id.
-
-find_player(PlayerId) ->
-	[Player] = mnesia:wread(player, PlayerId),
-	Player.
 
 player_ids(GameId) ->
 	MatchSpec = ets:fun2ms(fun({_, _, GmId, _} = GpAssoc) 
