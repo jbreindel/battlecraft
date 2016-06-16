@@ -8,8 +8,8 @@
 							{write_concurrency, true}]).
 
 %% api exports
--export([init/0,
-		 init/1,
+-export([init/1,
+		 init/2,
 		 insert_collision/2, 
 		 query_collisions/2,
 		 compute_path/3,

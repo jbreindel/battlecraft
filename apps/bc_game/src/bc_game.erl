@@ -1,8 +1,7 @@
 
 -module(bc_game).
 
--export([init_model/0,
-		 create/3,
+-export([create/3,
 		 id/1, 
 		 event/1, 
 		 fsm/1]).

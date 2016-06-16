@@ -47,7 +47,7 @@ start_gold_fsm(Sup, BcGame) ->
 	}),
 	{ok, BcGoldFsm} = supervisor:start_child(BcGoldSup, #{
 		id => gold_fsm,
-		start => {bc_gold_fsm, start_link, []},
+		start => {bc_gold_fsm, start_link, [BcPlayer]},
 		modules => [bc_gold_fsm]
 	}),
 	EventPid = bc_game:event(BcGame),
