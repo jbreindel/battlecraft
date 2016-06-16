@@ -44,7 +44,9 @@ init(GameId, BcGameSup) ->
 	}),
 	BcGame = bc_game:create(GameId, GameEventPid, self()),
 	{ok, BcInputSup} = supervisor:start_child(BcGameSup, #{
-		id => bc_input_sup										   
+		id => bc_input_sup,
+		start => {bc_input_sup, [], []},
+		modules => [bc_input_sup]
 	}),
 	{ok, BcInputServ} = supervisor:start_child(BcInputSup, #{
 		id => bc_input_serv,
@@ -97,10 +99,12 @@ pending({player_quit, PlayerId},
 			#state{game_sup = BcGameSup,
 				   game = BcGame,
 				   players = Players} = State) ->
+	GameId = bc_game:id(BcGame),
 	case remove_player(GameId, PlayerId) of
 		ok ->
-			#{player := BcPlayer, monitor := Monitor} = dict:fetch(PlayerId, Players),
+			GameEventPid = bc_game:pid(BcGame),
 			gen_event:delete_handler(GameEventPid, {bc_game_event, PlayerId}, []),
+			#{player := BcPlayer, monitor := Monitor} = dict:fetch(PlayerId, Players),
 			gen_event:notify(GameEventPid, {player_quit, BcPlayer}),
 			erlang:demonitor(Monitor),
 			UpdatedPlayers = dict:erase(PlayerId, Players),
@@ -128,9 +132,11 @@ started({_, OutPlayerId},
 				   players = Players} = State) ->
 	case update_out_player(OutPlayerId) of
 		ok ->
-			#{player := BcPlayer, monitor := Monitor} = dict:fetch(PlayerId, Players),
+			GameEventPid = bc_game:pid(BcGame),
+			#{player := BcPlayer} = dict:fetch(OutPlayerId, Players),
 			gen_event:notify(GameEventPid,
 							 {player_out, BcPlayer}),
+			GameId = bc_game:id(BcGame),
 			InPlayers = in_players(GameId),
 			case length(InPlayers) of
 				Length when Length =:= 1 ->
