@@ -38,7 +38,7 @@
 -type query_res() :: #{id => string(), vertex => bc_map:vertex()}.
 
 %% type exports
--export_type([collision/0, query_res/0]).
+-export_type([vertex/0, map_graph/0, collision/0, query_res/0]).
 
 %%====================================================================
 %% API functions
