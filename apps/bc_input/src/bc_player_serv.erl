@@ -3,12 +3,10 @@
 -behavior(gen_server).
 
 %% api functions
--export([start_link/1]).
+-export([start_link/4]).
 
 %% gen_server callbacks
--export([init/1,
-		 handle_call/3,
-		 handle_cast/3]).
+-export([init/1]).
 
 %% state rec
 -record(state, {player_sup,
@@ -28,8 +26,8 @@ start_link(BcPlayerSup, BcGame, BcPlayer, MapGraph) ->
 %% Gen_server functions
 %%====================================================================
 
-init(BcPlayerSup, BcGame, BcPlayer, MapGraph) ->
-	BcGoldFsm = start_gold_fsm(BcPlayerSup, BcGame),
+init([BcPlayerSup, BcGame, BcPlayer, MapGraph]) ->
+	BcGoldFsm = start_gold_fsm(BcPlayerSup, BcGame, BcPlayer),
 	{ok, #state{player_sup = BcPlayerSup, 
 				game = BcGame, 
 				player = BcPlayer, 
@@ -39,7 +37,7 @@ init(BcPlayerSup, BcGame, BcPlayer, MapGraph) ->
 %% Internal functions
 %%====================================================================
 
-start_gold_fsm(Sup, BcGame) ->
+start_gold_fsm(BcPlayerSup, BcGame, BcPlayer) ->
 	{ok, BcGoldSup} = supervisor:start_child(BcPlayerSup, #{
 		id => gold_sup,
 		start => {bc_gold_sup, start_link, []},
@@ -51,5 +49,5 @@ start_gold_fsm(Sup, BcGame) ->
 		modules => [bc_gold_fsm]
 	}),
 	EventPid = bc_game:event(BcGame),
-	gen_event:add_handler(EventPid, bc_gold_event, {gold_fsm, BcGoldFsm})
+	gen_event:add_handler(EventPid, bc_gold_event, {gold_fsm, BcGoldFsm}),
 	BcGoldFsm.

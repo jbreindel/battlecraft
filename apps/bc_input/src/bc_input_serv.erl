@@ -3,13 +3,12 @@
 -behavior(gen_server).
 
 %% api functions
--export([start_link/1,
+-export([start_link/2,
 		 create_player_serv/2]).
 
 %% gen_server callbacks
 -export([init/1,
-		 handle_call/3,
-		 handle_cast/3]).
+		 handle_call/3]).
 
 %% state rec
 -record(state, {input_sup,
@@ -45,6 +44,7 @@ handle_call({create_player_serv, BcPlayer}, _From,
 	#state{input_sup = BcInputSup,
 		   game = BcGame,
 		   map_graph = MapGraph} = State) ->
+	PlayerId = bc_player:id(BcPlayer),
 	{ok, BcPlayerSup} = supervisor:start_child(BcInputSup, #{
 		id => PlayerId,
 		start => {bc_player_sup, start_link, []},
@@ -53,8 +53,8 @@ handle_call({create_player_serv, BcPlayer}, _From,
 		modules => [bc_player_sup]
 	}),
 	{ok, BcPlayerServ} = supervisor:start_child(BcPlayerSup, #{
-		id => player_serv
+		id => player_serv,
 		start => {bc_player_serv, start_link, [BcPlayerSup, BcGame, BcPlayer, MapGraph]},
 		modules => [bc_player_serv]
-	}).
+	}),
 	{reply, {ok, BcPlayerServ}, State}.
