@@ -41,11 +41,11 @@ init([BcPlayer]) ->
 						 accrue_gold = AccrueGold}}.
 
 pending(accrue, State) ->
-	gen_fsm:send_event_after(State#state.accrue_time, {gold_accrued}),
+	gen_fsm:send_event_after(State#state.accrue_time, gold_accrued),
 	{next_state, accruing, State}.
 
-accruing({gold_accrued}, #state{player = BcPlayer} = State) ->
-	gen_fsm:send_event_after(State#state.accrue_time, {gold_accrued}),
+accruing(gold_accrued, #state{player = BcPlayer} = State) ->
+	gen_fsm:send_event_after(State#state.accrue_time, gold_accrued),
 	PlayerPid = bc_player:pid(BcPlayer),
 	Gold = State#state.gold + State#state.accrue_gold,
 	PlayerPid ! #{event => #{type => gold_accrued, gold => Gold}},
@@ -56,5 +56,6 @@ accruing({gold_cost, Cost}, State) ->
 			{reply, {ok, Gold}, accruing, State#state{gold = Gold}};
 		_ ->
 			{reply, {error, not_enough_gold}, accruing, State}
-	end.
-	
+	end;
+accruing(_, State) ->
+	{next_state, accruing, State}.
