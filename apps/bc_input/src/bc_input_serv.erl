@@ -22,12 +22,12 @@
 
 -spec start_link(BcInputSup :: pid(), 
 				 BcGame :: bc_game:game()) -> gen:start_ret().
-start_link(BcInputSup, BcGameFsm, GameEventPid) ->
-	gen_server:start_link(?MODULE, [BcInputSup, BcGameFsm, GameEventPid], []).
+start_link(BcInputSup, BcGame) ->
+	gen_server:start_link(?MODULE, [BcInputSup, BcGame], []).
 
 -spec create_player_serv(BcInputServ :: pid(), 
-						 BcPlayer :: bc_game_fsm:player()) -> {ok, Pid :: pid()} | 
-															  {error, Reason :: string()}.
+						 BcPlayer :: bc_player:player()) -> {ok, Pid :: pid()} | 
+															{error, Reason :: string()}.
 create_player_serv(BcInputServ, BcPlayer) ->
 	gen_server:call(BcInputServ, {create_player_serv, BcPlayer}).
 
@@ -48,6 +48,8 @@ handle_call({create_player_serv, BcPlayer}, _From,
 	{ok, BcPlayerSup} = supervisor:start_child(BcInputSup, #{
 		id => PlayerId,
 		start => {bc_player_sup, start_link, []},
+		restart => permanent,
+		type => supervisor,
 		modules => [bc_player_sup]
 	}),
 	{ok, BcPlayerServ} = supervisor:start_child(BcPlayerSup, #{

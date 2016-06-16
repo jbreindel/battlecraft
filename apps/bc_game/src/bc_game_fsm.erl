@@ -10,6 +10,7 @@
 
 %% state rec
 -record(state, {game_sup,
+				input_serv,
 				game,
 				players}).
 
@@ -36,24 +37,29 @@ player_out(GameFsmPid, PlayerId) ->
 %%====================================================================
 
 init(GameId, BcGameSup) ->
-	{ok, BcInputSup} = supervisor:start_child(BcGameSup, #{
-		id => bc_input_sup,
-		start => {bc_input_serv, start_link, []},
-		modules => [bc_input_serv]													   
-	}),
 	{ok, GameEventPid} = supervisor:start_child(BcGameSup, #{
 		id => bc_game_event,
 		start => {gen_event, start_link, []},
 		modules => [gen_event]
 	}),
 	BcGame = bc_game:create(GameId, GameEventPid, self()),
+	{ok, BcInputSup} = supervisor:start_child(BcGameSup, #{
+		id => bc_input_sup										   
+	}),
+	{ok, BcInputServ} = supervisor:start_child(BcInputSup, #{
+		id => bc_input_serv,
+		start => {bc_input_serv, [BcInputSup, BcGame], []},
+		modules => [bc_input_serv]
+	}),
 	{ok, pending, #state{game_sup = BcGameSup,
+						 input_serv = BcInputServ,
 						 game = BcGame,
 						 players = dict:new()}}.
 
 pending({player_join, #{player_pid := PlayerPid, 
 						handle := Handle}},
 			#state{game_sup = BcGameSup,
+				   input_serv = BcInputServ,
 				   game = BcGame,
 				   players = Players} = State) ->
 	GameId = bc_game:id(BcGame),
@@ -62,22 +68,21 @@ pending({player_join, #{player_pid := PlayerPid,
 			BcPlayer = bc_player:create(PlayerId, Handle, PlayerPid),
 			GameEventPid = bc_game:event(BcGame),
 			gen_event:notify(GameEventPid, {player_joined, BcPlayer}),
-			gen_event:add_handler(GameEventPid,
-								  {bc_game_event, PlayerId},
-								  {player, BcPlayer}),
-			UpdatedPlayers = dict:store(PlayerId,
-										#{player => BcPlayer,
-										  monitor => erlang:monitor(process, PlayerPid)}, Players),
+			gen_event:add_handler(GameEventPid, {bc_game_event, PlayerId},
+								  				{player, BcPlayer}),
+			UpdatedPlayers = dict:store(PlayerId, #{player => BcPlayer,
+										  			monitor => erlang:monitor(process, PlayerPid)}, Players),
 			UpdatedState = State#state{players = UpdatedPlayers},
+			{ok, BcPlayerServ} = bc_input_serv:create_player_serv(BcInputServ, BcPlayer),
 			case pending_players_changed(GameId, UpdatedPlayers) of
 				{ok, started} ->
 					gen_event:notify(GameEventPid, {game_started, 
 													lists:map(fun({K, V}) -> 
 															  	maps:get(player, V) 
 															  end, dict:to_list(UpdatedPlayers))}),
-					{reply, {ok, PlayerId, BcInputServ}, started, UpdatedState};
+					{reply, {ok, PlayerId, BcPlayerServ}, started, UpdatedState};
 				{ok, pending} ->
-					{reply, {ok, PlayerId, BcInputServ}, pending, UpdatedState};
+					{reply, {ok, PlayerId, BcPlayerServ}, pending, UpdatedState};
 				{error, Reason} = Error ->
 					gen_event:notify(GameEventPid, {game_error, Reason}),
 					gen_event:stop(GameEventPid),
@@ -94,28 +99,24 @@ pending({player_quit, PlayerId},
 				   players = Players} = State) ->
 	case remove_player(GameId, PlayerId) of
 		ok ->
-			case dict:find(PlayerId, Players) of
-				#{player := BcPlayer, monitor := Monitor} ->					
-					gen_event:delete_handler(GameEventPid, {bc_game_event, PlayerId}, []),
-					gen_event:notify(GameEventPid, {player_quit, BcPlayer}),
-					erlang:demonitor(Monitor),
-					UpdatedPlayers = dict:erase(PlayerId, Players),
-					UpdatedState = State#state{players = UpdatedPlayers},
-					case pending_players_changed(GameId, UpdatedPlayers) of
-						{ok, quit} ->
-							gen_event:stop(GameEventPid),
-							{stop, quit, UpdatedState};
-						{ok, pending} ->
-							{next_state, pending, UpdatedState};
-						{error, Reason} = Error ->
-							gen_event:notify(GameEventPid, {game_error, Reason}),
-							gen_event:stop(GameEventPid),
-							{stop, Error, UpdatedState};
-						_ ->
-							{stop, illegal_state, UpdatedState}
-					end;
+			#{player := BcPlayer, monitor := Monitor} = dict:fetch(PlayerId, Players),
+			gen_event:delete_handler(GameEventPid, {bc_game_event, PlayerId}, []),
+			gen_event:notify(GameEventPid, {player_quit, BcPlayer}),
+			erlang:demonitor(Monitor),
+			UpdatedPlayers = dict:erase(PlayerId, Players),
+			UpdatedState = State#state{players = UpdatedPlayers},
+			case pending_players_changed(GameId, UpdatedPlayers) of
+				{ok, quit} ->
+					gen_event:stop(GameEventPid),
+					{stop, quit, UpdatedState};
+				{ok, pending} ->
+					{next_state, pending, UpdatedState};
+				{error, Reason} = Error ->
+					gen_event:notify(GameEventPid, {game_error, Reason}),
+					gen_event:stop(GameEventPid),
+					{stop, Error, UpdatedState};
 				_ ->
-					{stop, Error, State}
+					{stop, illegal_state, UpdatedState}
 			end;
 		{error, Reason} = Error ->
 			{stop, Error, State}
