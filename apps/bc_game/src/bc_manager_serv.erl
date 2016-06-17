@@ -87,23 +87,3 @@ handle_cast({remove_game, GameId}, _From, State) ->
 	GameDict = State#state.games,
 	{noreply, State#state{games = dict:erase(GameId, GameDict)}}.
 
-%%====================================================================
-%% Internal functions
-%%====================================================================
-
-new_game(Privacy) ->
-	Now = now(),
-	GameId = bc_model:gen_id(game),
-	Game = #game{id = GameId,
-				 state = ?PENDING,
-				 winner_id = 0,
-				 is_private = Privacy,
-				 created = Now,
-				 modified = Now},
-	case mnesia:sync_transaction(fun() -> mnesia:write(Game) end) of
-		{atomic, _} ->
-			{ok, GameId};
-		{aborted, Reason} ->
-			{error, Reason}
-	end.
-

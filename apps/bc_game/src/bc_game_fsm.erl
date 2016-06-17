@@ -2,7 +2,6 @@
 -module(bc_game_fsm).
 -behavior(gen_fsm).
 -include("../include/bc_game_state.hrl").
--include("bc_game.hrl").
 
 %% exported funcs
 -export([start_link/3, player_join/3, player_quit/2, player_out/2]).
@@ -52,7 +51,7 @@ pending({player_join, #{player_pid := PlayerPid,
 				   game = BcGame,
 				   players = Players} = State) ->
 	GameId = bc_game:id(BcGame),
-	case save_player(GameId, Handle) of
+	case bc_player_model:save(GameId, Handle) of
 		{ok, PlayerId} ->
 			BcPlayer = bc_player:create(PlayerId, Handle, PlayerPid),
 			GameEventPid = bc_game:event(BcGame),
@@ -117,18 +116,18 @@ started({_, OutPlayerId},
 			#state{input_serv = BcInputServ,
 				   game = BcGame,
 				   players = Players} = State) ->
-	case update_out_player(OutPlayerId) of
+	case bc_player_model:update_out(OutPlayerId, true) of
 		ok ->
 			GameEventPid = bc_game:pid(BcGame),
 			#{player := BcPlayer} = dict:fetch(OutPlayerId, Players),
 			gen_event:notify(GameEventPid,
 							 {player_out, BcPlayer}),
 			GameId = bc_game:id(BcGame),
-			InPlayers = in_players(GameId),
-			case length(InPlayers) of
+			InPlayerIds = bc_player_model:in_player_ids(GameId),
+			case length(InPlayerIds) of
 				Length when Length =:= 1 ->
-					[InPlayer] = InPlayers,
-					case win_game(GameId, InPlayer#player.id) of
+					[InPlayerId] = InPlayerIds,
+					case bc_game_model:win(GameId, InPlayerId) of
 						{ok, won} ->
 							gen_event:notify(GameEventPid,
 											{game_won, BcPlayer}),
@@ -175,7 +174,7 @@ pending_players_changed(GameId, Players) ->
 	end.
 
 start_game(GameId) ->
-	case update_game_state(GameId, ?STARTED) of
+	case bc_game_model:update_state(GameId, ?STARTED) of
 		{ok, _} = Reply ->
 			{ok, started};
 		{error, Reason} = Error ->
@@ -183,102 +182,14 @@ start_game(GameId) ->
 	end.
 
 quit_game(GameId) ->
-	case update_game_state(GameId, ?QUIT) of
+	case bc_game_model:update_state(GameId, ?QUIT) of
 		{ok, _} = Reply ->
 			{ok, quit};
 		{error, Reason} = Error ->
 			Error
 	end.
 
-win_game(GameId, WinnerId) ->
-	case mnesia:sync_transaction(fun() -> 
-									[Game] = mnesia:wread(game, GameId),
-									mnesia:write(Game#game{state = ?WON, 
-														   winner_id = WinnerId, 
-														   modified = now()})
-								 end) of
-		{atomic, Result} ->
-			{ok, won};
-		{aborted, Reason} ->
-			{error, Reason}
-	end.
-
-update_game_state(GameId, GameState) ->
-	case mnesia:sync_transaction(fun() -> 
-										 [Game] = mnesia:wread(game, GameId), 
-										 mnesia:write(Game#game{state = GameState, 
-																modified = now()}) 
-								 end) of
-		{atomic, Result} ->
-			{ok, GameState};
-		{aborted, Reason} ->
-			{error, Reason}
-	end.
-
-save_player(GameId, Handle) ->
-	Now = now(),
-	PlayerId = bc_model:gen_id(),
-	Player = #player{id = PlayerId,
-					 handle = Handle,
-					 is_out = false,
-					 created = Now,
-					 modified = Now},
-	GamePlayerAssoc = #gp_assoc{id = bc_model:gen_id(),
-								game_id = GameId,
-								player_id = PlayerId},
-	case mnesia:sync_transaction(fun() ->
-										 mnesia:write(Player),
-										 mnesia:write(GamePlayerAssoc)
-								 end) of
-		{atomic, Result} ->
-			{ok, PlayerId};
-		{aborted, Reason} ->
-			{error, Reason}
-	end.
-
 find_player_id(PlayerPid, Players) ->
 	List = dict:to_list(Players),
 	[{Id, Pid}] = lists:filter(fun({_, Pid} = Tuple) when Pid =:= PlayerPid -> Tuple end, List),
 	Id.
-
-player_ids(GameId) ->
-	MatchSpec = ets:fun2ms(fun({_, _, GmId, _} = GpAssoc) 
-								when GmId =:= GameId -> GpAssoc end),
-	ResultList = mnesia:select(gp_assoc, MatchSpec),
-	lists:map(fun(GpAssoc) -> GpAssoc#gp_assoc.player_id end, ResultList).
-
-in_players(GameId) ->
-	PlIds = player_ids(GameId),
-	MatchSpec = [{{'_', PlId, false, '_', '_', '_'}, [], ['$_']} || PlId <- PlIds],
-	mnesia:select(player, MatchSpec).
-
-update_out_player(PlayerId) ->
-	case mnesia:sync_transaction(fun() -> 
-										 [Player] = mnesia:wread(player, PlayerId),
-										 mnesia:write(Player#player{is_out = true, modified = now()})
-								 end) of
-		{atomic, Result} ->
-			ok;
-		{aborted, Reason} ->
-			{error, Reason}
-	end.
-
-remove_player(GameId, PlayerId) ->
-	MatchSpec = ets:fun2ms(fun({_, _, GmId, PlId} = GP) 
-							  when GmId =:= GameId andalso 
-									   PlId =:= PlayerId -> GP end),
-	case mnesia:sync_transaction(fun() ->
-										case mnesia:select(gp_assoc, MatchSpec, 1, read) of
-											{[GPAssoc], 1} ->
-												Id = GPAssoc#gp_assoc.id,
-												mnesia:delete(gp_assoc, Id, write);
-											'$end_of_table' ->
-												ok
-										end,
-										mnesia:delete(player, PlayerId, write)
-								 end) of
-		{atomic, _} ->
-			ok;
-		{aborted, Reason} ->
-			{error, Reason}
-	end.

@@ -1,5 +1,6 @@
 
 -module(bc_model).
+-include("bc_model.hrl").
 
 %% API exports
 -export([init/0,
@@ -29,6 +30,16 @@ init(Nodes) ->
 	mnesia:start(),
 	create_tables(Nodes, [#{name => '_ids_',
 							attributes => record_info(fields, '_ids_')}]).
+
+init_model() ->
+	bc_model:init(),
+	Tables = [#{name => player,
+				attributes => record_info(fields, player)},
+			  #{name => game,
+				attributes => record_info(fields, game)},
+			  #{name => gp_assoc,
+				attributes => record_info(fields, gp_assoc)}],
+	create_tables([node()], Tables).
 
 gen_id(Tab) ->
 	mnesia:dirty_update_counter('_ids_', Tab, 1).
