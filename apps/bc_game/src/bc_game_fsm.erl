@@ -5,7 +5,7 @@
 
 %% exported funcs
 -export([start_link/3, player_join/3, player_quit/2, player_out/2]).
--export([init/1, pending/2, started/2]).
+-export([init/1, pending/2, pending/3, started/2]).
 
 %% state rec
 -record(state, {input_serv,
@@ -47,9 +47,9 @@ init([GameId, GameEventPid, BcInputSup]) ->
 
 pending({player_join, #{player_pid := PlayerPid, 
 						handle := Handle}},
-			#state{input_serv = BcInputServ,
-				   game = BcGame,
-				   players = Players} = State) ->
+			_From, #state{input_serv = BcInputServ,
+				   		  game = BcGame,
+				   		  players = Players} = State) ->
 	GameId = bc_game:id(BcGame),
 	case bc_player_model:save(GameId, Handle) of
 		{ok, PlayerId} ->
@@ -80,7 +80,8 @@ pending({player_join, #{player_pid := PlayerPid,
 			end;
 		{error, Reason} = Error ->
 			{reply, Error, pending, State}
-	end;
+	end.
+
 pending({player_quit, PlayerId},
 			#state{input_serv = BcInputServ,
 				   game = BcGame,
