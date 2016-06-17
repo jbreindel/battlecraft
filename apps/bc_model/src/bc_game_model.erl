@@ -2,8 +2,12 @@
 -module(bc_game_model).
 -include("bc_model.hrl").
 
--export(win_game/2, update_state/2).
+-export(save/1, 
+		win_game/2, 
+		update_state/2).
 
+-spec save(Privacy :: integer()) -> {ok, GameId :: integer()} | 
+									{error, Reason :: string()}.
 save(Privacy) ->
 	Now = now(),
 	GameId = bc_model:gen_id(game),
@@ -20,6 +24,8 @@ save(Privacy) ->
 			{error, Reason}
 	end.
 
+-spec win(GameId :: integer(), 
+		  WinnerId :: integer()) -> {ok, won} | {error, Reason :: string()}.
 win(GameId, WinnerId) ->
 	case mnesia:sync_transaction(fun() -> 
 									[Game] = mnesia:wread(game, GameId),
@@ -33,6 +39,9 @@ win(GameId, WinnerId) ->
 			{error, Reason}
 	end.
 
+-spec update_state(GameId :: integer(), 
+				   GameState :: integer()) -> {ok, GameState :: integer()} | 
+				   							  {error, Reason :: string()}.
 update_state(GameId, GameState) ->
 	case mnesia:sync_transaction(fun() -> 
 										 [Game] = mnesia:wread(game, GameId), 
