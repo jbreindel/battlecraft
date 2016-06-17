@@ -2,6 +2,14 @@
 -module(bc_player_model).
 -include("bc_model.hrl").
 
+-export([save/2, 
+		 player_ids/1, 
+		 in_player_ids/1, 
+		 update_out/2, 
+		 delete/2]).
+
+-spec save(GameId :: integer(), 
+		   Handle :: string()) -> {ok, PlayerId :: integer()} | {error, Reason :: string()}.
 save(GameId, Handle) ->
 	Now = now(),
 	PlayerId = bc_model:gen_id(),
@@ -22,19 +30,23 @@ save(GameId, Handle) ->
 		{aborted, Reason} ->
 			{error, Reason}
 	end.
-
+ 
+-spec player_ids(GameId :: integer()) -> [integer()].
 player_ids(GameId) ->
 	MatchSpec = ets:fun2ms(fun({_, _, GmId, _} = GpAssoc) 
 								when GmId =:= GameId -> GpAssoc end),
 	ResultList = mnesia:select(gp_assoc, MatchSpec),
 	lists:map(fun(GpAssoc) -> GpAssoc#gp_assoc.player_id end, ResultList).
 
+-spec in_player_ids(GameId :: integer()) -> [integer()].
 in_player_ids(GameId) ->
 	PlIds = player_ids(GameId),
 	MatchSpec = [{{'_', PlId, false, '_', '_', '_'}, [], ['$_']} || PlId <- PlIds],
 	ResultList = mnesia:select(player, MatchSpec),
 	lists:map(fun(GpAssoc) -> GpAssoc#gp_assoc.player_id end, ResultList).
 
+-spec update_out(PlayerId :: integer(), 
+				 IsOut :: boolean()) -> ok | {error, Reason :: string()}.
 update_out(PlayerId, IsOut) ->
 	case mnesia:sync_transaction(fun() -> 
 										 [Player] = mnesia:wread(player, PlayerId),
@@ -46,6 +58,8 @@ update_out(PlayerId, IsOut) ->
 			{error, Reason}
 	end.
 
+-spec delete(GameId :: integer(), 
+			 PlayerId :: integer()) -> ok | {error, Reason :: string()}.
 delete(GameId, PlayerId) ->
 	MatchSpec = ets:fun2ms(fun({_, _, GmId, PlId} = GP) 
 							  when GmId =:= GameId andalso 
