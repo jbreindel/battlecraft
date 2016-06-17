@@ -176,7 +176,7 @@ populate_edges(MapGraph, #{height := Height, width := Width} = Dims, Vertex, [Ne
 					digraph:add_edge(MapGraph, Vertex, NewNeighbor),
 					digraph:add_edge(MapGraph, NewNeighbor, Vertex);
 				{V, _} ->
-					case bc_map:are_neighbors(MapGraph, V, Vertex) of
+					case bc_map:are_neighbors(#{graph => MapGraph}, V, Vertex) of
 						false ->
 							digraph:add_edge(MapGraph, Vertex, V),
 							digraph:add_edge(MapGraph, V, Vertex);

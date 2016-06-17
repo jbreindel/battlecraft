@@ -46,7 +46,7 @@
 
 -spec init(Heir :: pid()) -> map_graph().
 init(Heir) ->
-	MapFile = filename:join([code:priv_dir(bc_map), "map", "map.json"]),
+	MapFile = filename:join([code:priv_dir(bc_map), "map.json"]),
 	init(Heir, MapFile).
 
 -spec init(Heir :: pid(), MapFile :: string()) -> map_graph().

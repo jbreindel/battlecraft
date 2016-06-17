@@ -5,12 +5,11 @@
 -include("bc_game.hrl").
 
 %% exported funcs
--export([start_link/2, player_join/3, player_quit/2, player_out/2]).
--export([init/2, pending/2, started/2]).
+-export([start_link/3, player_join/3, player_quit/2, player_out/2]).
+-export([init/1, pending/2, started/2]).
 
 %% state rec
--record(state, {game_sup,
-				input_serv,
+-record(state, {input_serv,
 				game,
 				players}).
 
@@ -18,8 +17,8 @@
 %% Public functions
 %%====================================================================
 
-start_link(GameId, BcGameSup) ->
-	gen_fsm:start_link(?MODULE, [GameId, BcGameSup], []).
+start_link(GameId, GameEventPid, BcInputSup) ->
+	gen_fsm:start_link(?MODULE, [GameId, GameEventPid, BcInputSup], []).
 
 player_join(GameFsmPid, PlayerPid, Handle) ->
 	gen_fsm:sync_send_event(GameFsmPid, 
@@ -33,35 +32,23 @@ player_out(GameFsmPid, PlayerId) ->
 	gen_fsm:send_event(GameFsmPid, {player_out, PlayerId}).
 
 %%====================================================================
-%% Gen_fsm callbacks
+%% Gen_fsm callbacks 
 %%====================================================================
 
-init(GameId, BcGameSup) ->
-	{ok, GameEventPid} = supervisor:start_child(BcGameSup, #{
-		id => bc_game_event,
-		start => {gen_event, start_link, []},
-		modules => [gen_event]
-	}),
+init([GameId, GameEventPid, BcInputSup]) ->
 	BcGame = bc_game:create(GameId, GameEventPid, self()),
-	{ok, BcInputSup} = supervisor:start_child(BcGameSup, #{
-		id => bc_input_sup,
-		start => {bc_input_sup, [], []},
-		modules => [bc_input_sup]
-	}),
 	{ok, BcInputServ} = supervisor:start_child(BcInputSup, #{
 		id => bc_input_serv,
-		start => {bc_input_serv, [BcInputSup, BcGame], []},
+		start => {bc_input_serv, start_link, [BcInputSup, BcGame]},
 		modules => [bc_input_serv]
 	}),
-	{ok, pending, #state{game_sup = BcGameSup,
-						 input_serv = BcInputServ,
+	{ok, pending, #state{input_serv = BcInputServ,
 						 game = BcGame,
 						 players = dict:new()}}.
 
 pending({player_join, #{player_pid := PlayerPid, 
 						handle := Handle}},
-			#state{game_sup = BcGameSup,
-				   input_serv = BcInputServ,
+			#state{input_serv = BcInputServ,
 				   game = BcGame,
 				   players = Players} = State) ->
 	GameId = bc_game:id(BcGame),
@@ -96,7 +83,7 @@ pending({player_join, #{player_pid := PlayerPid,
 			{reply, Error, pending, State}
 	end;
 pending({player_quit, PlayerId},
-			#state{game_sup = BcGameSup,
+			#state{input_serv = BcInputServ,
 				   game = BcGame,
 				   players = Players} = State) ->
 	GameId = bc_game:id(BcGame),
@@ -127,7 +114,7 @@ pending({player_quit, PlayerId},
 	end.
 
 started({_, OutPlayerId}, 
-			#state{game_sup = BcGameSup,
+			#state{input_serv = BcInputServ,
 				   game = BcGame,
 				   players = Players} = State) ->
 	case update_out_player(OutPlayerId) of
@@ -160,7 +147,7 @@ started({_, OutPlayerId},
 	end.
 
 handle_info({'DOWN', Ref, process, Pid, _}, 
-		#state{game_sup = BcGameSup,
+		#state{input_serv = BcInputServ,
 			   game = BcGame,
 			   players = Players} = State) ->
 	case lists:filter(fun({K, #{monitor := Monitor}}) -> 

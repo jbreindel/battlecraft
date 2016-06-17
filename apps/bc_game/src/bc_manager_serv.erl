@@ -5,7 +5,7 @@
 -include("bc_game.hrl").
 
 %% api functions
--export([start_link/1,
+-export([start_link/0,
 		 create_game/2,
 		 get_game/2,
 		 remove_game/2]).
@@ -23,8 +23,8 @@
 %% API functions
 %%====================================================================
 
-start_link(BcManagerSup) ->
-	gen_server:start_link({local, bc_manager_serv}, ?MODULE, BcManagerSup, []).
+start_link() ->
+	gen_server:start_link({local, bc_manager_serv}, ?MODULE, [], []).
 
 create_game(Name, Privacy) ->
 	gen_server:call(Name, {create_game, Privacy}).
@@ -39,7 +39,8 @@ remove_game(Name, GameId) ->
 %% Gen_server callbacks
 %%====================================================================
 
-init(BcManagerSup) ->
+init([]) ->
+	BcManagerSup = whereis(bc_manager_sup),
 	{ok, #state{manager_sup = BcManagerSup, games = dict:new()}}.
 	
 handle_call({create_game, Privacy}, _From, 
@@ -49,11 +50,22 @@ handle_call({create_game, Privacy}, _From,
 			{ok, BcGameSup} = supervisor:start_child(BcManagerSup, #{
 				 id => GameId,
 				 start => {bc_game_sup, start_link, []},
+				 type => supervisor,
 				 modules => [bc_game_sup]
+			}),
+			{ok, BcInputSup} = supervisor:start_child(BcGameSup, #{
+				id => bc_input_sup,
+				start => {bc_input_sup, start_link, []},
+				modules => [bc_input_sup]
+			}),
+			{ok, GameEventPid} = supervisor:start_child(BcGameSup, #{
+				id => bc_game_event,
+				start => {gen_event, start_link, []},
+				modules => [gen_event]
 			}),
 			{ok, BcGameFsm} = supervisor:start_child(BcGameSup, #{
 			   id => bc_game_fsm,
-			   start => {bc_game_fsm, start_link, [GameId]},
+			   start => {bc_game_fsm, start_link, [GameId, GameEventPid, BcInputSup]},
 			   modules => [bc_game_fsm]
 			}),
  			{reply, {ok, GameId, BcGameFsm}, 

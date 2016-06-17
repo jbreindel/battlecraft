@@ -28,7 +28,7 @@ start_link(BcPlayerSup, BcGame, BcPlayer, MapGraph) ->
 
 init([BcPlayerSup, BcGame, BcPlayer, MapGraph]) ->
 	BcGoldFsm = start_gold_fsm(BcPlayerSup, BcGame, BcPlayer),
-	{ok, #state{player_sup = BcPlayerSup, 
+	{ok, #state{player_sup = BcPlayerSup,
 				game = BcGame, 
 				player = BcPlayer, 
 				map_graph = MapGraph}}.
