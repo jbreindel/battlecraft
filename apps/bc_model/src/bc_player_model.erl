@@ -12,13 +12,13 @@
 		   Handle :: string()) -> {ok, PlayerId :: integer()} | {error, Reason :: string()}.
 save(GameId, Handle) ->
 	Now = now(),
-	PlayerId = bc_model:gen_id(),
+	PlayerId = bc_model:gen_id(player),
 	Player = #player{id = PlayerId,
 					 handle = Handle,
 					 is_out = false,
 					 created = Now,
 					 modified = Now},
-	GamePlayerAssoc = #gp_assoc{id = bc_model:gen_id(),
+	GamePlayerAssoc = #gp_assoc{id = bc_model:gen_id(gp_assoc),
 								game_id = GameId,
 								player_id = PlayerId},
 	case mnesia:sync_transaction(fun() ->
