@@ -5,6 +5,7 @@
 %% API exports
 -export([init/0,
 		 init/1,
+		 init_model/0,
 		 gen_id/1,
 		 create_tables/2,
 		 migrate/0,

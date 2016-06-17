@@ -2,7 +2,6 @@
 -module(bc_manager_serv).
 -behavior(gen_server).
 -include("../include/bc_game_state.hrl").
--include("bc_game.hrl").
 
 %% api functions
 -export([start_link/0,
@@ -45,7 +44,7 @@ init([]) ->
 	
 handle_call({create_game, Privacy}, _From, 
 	#state{manager_sup = BcManagerSup, games = GameDict} = State) ->
-	case new_game(Privacy) of
+	case bc_game_model:save(Privacy, ?PENDING) of
 		{ok, GameId} ->
 			{ok, BcGameSup} = supervisor:start_child(BcManagerSup, #{
 				 id => GameId,

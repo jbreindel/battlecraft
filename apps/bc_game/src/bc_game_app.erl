@@ -5,7 +5,6 @@
 
 -module(bc_game_app).
 -behavior(application).
--include("bc_game.hrl").
 
 %% Application callbacks
 -export([start/2,

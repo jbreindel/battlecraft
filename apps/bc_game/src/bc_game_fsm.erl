@@ -65,7 +65,7 @@ pending({player_join, #{player_pid := PlayerPid,
 			case pending_players_changed(GameId, UpdatedPlayers) of
 				{ok, started} ->
 					gen_event:notify(GameEventPid, {game_started, 
-													lists:map(fun({K, V}) -> 
+													lists:map(fun({_, V}) -> 
 															  	maps:get(player, V) 
 															  end, dict:to_list(UpdatedPlayers))}),
 					{reply, {ok, PlayerId, BcPlayerServ}, started, UpdatedState};
@@ -86,7 +86,7 @@ pending({player_quit, PlayerId},
 				   game = BcGame,
 				   players = Players} = State) ->
 	GameId = bc_game:id(BcGame),
-	case remove_player(GameId, PlayerId) of
+	case bc_player_model:delete(GameId, PlayerId) of
 		ok ->
 			GameEventPid = bc_game:pid(BcGame),
 			gen_event:delete_handler(GameEventPid, {bc_game_event, PlayerId}, []),

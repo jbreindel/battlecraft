@@ -2,17 +2,17 @@
 -module(bc_game_model).
 -include("bc_model.hrl").
 
--export(save/1, 
-		win_game/2, 
-		update_state/2).
+-export([save/2, 
+		 win/3, 
+		 update_state/2]).
 
--spec save(Privacy :: integer()) -> {ok, GameId :: integer()} | 
-									{error, Reason :: string()}.
-save(Privacy) ->
+-spec save(Privacy :: integer(), State :: integer()) -> 
+		  {ok, GameId :: integer()} | {error, Reason :: string()}.
+save(Privacy, State) ->
 	Now = now(),
 	GameId = bc_model:gen_id(game),
 	Game = #game{id = GameId,
-				 state = ?PENDING,
+				 state = State,
 				 winner_id = 0,
 				 is_private = Privacy,
 				 created = Now,
@@ -20,21 +20,6 @@ save(Privacy) ->
 	case mnesia:sync_transaction(fun() -> mnesia:write(Game) end) of
 		{atomic, _} ->
 			{ok, GameId};
-		{aborted, Reason} ->
-			{error, Reason}
-	end.
-
--spec win(GameId :: integer(), 
-		  WinnerId :: integer()) -> {ok, won} | {error, Reason :: string()}.
-win(GameId, WinnerId) ->
-	case mnesia:sync_transaction(fun() -> 
-									[Game] = mnesia:wread(game, GameId),
-									mnesia:write(Game#game{state = ?WON, 
-														   winner_id = WinnerId, 
-														   modified = now()})
-								 end) of
-		{atomic, Result} ->
-			{ok, won};
 		{aborted, Reason} ->
 			{error, Reason}
 	end.
@@ -50,6 +35,22 @@ update_state(GameId, GameState) ->
 								 end) of
 		{atomic, Result} ->
 			{ok, GameState};
+		{aborted, Reason} ->
+			{error, Reason}
+	end.
+
+-spec win(GameId :: integer(), 
+		  WinnerId :: integer(), 
+		  State :: integer()) -> {ok, won} | {error, Reason :: string()}.
+win(GameId, WinnerId, State) ->
+	case mnesia:sync_transaction(fun() -> 
+									[Game] = mnesia:wread(game, GameId),
+									mnesia:write(Game#game{state = State, 
+														   winner_id = WinnerId, 
+														   modified = now()})
+								 end) of
+		{atomic, Result} ->
+			{ok, won};
 		{aborted, Reason} ->
 			{error, Reason}
 	end.
