@@ -1,0 +1,17 @@
+{
+  "name": "battlecraft",
+  "version": "0.1.0",
+  "description": "A real time strategy game",
+  "main": "gulpfile.js",
+  "dependencies": {
+    "gulp": "^3.9.1",
+    "gulp-bower": "0.0.13",
+    "gulp-sass": "^2.3.2"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "jake breindel",
+  "license": "ISC"
+}
