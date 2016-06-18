@@ -52,9 +52,29 @@ handle_call({create_player_serv, BcPlayer}, _From,
 		type => supervisor,
 		modules => [bc_player_sup]
 	}),
+	BcGoldFsm = start_gold_fsm(BcPlayerSup, BcGame, BcPlayer),
 	{ok, BcPlayerServ} = supervisor:start_child(BcPlayerSup, #{
 		id => player_serv,
-		start => {bc_player_serv, start_link, [BcPlayerSup, BcGame, BcPlayer, MapGraph]},
+		start => {bc_player_serv, start_link, [BcPlayerSup, BcGame, BcPlayer, BcGoldFsm, MapGraph]},
 		modules => [bc_player_serv]
 	}),
 	{reply, {ok, BcPlayerServ}, State}.
+
+%%====================================================================
+%% Internal functions
+%%====================================================================
+
+start_gold_fsm(BcPlayerSup, BcGame, BcPlayer) ->
+	{ok, BcGoldSup} = supervisor:start_child(BcPlayerSup, #{
+		id => gold_sup,
+		start => {bc_gold_sup, start_link, []},
+		modules => [bc_gold_sup]
+	}),
+	{ok, BcGoldFsm} = supervisor:start_child(BcGoldSup, #{
+		id => gold_fsm,
+		start => {bc_gold_fsm, start_link, [BcPlayer]},
+		modules => [bc_gold_fsm]
+	}),
+	EventPid = bc_game:event(BcGame),
+	gen_event:add_handler(EventPid, bc_gold_event, {gold_fsm, BcGoldFsm}),
+	BcGoldFsm.
