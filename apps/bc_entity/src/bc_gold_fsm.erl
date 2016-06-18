@@ -5,7 +5,7 @@
 %% api functions
 -export([start_link/1, accrue/1, subtract/2]).
 %% gen_fsm callbacks
--export([init/1, pending/2, accruing/2]).
+-export([init/1, pending/2, accruing/2, accruing/3]).
 
 %% state rec
 -record(state, {player,
@@ -50,12 +50,13 @@ accruing(gold_accrued, #state{player = BcPlayer} = State) ->
 	Gold = State#state.gold + State#state.accrue_gold,
 	PlayerPid ! #{event => #{type => gold_accrued, gold => Gold}},
 	{next_state, accruing, State#state{gold = Gold}};
-accruing({gold_cost, Cost}, State) ->
+accruing(_, State) ->
+	{next_state, accruing, State}.
+
+accruing({gold_cost, Cost}, _From, State) ->
 	case State#state.gold - Cost of
 		Gold when Gold >= 0 ->
 			{reply, {ok, Gold}, accruing, State#state{gold = Gold}};
 		_ ->
 			{reply, {error, not_enough_gold}, accruing, State}
 	end;
-accruing(_, State) ->
-	{next_state, accruing, State}.
