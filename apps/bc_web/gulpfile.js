@@ -13,6 +13,7 @@ var CSS_DIR = STATIC_DIR + 'css/';
 var FONT_DIR = STATIC_DIR + 'font/';
 
 // lib directories
+var BULMA_SASS_DIR = BOWER_DIR + 'bulma/';
 var FONT_AWE_SASS_DIR = BOWER_DIR + 'font-awesome/scss/';
 
 //bower install
@@ -28,7 +29,7 @@ gulp.task('css', ['bower'], function() {
 	// run sass
     return gulp.src(SASS_DIR + '*.scss')
     	.pipe(sass({
-    		includePaths: [FONT_AWE_SASS_DIR]
+    		includePaths: [BULMA_SASS_DIR, FONT_AWE_SASS_DIR]
     	}))
     	.pipe(gulp.dest(CSS_DIR));
 });

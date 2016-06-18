@@ -21,7 +21,6 @@ bower_components
 .bower-registry
 .bower-tmp
 
-
 ### Node ###
 # Logs
 logs
@@ -63,3 +62,7 @@ jspm_packages
 
 # Optional REPL history
 .node_repl_history
+
+## generated directories
+priv/static/css/
+priv/static/font/
