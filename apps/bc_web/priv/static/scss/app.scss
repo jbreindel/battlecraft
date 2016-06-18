@@ -1,0 +1,21 @@
+
+// colors
+$bc-yellow: #f5da55;
+$bc-black: #000;
+
+// font-awesome
+@import "variables";
+@import "mixins";
+@import "partials/font-awesome-settings";
+@import "core";
+@import "larger";
+@import "fixed-width";
+@import "list";
+@import "bordered-pulled";
+@import "animated";
+@import "rotated-flipped";
+@import "stacked";
+@import "icons";
+
+// include bulma
+@import "bulma"
