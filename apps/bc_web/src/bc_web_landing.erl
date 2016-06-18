@@ -4,7 +4,7 @@
 -export([init/3, handle/2, terminate/3]).
 
 init(_Type, Req, _Opts) ->
-	ViewFile = bc_web_files:view_file("landing.html"),
+	ViewFile = bc_web_files:view_file("index.html"),
 	erlydtl:compile(ViewFile, landing_view, 
 					[{vars, [{title, "Battlecraft Online"}, 
 							 {description, "An online real time strategy simulation game."}]}]),
