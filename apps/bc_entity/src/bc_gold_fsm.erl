@@ -59,4 +59,4 @@ accruing({gold_cost, Cost}, _From, State) ->
 			{reply, {ok, Gold}, accruing, State#state{gold = Gold}};
 		_ ->
 			{reply, {error, not_enough_gold}, accruing, State}
-	end;
+	end.
