@@ -24,6 +24,7 @@ body, html {
 	height: 100%;
     margin: 0;
     padding: 0;
+	background: $white;
     font-size: 100%;
     font-family: Sans-Serif;
 }
@@ -36,11 +37,9 @@ body, html {
         padding: 0 0 425px;
     }
     position: relative;
-
     .container {
         width: 100%;
         max-width: 100%;
-
         .inner-container {
             width: 960px;
             @include mobile() {
@@ -54,28 +53,16 @@ body, html {
     }
 
     .header-container {
-        background-color: $black;
-
-        .inner-container {
-
-			.logo-container {
-				// @include flexbox();
-				align-items: center;
-
-				.splash-title {
-					margin: 0;
-					padding-top: 10px;
-					padding-left: 20px;
-					padding-bottom: 10px;
+		background-color: $black;
+		nav {
+	        background-color: $black;
+			.splash-title {
+				color: $bc-yellow;
+				.fa {
 					color: $bc-yellow;
-					font-size: 300%;
-
-					.fa {
-						color: $bc-yellow;
-					}
 				}
 			}
-        }
+		}
     }
 
     .content-container {
