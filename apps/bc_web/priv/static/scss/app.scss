@@ -53,16 +53,16 @@ body, html {
     }
 
     .header-container {
-		background-color: $black;
-		nav {
-	        background-color: $black;
-			.splash-title {
-				color: $bc-yellow;
-				.fa {
-					color: $bc-yellow;
-				}
-			}
-		}
+        background-color: $black;
+        nav {
+            background-color: $black;
+            .splash-title {
+                color: $bc-yellow;
+                .fa {
+                    color: $bc-yellow;
+                }
+            }
+        }
     }
 
     .content-container {
