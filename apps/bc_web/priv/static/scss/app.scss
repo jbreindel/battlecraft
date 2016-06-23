@@ -21,7 +21,7 @@ $bc-black: #000;
 @import "bulma";
 
 body, html {
-    height: 100%;
+	height: 100%;
     margin: 0;
     padding: 0;
     font-size: 100%;
@@ -29,83 +29,83 @@ body, html {
 }
 
 .main {
-        box-sizing: border-box;
-        min-height: 100%;
-        padding: 0 0 200px;
-        @include mobile() {
-                padding: 0 0 425px;
+    box-sizing: border-box;
+    min-height: 100%;
+    padding: 0 0 200px;
+    @include mobile() {
+        padding: 0 0 425px;
+    }
+    position: relative;
+
+    .container {
+        width: 100%;
+        max-width: 100%;
+
+        .inner-container {
+            width: 960px;
+            @include mobile() {
+            	width: 98%;
+            }
+            @include tablet-only() {
+                width: 95%;
+            }
+            margin: 0 auto;
         }
-        position: relative;
+    }
 
-        .container {
-                width: 100%;
-                max-width: 100%;
+    .header-container {
+        background-color: $black;
 
-                .inner-container {
-                        width: 960px;
-                        @include mobile() {
-                                width: 98%;
-                        }
-                        @include tablet-only() {
-                                width: 95%;
-                        }
-                        margin: 0 auto;
-                }
-        }
-        
-        .header-container {
-            background-color: $black;
+        .inner-container {
 
-            .inner-container {
+			.logo-container {
+				// @include flexbox();
+				align-items: center;
 
-				.logo-container {
-					// @include flexbox();
-					align-items: center;
-					
-					.splash-title {
-						margin: 0;
-						padding-top: 10px;
-						padding-left: 20px;
-						padding-bottom: 10px;
+				.splash-title {
+					margin: 0;
+					padding-top: 10px;
+					padding-left: 20px;
+					padding-bottom: 10px;
+					color: $bc-yellow;
+					font-size: 300%;
+
+					.fa {
 						color: $bc-yellow;
-						font-size: 300%;
-						
-						.fa {
-							color: $bc-yellow;
-						}
 					}
 				}
-            }
+			}
         }
-        
-        .content-container {
-                padding-top: 25px;
-                padding-bottom: 25px;
-                @include mobile() {
-                        padding-top: 5px;
-                        padding-bottom: 5px;
-                }
-                @include tablet-only() {
-                        padding-top: 10px;
-                        padding-bottom: 10px;
-                }
-                background-color: $white;
+    }
+
+    .content-container {
+        padding-top: 25px;
+        padding-bottom: 25px;
+        @include mobile() {
+			padding-top: 5px;
+			padding-bottom: 5px;
         }
-        
-        .footer-container {
-        		@extend .is-flex;
-        		// from medium & up
-                @include desktop() {
-                        align-items: center;
-                        height: 200px;
-                }
-                @include mobile() {
-                        height: 425px;
-                }
-                position: absolute;
-                bottom: 0;
-                left: 0;
-                background-color: $bc-yellow;
-                color: $black;
+        @include tablet-only() {
+            padding-top: 10px;
+            padding-bottom: 10px;
         }
+        background-color: $white;
+    }
+
+    .footer-container {
+    	@extend .is-flex;
+    	// from medium & up
+        @include desktop() {
+            align-items: center;
+            height: 200px;
+        }
+        @include mobile() {
+            height: 425px;
+        }
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        background-color: $bc-yellow;
+        color: $black;
+    }
 }
