@@ -25,14 +25,14 @@
 start_link() ->
 	gen_server:start_link({local, bc_manager_serv}, ?MODULE, [], []).
 
-create_game(Name, Privacy) ->
-	gen_server:call(Name, {create_game, Privacy}).
+create_game(BcGameServ, Privacy) ->
+	gen_server:call(BcGameServ, {create_game, Privacy}).
 
-get_game(Name, GameId) ->
-	gen_server:call(Name, {get_game, GameId}).
+get_game(BcGameServ, GameId) ->
+	gen_server:call(BcGameServ, {get_game, GameId}).
 
-remove_game(Name, GameId) ->
-	gen_server:cast(Name, {remove_game, GameId}).
+remove_game(BcGameServ, GameId) ->
+	gen_server:cast(BcGameServ, {remove_game, GameId}).
 
 %%====================================================================
 %% Gen_server callbacks

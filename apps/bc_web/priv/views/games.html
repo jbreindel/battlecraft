@@ -1,0 +1,43 @@
+{% extends "template/template.html" %}
+
+{% block content %}
+	<div class="games">
+		<div class="title">
+			<h2>Games</h2>
+		</div>
+		<div class="game-table">
+			<table class="table is-bordered is-striped">
+				<thead>
+					<th>Id</th>
+					<th>Number of Players</th>
+					<th>Players</th>
+					<th>Status</th>
+					<th>Winner</th>
+					<th>Created</th>
+					<th>Actions</th>
+				</thead>
+				<tbody>
+					{% for game in games %}
+						<td>{{ game.id }}</td>
+						<td>{{ game.player_count }}</td>
+						<td>{{ game.players }}</td>
+						<td>{{ game.winner }}</td>
+						<td>
+							{% if game.status == 1 %}
+								<td>Pending</td>
+							{% elif game.status == 2 %}
+								<td>Started</td>
+							{% elif game.status == 3 %}
+								<td>Won</td>
+							{% elif game.status == 4 %}
+								<td>Quit</td>
+							{% endif %}
+						</td>
+						<th>{{ game.created }}</th>
+						<td><div class="button is-primary">Join</div></td>
+					{% endfor %}
+				</tbody>
+			</table>
+		</div>
+	</div>
+{% endblock %}
