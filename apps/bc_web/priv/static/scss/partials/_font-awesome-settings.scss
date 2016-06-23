@@ -3,10 +3,10 @@
 	font-weight: normal;
 	font-style: normal;
 
-    src: url('static/font/fontawesome-webfont.eot');
-    src: url('static/font/fontawesome-webfont.eot') format('embedded-opentype'),
-    	url('static/font/fontawesome-webfont.woff2') format('woff2'),
-    	url('static/font/fontawesome-webfont.woff') format('woff'),
-    	url('static/font/fontawesome-webfont.ttf') format('truetype'),
-    	url('static/font/fontawesome-webfont.svg') format('svg');
+    src: url('/static/font/fontawesome-webfont.eot');
+    src: url('/static/font/fontawesome-webfont.eot') format('embedded-opentype'),
+    	url('/static/font/fontawesome-webfont.woff2') format('woff2'),
+    	url('/static/font/fontawesome-webfont.woff') format('woff'),
+    	url('/static/font/fontawesome-webfont.ttf') format('truetype'),
+    	url('/static/font/fontawesome-webfont.svg') format('svg');
 }
