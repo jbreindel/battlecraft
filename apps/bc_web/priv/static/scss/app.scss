@@ -18,6 +18,7 @@ $bc-black: #000;
 @import "icons";
 
 // include bulma
+@import "partials/bulma-settings";
 @import "bulma";
 
 body, html {
@@ -94,5 +95,13 @@ body, html {
         left: 0;
         background-color: $bc-yellow;
         color: $black;
+		.footer {
+			background-color: $bc-yellow;
+		}
     }
+}
+
+// override primary button background
+.button.is-primary {
+	color: $black;
 }
