@@ -5,7 +5,23 @@
 -export([save/2, 
 		 win/3, 
 		 update_state/2]).
-
+		
+-spec get_games(QueryState :: integer(), 
+				Offset :: integer, 
+				Limit :: integer()) -> {ok, Games :: [proplist()]} | {error, Reason :: string()}.
+get_games(QueryState, Offset, Limit) ->
+	case bc_query_util:menisa_query(fun() -> 
+			qlc:cursor(
+				qlc:q([GameRecord | #game{state = State} <- mnesia:table(game), 
+					State =:= QueryState])
+			)
+		end, Offset, Limit) of
+		{atomic, Records} ->
+			%% TODO query for player data
+		{error, Reason} = Error ->
+			Error
+	end.
+	
 -spec save(Privacy :: integer(), State :: integer()) -> 
 		  {ok, GameId :: integer()} | {error, Reason :: string()}.
 save(Privacy, State) ->
@@ -54,3 +70,5 @@ win(GameId, WinnerId, State) ->
 		{aborted, Reason} ->
 			{error, Reason}
 	end.
+	
+
