@@ -1,23 +1,31 @@
 
 -module(bc_game_model).
+-include_lib("stdlib/include/qlc.hrl").
 -include("bc_model.hrl").
 
--export([save/2, 
+-export([get_games/3,
+		 save/2, 
 		 win/3, 
 		 update_state/2]).
 		
 -spec get_games(QueryState :: integer(), 
 				Offset :: integer, 
-				Limit :: integer()) -> {ok, Games :: [proplist()]} | {error, Reason :: string()}.
+				Limit :: integer()) -> {ok, Games :: [map()]} | {error, Reason :: string()}.
 get_games(QueryState, Offset, Limit) ->
-	case bc_query_util:menisa_query(fun() -> 
+	case bc_query_util:mnesia_query(fun() -> 
 			qlc:cursor(
-				qlc:q([GameRecord | #game{state = State} <- mnesia:table(game), 
+				qlc:q([GameRecord || #game{state = State} = GameRecord <- mnesia:table(game), 
 					State =:= QueryState])
 			)
 		end, Offset, Limit) of
 		{atomic, Records} ->
-			%% TODO query for player data
+			{ok, lists:map(fun(GameRec) -> 
+							#{id => GameRec#game.id,
+							  state => GameRec#game.state,
+							  is_private => GameRec#game.is_private,
+							  created => GameRec#game.created,
+							  modified => GameRec#game.modified} 
+					  end, Records)};
 		{error, Reason} = Error ->
 			Error
 	end.
