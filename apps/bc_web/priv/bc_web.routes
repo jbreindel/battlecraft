@@ -5,5 +5,6 @@
 % landing controller
 {'_', [
 	{"/", bc_web_landing, []},
+	{"/games", bc_web_games, []},
 	{"/static/[...]", cowboy_static, {priv_dir, bc_web, "static"}}
 ]}.
