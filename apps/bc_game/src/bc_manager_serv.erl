@@ -26,17 +26,17 @@
 start_link() ->
 	gen_server:start_link({local, bc_manager_serv}, ?MODULE, [], []).
 
-create_game(BcGameServ, Privacy) ->
-	gen_server:call(BcGameServ, {create_game, Privacy}).
+create_game(BcManagerServ, Privacy) ->
+	gen_server:call(BcManagerServ, {create_game, Privacy}).
 
-get_game(BcGameServ, GameId) ->
-	gen_server:call(BcGameServ, {get_game, GameId}).
+get_game(BcManagerServ, GameId) ->
+	gen_server:call(BcManagerServ, {get_game, GameId}).
 
-get_games(BcGameServ, State, Offset, Limit) ->
-	gen_server:call(BcGameServ, {get_games, {State, Offset, Limit}}).
+get_games(BcManagerServ, GameState, Offset, Limit) ->
+	gen_server:call(BcManagerServ, {get_games, GameState, Offset, Limit}).
 
-remove_game(BcGameServ, GameId) ->
-	gen_server:cast(BcGameServ, {remove_game, GameId}).
+remove_game(BcManagerServ, GameId) ->
+	gen_server:cast(BcManagerServ, {remove_game, GameId}).
 
 %%====================================================================
 %% Gen_server callbacks
@@ -86,8 +86,8 @@ handle_call({get_game, GameId}, _From, State) ->
 			{reply, {error, not_found}, State}
 	end;
 
-handle_call({get_games, {State, Offset, Limit}}, _From, State) ->
-	case bc_game_model:get_games(State, Offset, Limit) of
+handle_call({get_games, GameState, Offset, Limit}, _From, State) ->
+	case bc_game_model:get_games(GameState, Offset, Limit) of
 		{ok, Games} = Reply ->
 			{reply, Reply, State};
 		{error, Reason} = Error ->
