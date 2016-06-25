@@ -7,7 +7,6 @@
 -export([start_link/0,
 		 create_game/2,
 		 get_game/2,
-		 get_games/4,
 		 remove_game/2]).
 
 %% gen_server callbacks
@@ -31,9 +30,6 @@ create_game(BcManagerServ, Privacy) ->
 
 get_game(BcManagerServ, GameId) ->
 	gen_server:call(BcManagerServ, {get_game, GameId}).
-
-get_games(BcManagerServ, GameState, Offset, Limit) ->
-	gen_server:call(BcManagerServ, {get_games, GameState, Offset, Limit}).
 
 remove_game(BcManagerServ, GameId) ->
 	gen_server:cast(BcManagerServ, {remove_game, GameId}).
@@ -84,14 +80,6 @@ handle_call({get_game, GameId}, _From, State) ->
 			{reply, {ok, BcGameFsm}, State};
 		error ->
 			{reply, {error, not_found}, State}
-	end;
-
-handle_call({get_games, GameState, Offset, Limit}, _From, State) ->
-	case bc_game_model:get_games(GameState, Offset, Limit) of
-		{ok, Games} = Reply ->
-			{reply, Reply, State};
-		{error, Reason} = Error ->
-			{reply, Error, State}
 	end.
 
 handle_cast({remove_game, GameId}, _From, State) ->
