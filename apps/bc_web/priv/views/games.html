@@ -3,7 +3,7 @@
 {% block content %}
 	<div class="games">
 		<div class="title">
-			<h3>Games</h3>
+			<h4>Games</h4>
 		</div>
 		<div class="game-table">
 			<table class="table is-bordered is-striped">
@@ -30,7 +30,7 @@
 							<td>{{ game.winner }}</td>
 							<td>{{ game.created }}</td>
 							<td>
-								<a class="button is-primary">Join</a>
+								<a class="button is-primary" href="/game/{{ game.id }}">Join</a>
 							</td>
 						</tr>
 					{% endfor %}
