@@ -11,7 +11,7 @@
 -spec save(GameId :: integer(), 
 		   Handle :: string()) -> {ok, PlayerId :: integer()} | {error, Reason :: string()}.
 save(GameId, Handle) ->
-	Now = now(),
+	Now = erlang:system_time(seconds),
 	PlayerId = bc_model:gen_id(player),
 	Player = #player{id = PlayerId,
 					 handle = Handle,
@@ -50,7 +50,7 @@ in_player_ids(GameId) ->
 update_out(PlayerId, IsOut) ->
 	case mnesia:sync_transaction(fun() -> 
 										 [Player] = mnesia:wread(player, PlayerId),
-										 mnesia:write(Player#player{is_out = IsOut, modified = now()})
+										 mnesia:write(Player#player{is_out = IsOut, modified = erlang:system_time(seconds)})
 								 end) of
 		{atomic, Result} ->
 			ok;

@@ -33,7 +33,7 @@ get_games(QueryState, Offset, Limit) ->
 -spec save(Privacy :: integer(), State :: integer()) -> 
 		  {ok, GameId :: integer()} | {error, Reason :: string()}.
 save(Privacy, State) ->
-	Now = now(),
+	Now = erlang:system_time(seconds),
 	GameId = bc_model:gen_id(game),
 	Game = #game{id = GameId,
 				 state = State,
@@ -55,7 +55,7 @@ update_state(GameId, GameState) ->
 	case mnesia:sync_transaction(fun() -> 
 										 [Game] = mnesia:wread(game, GameId), 
 										 mnesia:write(Game#game{state = GameState, 
-																modified = now()}) 
+																modified = erlang:system_time(seconds)}) 
 								 end) of
 		{atomic, Result} ->
 			{ok, GameState};
@@ -71,7 +71,7 @@ win(GameId, WinnerId, State) ->
 									[Game] = mnesia:wread(game, GameId),
 									mnesia:write(Game#game{state = State, 
 														   winner_id = WinnerId, 
-														   modified = now()})
+														   modified = erlang:system_time(seconds)})
 								 end) of
 		{atomic, Result} ->
 			{ok, won};
