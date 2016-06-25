@@ -3,38 +3,36 @@
 {% block content %}
 	<div class="games">
 		<div class="title">
-			<h2>Games</h2>
+			<h3>Games</h3>
 		</div>
 		<div class="game-table">
 			<table class="table is-bordered is-striped">
 				<thead>
 					<th>Id</th>
-					<th>Number of Players</th>
-					<th>Players</th>
-					<th>Status</th>
+					<th>state</th>
 					<th>Winner</th>
 					<th>Created</th>
 					<th>Actions</th>
 				</thead>
 				<tbody>
 					{% for game in games %}
-						<td>{{ game.id }}</td>
-						<td>{{ game.player_count }}</td>
-						<td>{{ game.players }}</td>
-						<td>{{ game.winner }}</td>
-						<td>
-							{% if game.status == 1 %}
+						<tr>
+							<td>{{ game.id }}</td>
+							{% if game.state == 1 %}
 								<td>Pending</td>
-							{% elif game.status == 2 %}
+							{% elif game.state == 2 %}
 								<td>Started</td>
-							{% elif game.status == 3 %}
+							{% elif game.state == 3 %}
 								<td>Won</td>
-							{% elif game.status == 4 %}
+							{% elif game.state == 4 %}
 								<td>Quit</td>
 							{% endif %}
-						</td>
-						<th>{{ game.created }}</th>
-						<td><div class="button is-primary">Join</div></td>
+							<td>{{ game.winner }}</td>
+							<td>{{ game.created }}</td>
+							<td>
+								<a class="button is-primary">Join</a>
+							</td>
+						</tr>
 					{% endfor %}
 				</tbody>
 			</table>
