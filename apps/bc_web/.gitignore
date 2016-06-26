@@ -66,3 +66,7 @@ jspm_packages
 ## generated directories
 priv/static/css/
 priv/static/font/
+priv/static/js/
+
+## elm proj libs
+priv/static/elm/elm-stuff/
