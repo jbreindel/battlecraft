@@ -25,6 +25,7 @@ get_games(QueryState, Offset, Limit) ->
 					{ok, qlc:eval(qlc:q([#{id => GameRec#game.id,
 										   state => GameRec#game.state,
 										   players => Players,
+										   winner_id => GameRec#game.winner_id,
 										   is_private => GameRec#game.is_private,
 										   created => GameRec#game.created,
 										   modified => GameRec#game.modified} || GameRec <- Records, 

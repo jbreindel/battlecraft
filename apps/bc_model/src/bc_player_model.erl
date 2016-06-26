@@ -33,11 +33,11 @@ game_players(GameIds) ->
 		GpQh = qlc:q([{GpAssoc#gp_assoc.game_id, Player} || Player <- PQh, GpAssoc <- GpaQh, 
 															Player#player.id =:= GpAssoc#gp_assoc.player_id]),
 		qlc:fold(fun({GameId, Player}, GpDict) ->
-					case dict:find(GameId) of
+					case dict:find(GameId, GpDict) of
 						{ok, Players} ->
-							UpdatedPlayers = Players ++ #{id => Player#player.id,
+							UpdatedPlayers = Players ++ [#{id => Player#player.id,
 														  handle => Player#player.handle,
-														  is_out => Player#player.is_out},
+														  is_out => Player#player.is_out}],
 							dict:store(GameId, UpdatedPlayers, GpDict);
 						error ->
 							dict:store(GameId, [#{id => Player#player.id,

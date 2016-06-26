@@ -10,7 +10,10 @@
 				<thead>
 					<th>Id</th>
 					<th>state</th>
-					<th>Winner</th>
+					<th>Players</th>
+					{% if game.state == 3 %}
+						<th>Winner</th>
+					{% endif %}
 					<th>Created</th>
 					<th>Actions</th>
 				</thead>
@@ -24,10 +27,17 @@
 								<td>Started</td>
 							{% elif game.state == 3 %}
 								<td>Won</td>
+								<td>{{ game.winner }}</td>
 							{% elif game.state == 4 %}
 								<td>Quit</td>
 							{% endif %}
-							<td>{{ game.winner }}</td>
+							<td>
+								<ul>
+									{% for player in game.players %}
+										<li>{{ player.handle }}</li>
+									{% endfor %}
+								</ul>
+							</td>
 							<td>{{ game.created }}</td>
 							<td>
 								<a class="button is-primary" href="/game/{{ game.id }}">Join</a>
