@@ -5,13 +5,14 @@
 
 init(_Type, Req, _Opt) ->
 	ViewFile = bc_web_files:view_file("game.html"),
-	erlydtl:compile(ViewFile, games_view, 
+	erlydtl:compile(ViewFile, game_view, 
 					[{vars, [{title, "Game"}, 
 							 {description, "Gameplay page"}]}]),
 	{ok, Req, no_state}.
 
 handle(Req, _State) ->
-	case games_view:render([]) of
+	{GameId, Req2} = cowboy_req:binding(game_id, Req),
+	case game_view:render([{game_id, GameId}]) of
 		{ok, View} ->
 			{ok, cowboy_req:reply(200, [], View, Req), no_state};
 		{error, ViewReason} ->
