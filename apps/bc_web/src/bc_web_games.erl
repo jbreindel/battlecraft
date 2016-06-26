@@ -7,7 +7,7 @@ init(_Type, Req, _Opt) ->
 	ViewFile = bc_web_files:view_file("games.html"),
 	erlydtl:compile(ViewFile, games_view, 
 					[{vars, [{title, "Games"}, 
-							 {description, "Open games"}]}]),
+							 {description, "List of games to join"}]}]),
 	{ok, Req, no_state}.
 
 handle(Req, _State) ->
