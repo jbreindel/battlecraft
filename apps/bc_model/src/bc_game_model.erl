@@ -19,15 +19,22 @@ get_games(QueryState, Offset, Limit) ->
 			)
 		end, Offset, Limit) of
 		{atomic, Records} ->
-			{ok, lists:map(fun(GameRec) -> 
-							#{id => GameRec#game.id,
-							  state => GameRec#game.state,
-							  is_private => GameRec#game.is_private,
-							  created => GameRec#game.created,
-							  modified => GameRec#game.modified} 
-					  end, Records)};
-		{error, Reason} = Error ->
-			Error
+			GameIds = lists:map(fun(#game{id = Id}) -> Id end, Records),
+			case bc_player_model:game_players(GameIds) of
+				{ok, PlayerDict} ->
+					{ok, qlc:eval(qlc:q([#{id => GameRec#game.id,
+										   state => GameRec#game.state,
+										   players => Players,
+										   is_private => GameRec#game.is_private,
+										   created => GameRec#game.created,
+										   modified => GameRec#game.modified} || GameRec <- Records, 
+																				 {GameId, Players} <- dict:to_list(PlayerDict),
+																				 GameId =:= GameRec#game.id]))};
+				{error, Reason} = PlayerError ->
+					PlayerError
+			end;
+		{error, Reason} = GameError ->
+			GameError
 	end.
 	
 -spec save(Privacy :: integer(), State :: integer()) -> 
