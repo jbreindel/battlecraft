@@ -17,18 +17,21 @@ init({player, BcPlayer}) ->
 handle_event({game_started, Players}, 
 			 #state{player = BcPlayer} = State) ->
 	PlayerPid = bc_player:pid(BcPlayer),
-	PlayerPid ! #{event => #{type => game_started,
-							 players => Players}},
+	PlayerPid ! #{type => game_event,
+				  game_event => #{event_type => game_started,
+							 	  players => Players}},
 	{ok, State};
 handle_event({game_error, Reason},
 			 #state{player = BcPlayer} = State) ->
 	PlayerPid = bc_player:pid(BcPlayer),
-	PlayerPid ! #{event => #{type => game_error,
-							 reason => Reason}},
+	PlayerPid ! #{type => game_event,
+				  game_event => #{event_type => game_error,
+							 	  reason => Reason}},
 	{ok, State};
 handle_event({PlayerEventType, BcPlayer}, 
 			 #state{player = BcPlayer} = State) ->
 	PlayerPid = bc_player:pid(BcPlayer),
-	PlayerPid ! #{event => #{type => PlayerEventType,
-							 player => BcPlayer}},
+	PlayerPid ! #{type => game_event,
+				  game_event => #{event_type => PlayerEventType,
+							 	  player => BcPlayer}},
 	{ok, State}.

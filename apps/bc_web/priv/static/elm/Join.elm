@@ -12,11 +12,20 @@ type alias Model = {
 	playerId : Int
 }
 
-subscriptions : Model -> Sub Msg
-subscriptions model =
-	WebSocket.listen model.address NewMessage
+type Msg =
+	OnMessage String
 
-main : Program(Maybe Model)
+update : Msg -> Model -> (Model, Cmd Msg)
+update msg {address, playerId} =
+	case msg of
+		OnMessage str ->
+			(Model address )
+
+subscriptions : Model -> Sub Msg
+subscriptions {addres, _} =
+	WebSocket.listen address OnMessage
+
+main : Program (Maybe Model)
 main =
 	App.programWithFlags {
 		init = init,
