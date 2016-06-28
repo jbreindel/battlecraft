@@ -1,7 +1,10 @@
 
 -module(bc_web_ws).
 
--export([init/3]).
+-export([init/3, 
+		 websocket_init/3, 
+		 websocket_handle/3, 
+		 websocket_info/3]).
 
 -record(state, {game_id, 
 				input_serv}).
