@@ -1,10 +1,13 @@
 {% extends "template/template.html" %}
 
 {% block content %}
-	<div class="game">
-
-	</div>
+	<div id="game"></div>
+	<script src="/static/js/join.js"></script>
 	<script>
 		var gameId = {{ game_id }};
+		var address = 'ws://localhost:8080/ws/game/{{ game_id }}/';
+
+		var node = document.getElementById('game');
+		var app = Elm.Join.embed(node);
 	</script>
 {% endblock %}
