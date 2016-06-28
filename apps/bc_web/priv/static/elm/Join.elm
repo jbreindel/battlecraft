@@ -3,54 +3,77 @@ port module Join exposing (..)
 import Html exposing (..)
 import Html.App as App
 import Html.Attributes exposing (..)
+import Html.Events exposing (onInput, onClick)
 import Json.Decode exposing (..)
 import Message
 import WebSocket
+import Debug
 
 -- Model
 
 type alias Model = {
-	address : String
-	playerId : Int
+    address : String,
+    handle : String,
+    playerId : Int
 }
 
-init : (Model, Cmd Msg)
-init =
-	(Model "" -1, Cmd.none)
-
-type Msg =
-	OnMessage String |
-	Join String
+init : Flags -> (Model, Cmd Msg)
+init savedModel =
+    (Model "" "" -1, Cmd.none)
 
 -- Update
 
+type Msg =
+    JoinGame |
+    UpdateHandle String |
+    OnMessage String
+
 update : Msg -> Model -> (Model, Cmd Msg)
-update msg {address, playerId} =
-	case msg of
+update msg model =
+    case msg of
 
-		Join handle ->
+        UpdateHandle handle ->
+            ({model | handle = handle}, Cmd.none)
 
-		OnMessage json ->
-			case decodeString Message.message json of
-				Ok Message ->
-					-- TODO decompose join message
-				Err Reason ->
-					-- TODO show error message
+        JoinGame ->
+            (model, WebSocket.send model.address model.handle)
 
+{--
+
+        OnMessage json ->
+            case decodeString Message.message json of
+                Ok Message ->
+                    -- TODO decompose join message
+                    log "websocket" Message
+                Err Reason ->
+                    -- TODO show error message
+                    log "error" Reason
+
+--}
 
 -- Subscriptions
 
 subscriptions : Model -> Sub Msg
-subscriptions {addres, _} =
-	WebSocket.listen address OnMessage
+subscriptions model =
+    WebSocket.listen model.address OnMessage
+
+-- View
+
+view : Model -> Html Msg
+view model =
+    div []
+        [
+            input [placeholder "Game Handle", onInput UpdateHandle] [],
+            button [onClick JoinGame] [text "Join"]
+        ]
 
 -- Main
 
 main : Program (Maybe Model)
 main =
-	App.programWithFlags {
-		init = init,
-		view = view,
-		update = update,
-		subscriptions = subscriptions
-	}
+    App.programWithFlags {
+        init = init,
+        view = view,
+        update = update,
+        subscriptions = subscriptions
+    }

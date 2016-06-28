@@ -5,83 +5,82 @@ import Json.Decode exposing (..)
 -- Model types
 
 type alias Player = {
-	id : Int
-	handle : String
-	isOut : Bool
+    id : Int,
+    handle : String,
+    isOut : Bool
 }
 
 player : Decoder Player
 player =
-	object2 Player
-		("id" := int)
-		("handle" := string)
-		("is_out" := bool)
+    object3 Player
+        ("id" := int)
+        ("handle" := string)
+        ("is_out" := bool)
 
 -- GameEvent Types
 
 type alias PlayerEvent = {
-	eventType : String
-	player : Player
+    eventType : String,
+    player : Player
 }
 
-playerEvent : Decoder GameEvent
+playerEvent : Decoder PlayerEvent
 playerEvent =
-	object2 PlayerEvent
-		("event_type" := string)
-		("player" := player)
+    object2 PlayerEvent
+        ("event_type" := string)
+        ("player" := player)
 
 type alias GameStartedEvent = {
-	eventType : String
-	players : List Player
+    eventType : String,
+    players : List Player
 }
 
-gameStartedEvent : Decoder GameEvent
+gameStartedEvent : Decoder GameStartedEvent
 gameStartedEvent =
-	object2 GameStartedEvent
-		("event_type" := string)
-		("players" := list player)
+    object2 GameStartedEvent
+        ("event_type" := string)
+        ("players" := list player)
 
 type alias GameErrorEvent = {
-	eventType : String
-	reason : String
+    eventType : String,
+    reason : String
 }
 
-gameErrorEvent : Decoder GameEvent
+gameErrorEvent : Decoder GameErrorEvent
 gameErrorEvent =
-	object2 GameErrorEvent
-		("event_type" := string)
-		("reason" := string)
+    object2 GameErrorEvent
+        ("event_type" := string)
+        ("reason" := string)
 
 -- Aggregate Types
 
-type GameEvent =
-	PlayerEvent |
-	GameStartedEvent |
-	GameErrorEvent
+{--
 
 gameEventInfo : String -> Decoder GameEvent
 gameEventInfo eventType =
-	case eventType of
-		"game_started" ->
-			gameStartedEvent
-		"game_error" ->
-			gameErrorEvent
-		_ ->
-			playerEvent
+    case eventType of
+        "game_started" ->
+            gameStartedEvent
+        "game_error" ->
+            gameErrorEvent
+        _ ->
+            playerEvent
 
 gameEvent : Decoder GameEvent
 gameEvent =
-	at ["game_event", "event_type"] string `andThen` gameEventInfo
+    at ["game_event", "event_type"] string `andThen` gameEventInfo
 
 type Message =
-	GameEvent
+    GameEvent
 
 messageInfo : String -> Decoder Message
 messageInfo messageType =
-	case messageType of
-		"game_event" ->
-			gameEvent
+    case messageType of
+        "game_event" ->
+            gameEvent
 
 message : Decoder Message
 message =
-	("type" := string) `andThen` messageInfo
+    ("type" := string) `andThen` messageInfo
+
+--}
