@@ -8,6 +8,7 @@
 		var address = 'ws://localhost:8080/ws/game/{{ game_id }}/';
 
 		var node = document.getElementById('game');
-		var app = Elm.Join.embed(node);
+		var app = Elm.Join.embed(node, {address: address,
+            handle: "", playerId: -1});
 	</script>
 {% endblock %}

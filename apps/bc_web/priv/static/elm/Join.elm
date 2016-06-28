@@ -7,7 +7,7 @@ import Html.Events exposing (onInput, onClick)
 import Json.Decode exposing (..)
 import Message
 import WebSocket
-import Debug
+import Debug exposing (log)
 
 -- Model
 
@@ -17,9 +17,9 @@ type alias Model = {
     playerId : Int
 }
 
-init : Flags -> (Model, Cmd Msg)
+init : Model -> (Model, Cmd Msg)
 init savedModel =
-    (Model "" "" -1, Cmd.none)
+    (Model savedModel.address savedModel.handle -1, Cmd.none)
 
 -- Update
 
@@ -38,9 +38,11 @@ update msg model =
         JoinGame ->
             (model, WebSocket.send model.address model.handle)
 
+        OnMessage json ->
+            (model, Cmd.none)
+
 {--
 
-        OnMessage json ->
             case decodeString Message.message json of
                 Ok Message ->
                     -- TODO decompose join message
@@ -69,7 +71,7 @@ view model =
 
 -- Main
 
-main : Program (Maybe Model)
+main : Program Model
 main =
     App.programWithFlags {
         init = init,
