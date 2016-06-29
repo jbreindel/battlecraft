@@ -54,17 +54,22 @@ gameErrorEvent =
 
 -- Aggregate Types
 
+type GameEvent =
+    PlayerEv PlayerEvent |
+    GameStartedEv GameStartedEvent |
+    GameErrorEv GameErrorEvent
+
 {--
 
 gameEventInfo : String -> Decoder GameEvent
 gameEventInfo eventType =
     case eventType of
         "game_started" ->
-            gameStartedEvent
+            object2 PlayerEv gameStartedEvent
         "game_error" ->
-            gameErrorEvent
+            object2 GameStartedEv gameErrorEvent
         _ ->
-            playerEvent
+            object2 GameErrorEv playerEvent
 
 gameEvent : Decoder GameEvent
 gameEvent =
