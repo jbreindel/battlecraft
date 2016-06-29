@@ -59,21 +59,21 @@ type GameEvent =
     GameStartedEv GameStartedEvent |
     GameErrorEv GameErrorEvent
 
-{--
-
 gameEventInfo : String -> Decoder GameEvent
 gameEventInfo eventType =
     case eventType of
         "game_started" ->
-            object2 PlayerEv gameStartedEvent
+            object1 GameStartedEv gameStartedEvent
         "game_error" ->
-            object2 GameStartedEv gameErrorEvent
+            object1 GameErrorEv gameErrorEvent
         _ ->
-            object2 GameErrorEv playerEvent
+            object1 PlayerEv playerEvent
 
 gameEvent : Decoder GameEvent
 gameEvent =
     at ["game_event", "event_type"] string `andThen` gameEventInfo
+
+{--
 
 type Message =
     GameEvent
