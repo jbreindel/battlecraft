@@ -8,7 +8,6 @@ import Json.Decode exposing (..)
 import GameEvent exposing (..)
 import WebSocket
 import Debug exposing (log)
-        ]
 
 -- Main
 
