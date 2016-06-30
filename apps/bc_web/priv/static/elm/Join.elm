@@ -1,13 +1,4 @@
-port module Join exposing (..)
-
-import Html exposing (..)
-import Html.App as App
-import Html.Attributes exposing (..)
-import Html.Events exposing (onInput, onClick)
-import Json.Decode exposing (..)
-import Message
-import WebSocket
-import Debug exposing (log)
+module Join exposing (..)
 
 -- Model
 
@@ -19,7 +10,7 @@ type alias Model = {
 
 init : Model -> (Model, Cmd Msg)
 init savedModel =
-    (Model savedModel.address savedModel.handle -1, Cmd.none)
+    (Model savedModel.address "" -1, Cmd.none)
 
 -- Update
 
@@ -41,18 +32,6 @@ update msg model =
         OnMessage json ->
             (model, Cmd.none)
 
-{--
-
-            case decodeString Message.message json of
-                Ok Message ->
-                    -- TODO decompose join message
-                    log "websocket" Message
-                Err Reason ->
-                    -- TODO show error message
-                    log "error" Reason
-
---}
-
 -- Subscriptions
 
 subscriptions : Model -> Sub Msg
@@ -67,15 +46,3 @@ view model =
         [
             input [placeholder "Game Handle", onInput UpdateHandle] [],
             button [onClick JoinGame] [text "Join"]
-        ]
-
--- Main
-
-main : Program Model
-main =
-    App.programWithFlags {
-        init = init,
-        view = view,
-        update = update,
-        subscriptions = subscriptions
-    }

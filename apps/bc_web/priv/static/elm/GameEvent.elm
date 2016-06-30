@@ -1,4 +1,4 @@
-module Message exposing (..)
+module GameEvent exposing (..)
 
 import Json.Decode exposing (..)
 
