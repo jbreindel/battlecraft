@@ -1,5 +1,13 @@
 module Join exposing (..)
 
+import Html exposing (..)
+import Html.App as App
+import Html.Attributes exposing (..)
+import Html.Events exposing (onInput, onClick)
+import Json.Decode exposing (..)
+import GameEvent exposing (..)
+import WebSocket
+
 -- Model
 
 type alias Model = {
@@ -17,7 +25,7 @@ init savedModel =
 type Msg =
     JoinGame |
     UpdateHandle String |
-    OnMessage String
+    OnJoinResponse JoinResponse
 
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
@@ -42,7 +50,19 @@ subscriptions model =
 
 view : Model -> Html Msg
 view model =
-    div []
-        [
-            input [placeholder "Game Handle", onInput UpdateHandle] [],
-            button [onClick JoinGame] [text "Join"]
+    div [class "card"] [
+        header [class "card-header"] [
+            p [class "card-header-title"] [
+                text "Join Game"
+            ]
+        ],
+        div [class "card-content"] [
+            div [class "content"] [
+                h4 [] [text "Select a handle"],
+                input [placeholder "Game Handle", onInput UpdateHandle] []
+            ]
+        ],
+        footer [class "card-footer"] [
+            a [class "card-footer-item" onClick JoinGame] [text "Join Game"]
+        ]
+    ]
