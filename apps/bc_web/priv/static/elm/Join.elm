@@ -4,11 +4,11 @@ import Html exposing (..)
 import Html.App as App
 import Html.Attributes exposing (..)
 import Html.Events exposing (onInput, onClick)
-import Json.Decode exposing (..)
-import GameEvent exposing (..)
 import WebSocket
 
 -- Model
+
+-- TODO declare join cmd/response
 
 type alias Model = {
     address : String,
@@ -16,16 +16,15 @@ type alias Model = {
     playerId : Int
 }
 
-init : Model -> (Model, Cmd Msg)
-init savedModel =
-    (Model savedModel.address "" -1, Cmd.none)
+init : String -> (Model, Cmd Msg)
+init address =
+    (Model address "" -1, Cmd.none)
 
 -- Update
 
 type Msg =
     JoinGame |
-    UpdateHandle String |
-    OnJoinResponse JoinResponse
+    UpdateHandle String
 
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
@@ -36,15 +35,6 @@ update msg model =
 
         JoinGame ->
             (model, WebSocket.send model.address model.handle)
-
-        OnMessage json ->
-            (model, Cmd.none)
-
--- Subscriptions
-
-subscriptions : Model -> Sub Msg
-subscriptions model =
-    WebSocket.listen model.address OnMessage
 
 -- View
 
