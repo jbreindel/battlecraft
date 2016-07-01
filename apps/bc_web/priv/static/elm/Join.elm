@@ -53,6 +53,6 @@ view model =
             ]
         ],
         footer [class "card-footer"] [
-            a [class "card-footer-item" onClick JoinGame] [text "Join Game"]
+            a [class "card-footer-item", onClick JoinGame] [text "Join Game"]
         ]
     ]
