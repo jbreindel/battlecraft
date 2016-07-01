@@ -17,8 +17,8 @@ type GameState =
 -- Action
 
 type Msg =
-    JoinMsg Join.Msg |
     StateChange GameState |
+    JoinMsg Join.Msg |
     OnWsMessage String
 
 -- Model
@@ -58,12 +58,25 @@ subscriptions model =
 
 view : Model -> Html Msg
 view model =
-    -- let
-    --     body =
-    --         case model.state of
-    --             Joining ->
-
-    div [id "game"] []
+    let
+        body =
+            case model.state of
+                
+                Joining ->
+                    Join.view model.joinModel
+                
+                Pending ->
+                    -- TODO create pending view
+                    div [] []
+                    
+                Started ->
+                    -- TODO create map view
+                    div [] []
+                    
+    in
+        div [id "game"] [
+            body
+        ]
 
 -- Main
 
