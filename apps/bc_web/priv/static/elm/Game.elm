@@ -86,7 +86,7 @@ view model =
                     div [] []
 
     in
-        div [id "game"] [
+        div [class "game-content is-full-width"] [
             body
         ]
 
