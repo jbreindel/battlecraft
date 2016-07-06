@@ -4,11 +4,11 @@ import Html exposing (..)
 import Html.App as App
 import Html.Attributes exposing (..)
 import Html.Events exposing (onInput, onClick)
+import Command exposing (..)
+import Json.Encode exposing (..)
 import WebSocket
 
 -- Model
-
--- TODO declare join cmd/response
 
 type alias Model = {
     address : String,
@@ -34,7 +34,12 @@ update msg model =
             ({model | handle = handle}, Cmd.none)
 
         JoinGame ->
-            (model, WebSocket.send model.address model.handle)
+            let
+                joinCommandJson = initJoinCommand model.handle
+                    |> encodeJoinCommand
+                    |> encode 0
+            in
+                (model, WebSocket.send model.address joinCommandJson)
 
 -- View
 
@@ -53,6 +58,6 @@ view model =
             ]
         ],
         footer [class "card-footer"] [
-            a [class "card-footer-item" onClick JoinGame] [text "Join Game"]
+            a [class "card-footer-item", onClick JoinGame] [text "Join Game"]
         ]
     ]
