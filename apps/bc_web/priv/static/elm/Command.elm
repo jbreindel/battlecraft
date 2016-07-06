@@ -23,6 +23,17 @@ encodeJoinCommand joinCmd =
 
 -- Response types
 
+type alias ResponseError = {
+    responseType : String,
+    error : String
+}
+
+responseError : Json.Decode.Decoder ResponseError
+responseError =
+    object2 ResponseError
+        ("response_type" := Json.Decode.string)
+        ("reason" := Json.Decode.string)
+
 type alias JoinResponse = {
     responseType : String,
     playerId : Int

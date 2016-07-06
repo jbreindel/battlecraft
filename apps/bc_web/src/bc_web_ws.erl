@@ -6,8 +6,9 @@
 		 websocket_handle/3, 
 		 websocket_info/3]).
 
--record(state, {game_id, 
-				input_serv}).
+-record(state, {game_id,
+				player_id,
+				player_serv}).
 
 init(_Type, _Req, _Opts) ->
 	{upgrade, protocol, cowboy_websocket}.
@@ -28,8 +29,26 @@ websocket_init(_Type, Req, _Opts) ->
 			end
 	end.
 
-websocket_handle({text, Json} = Frame, Req, State) ->
-	{reply, Frame, Req, State};
+websocket_handle({text, Json} = Frame, Req, #state{game_id = GameId} = State) ->
+	CommandMap = jsx:decode(Json, [return_maps]),
+	case maps:get(<<"command_type">>, CommandMap, undefined) of
+		<<"join_command">> ->
+			Handle = maps:get(<<"handle">>, CommandMap),
+			case join_game(GameId, Handle) of
+				{ok, PlayerId, BcPlayerServ} ->
+					ReplyMap = #{response_type => join_response,
+								 player_id => PlayerId},
+					ReplyJson = jsx:encode(ReplyMap),
+					{reply, {text, ReplyJson}, Req, State#state{player_id = PlayerId}};
+				{error, Reason} = Error ->
+					ErrorMap = #{response_type => response_error,
+								 error => Reason},
+					ReplyJson = jsx:encode(ErrorMap),
+					{reply, {text, ReplyJson, Req, State}}
+			end;
+		_ ->
+			{reply, Frame, Req, State}
+	end;
 websocket_handle(_Frame, Req, State) ->
 	{ok, Req, State}.
 
@@ -37,3 +56,12 @@ websocket_info(Info, Req, State) when erlang:is_map(Info) ->
 	{reply, {text, <<"Hello World">>}, Req, State};
 websocket_info(_Info, Req, State) ->
 	{ok, Req, State}.
+
+join_game(GameId, Handle) ->
+	BcManagerServ = whereis(bc_manager_serv),
+	case bc_manager_serv:get_game(GameId) of
+		{ok, BcGameFsm} ->
+			bc_game_fsm:player_join(BcGameFsm, self(), Handle);
+		{error, Reason} = Error ->
+			Error
+	end.
