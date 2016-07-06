@@ -30,7 +30,8 @@ websocket_init(_Type, Req, _Opts) ->
 	end.
 
 websocket_handle({text, Json} = Frame, Req, #state{game_id = GameId} = State) ->
-	CommandMap = jsx:decode(Json, [return_maps]),
+ 	CommandMap = jsx:decode(Json, [return_maps]),
+	lager:info("Websocket message received: ~p", [CommandMap]),
 	case maps:get(<<"command_type">>, CommandMap, undefined) of
 		<<"join_command">> ->
 			Handle = maps:get(<<"handle">>, CommandMap),
@@ -44,22 +45,25 @@ websocket_handle({text, Json} = Frame, Req, #state{game_id = GameId} = State) ->
 					ErrorMap = #{response_type => response_error,
 								 error => Reason},
 					ReplyJson = jsx:encode(ErrorMap),
-					{reply, {text, ReplyJson, Req, State}}
+					{reply, {text, ReplyJson}, Req, State}
 			end;
-		_ ->
+		undefined ->
 			{reply, Frame, Req, State}
 	end;
-websocket_handle(_Frame, Req, State) ->
+websocket_handle(Frame, Req, State) ->
+	lager:info("Websocket message receive: ~p", [Frame]),
 	{ok, Req, State}.
 
-websocket_info(Info, Req, State) when erlang:is_map(Info) ->
-	{reply, {text, <<"Hello World">>}, Req, State};
+websocket_info(WsMessage, Req, State) when erlang:is_map(WsMessage) ->
+	Json = jsx:encode(WsMessage),
+	lager:info("Sending ws message: ~p", [Json]),
+	{reply, {text, Json}, Req, State};
 websocket_info(_Info, Req, State) ->
 	{ok, Req, State}.
 
 join_game(GameId, Handle) ->
 	BcManagerServ = whereis(bc_manager_serv),
-	case bc_manager_serv:get_game(GameId) of
+	case bc_manager_serv:get_game(BcManagerServ, GameId) of
 		{ok, BcGameFsm} ->
 			bc_game_fsm:player_join(BcGameFsm, self(), Handle);
 		{error, Reason} = Error ->
