@@ -17,20 +17,28 @@ type GameState =
 -- Action
 
 type Msg =
-    JoinMsg Join.Msg |
     StateChange GameState |
+    JoinMsg Join.Msg |
     OnWsMessage String
 
 -- Model
 
+type alias Flags = {
+    address : String
+}
+
 type alias Model = {
-    state : GameState
+    state : GameState,
+    address: String,
     joinModel : Join.Model
 }
 
-init : Model -> (Model, Cmd Msg)
+init : Flags -> (Model, Cmd Msg)
 init flags =
-    (Model Joining (Join.init flags.address), Cmd.none)
+    let
+        (joinModel, joinCmd) = Join.init flags.address
+    in
+        (Model Joining flags.address joinModel, Cmd.none)
 
 -- Update
 
@@ -38,36 +46,53 @@ update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
     case msg of
 
+        StateChange state ->
+            ({model | state = state}, Cmd.none)
+
         JoinMsg sub ->
             let
-                (joinModel, cmd) =
+                (updateJoinModel, updateJoinCmd) =
                     Join.update sub model.joinModel
             in
-                ({model | joinModel = joinModel} , Cmd.map JoinMsg cmd)
+                ({model | joinModel = updateJoinModel}, Cmd.map JoinMsg updateJoinCmd)
 
-        -- OnWsMessage str ->
+        OnWsMessage str ->
             -- TODO decode message
+            (model, Cmd.none)
 
 -- Subscriptions
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    WebSocket.listen model.address OnMessage
+    WebSocket.listen model.address OnWsMessage
 
 -- View
 
 view : Model -> Html Msg
 view model =
-    -- let
-    --     body =
-    --         case model.state of
-    --             Joining ->
+    let
+        body =
+            case model.state of
 
-    div [id "game"] []
+                Joining ->
+                    App.map JoinMsg <| Join.view model.joinModel
+
+                Pending ->
+                    -- TODO create pending view
+                    div [] []
+
+                Started ->
+                    -- TODO create map view
+                    div [] []
+
+    in
+        div [class "game-content is-full-width"] [
+            body
+        ]
 
 -- Main
 
-main : Program Model
+main : Program Flags
 main =
     App.programWithFlags {
         init = init,

@@ -45,15 +45,14 @@ update msg model =
 
 view : Model -> Html Msg
 view model =
-    div [class "card"] [
+    div [class "card join-card"] [
         header [class "card-header"] [
             p [class "card-header-title"] [
-                text "Join Game"
+                text "Select a handle"
             ]
         ],
         div [class "card-content"] [
             div [class "content"] [
-                h4 [] [text "Select a handle"],
                 input [placeholder "Game Handle", onInput UpdateHandle] []
             ]
         ],

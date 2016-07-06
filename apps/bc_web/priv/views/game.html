@@ -4,11 +4,9 @@
 	<div id="game"></div>
 	<script src="/static/js/join.js"></script>
 	<script>
-		var gameId = {{ game_id }};
 		var address = 'ws://localhost:8080/ws/game/{{ game_id }}/';
 
 		var node = document.getElementById('game');
-		var app = Elm.Join.embed(node, {address: address,
-            handle: "", playerId: -1});
+		var app = Elm.Game.embed(node, {address: address});
 	</script>
 {% endblock %}
