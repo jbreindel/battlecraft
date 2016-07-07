@@ -4,7 +4,8 @@
 -export([init/3, 
 		 websocket_init/3, 
 		 websocket_handle/3, 
-		 websocket_info/3]).
+		 websocket_info/3,
+		 websocket_terminate/3]).
 
 -record(state, {game_id,
 				player_id,
@@ -60,6 +61,10 @@ websocket_info(WsMessage, Req, State) when erlang:is_map(WsMessage) ->
 	{reply, {text, Json}, Req, State};
 websocket_info(_Info, Req, State) ->
 	{ok, Req, State}.
+
+websocket_terminate(Reason, _Req, _State) ->
+	lager:info("Websocket terminating: ~p", [Reason]),
+    ok.
 
 join_game(GameId, Handle) ->
 	BcManagerServ = whereis(bc_manager_serv),
