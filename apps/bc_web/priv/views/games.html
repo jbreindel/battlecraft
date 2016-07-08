@@ -2,9 +2,35 @@
 
 {% block content %}
 	<div class="games">
-		<div class="title">
-			<h4>Games</h4>
-		</div>
+        <div class="columns">
+            <div class="column is-7">
+                <div class="title">
+                    <h4 class="is-marginless">Games</h4>
+                </div>
+            </div>
+            <div class="column">
+                <form action="/games" method="post">
+                    <input type="hidden" name="is_private" value="true" />
+                    <button class="button" type="submit">
+                        <span>Create Private Game</span>
+                        <span class="icon">
+                            <i class="fa fa-lock"></i>
+                        </span>
+                    </button>
+                </form>
+            </div>
+            <div class="column">
+                <form action="/games" method="post">
+                    <input type="hidden" name="is_private" value="false" />
+                    <button class="button is-primary" type="submit">
+                        <span>Create Public Game</span>
+                        <span class="icon">
+                            <i class="fa fa-unlock"></i>
+                        </span>
+                    </button>
+                </form>
+            </div>
+        </div>
 		<div class="game-table">
 			<table class="table is-bordered is-striped">
 				<thead>
