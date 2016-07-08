@@ -44,3 +44,9 @@ joinResponse =
     object2 JoinResponse
         ("response_type" := Json.Decode.string)
         ("player_id" := Json.Decode.int)
+
+-- Aggregate types
+
+type Response =
+    ResponseErr ResponseError |
+    JoinResp JoinResponse

@@ -4,27 +4,30 @@ import Html exposing (..)
 import Html.App as App
 import Html.Attributes exposing (..)
 import Html.Events exposing (onInput, onClick)
-import Command exposing (..)
 import Json.Encode exposing (..)
 import WebSocket
+
+import Command exposing (..)
 
 -- Model
 
 type alias Model = {
     address : String,
     handle : String,
-    playerId : Int
+    playerId : Int,
+    error : Maybe String
 }
 
 init : String -> (Model, Cmd Msg)
 init address =
-    (Model address "" -1, Cmd.none)
+    (Model address "" -1 Nothing, Cmd.none)
 
 -- Update
 
 type Msg =
     JoinGame |
-    UpdateHandle String
+    UpdateHandle String |
+    OnJoinResponse Response
 
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
@@ -40,6 +43,13 @@ update msg model =
                     |> encode 0
             in
                 (model, WebSocket.send model.address joinCommandJson)
+
+        OnJoinResponse response ->
+            case response of
+                ResponseErr responseError ->
+                    ({model | error = Just responseError.error}, Cmd.none)
+                JoinResp joinResponse ->
+                    ({model | playerId = joinResponse.playerId}, Cmd.none)
 
 -- View
 
