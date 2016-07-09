@@ -23,16 +23,16 @@ encodeJoinCommand joinCmd =
 
 -- Response types
 
-type alias ResponseError = {
+type alias ErrorResponse = {
     responseType : String,
     error : String
 }
 
-responseError : Json.Decode.Decoder ResponseError
-responseError =
-    object2 ResponseError
+errorResponse : Json.Decode.Decoder ResponseError
+errorResponse =
+    object2 ErrorResponse
         ("response_type" := Json.Decode.string)
-        ("reason" := Json.Decode.string)
+        ("error" := Json.Decode.string)
 
 type alias JoinResponse = {
     responseType : String,
@@ -48,5 +48,19 @@ joinResponse =
 -- Aggregate types
 
 type Response =
-    ResponseErr ResponseError |
+    ErrorResp ErrorResponse |
     JoinResp JoinResponse
+
+responseInfo : String -> Decoder Response
+responseInfo responseType =
+    case responseType of
+        "join_response" ->
+            object1 JoinResp joinResponse
+        "join_error" ->
+            object1 JoinError errorResponse
+        _ ->
+            object1 JoinError errorResponse
+
+response : Decoder Response
+response =
+    at ["command_response", "response_type"] string `andThen` responseInfo

@@ -6,21 +6,32 @@ import Html.Attributes exposing (..)
 import Html.Events exposing (onInput, onClick)
 import Json.Encode exposing (..)
 import WebSocket
+import Effects exposing (Effects)
+
+-- Local imports
 
 import Command exposing (..)
+import GameState exposing (..)
 
 -- Model
 
+type Effect =
+    UpdateGameState GameState |
+    WsSendMessage String
+
 type alias Model = {
-    address : String,
     handle : String,
     playerId : Int,
     error : Maybe String
 }
 
-init : String -> (Model, Cmd Msg)
-init address =
-    (Model address "" -1 Nothing, Cmd.none)
+init : Effects Model (Cmd Msg)
+init =
+    Effects.return {
+        handle = "",
+        playerId = -1,
+        error = Nothing
+    }
 
 -- Update
 
@@ -29,27 +40,30 @@ type Msg =
     UpdateHandle String |
     OnJoinResponse Response
 
-update : Msg -> Model -> (Model, Cmd Msg)
+update : Msg -> Model -> Effects Model Effect
 update msg model =
     case msg of
 
         UpdateHandle handle ->
-            ({model | handle = handle}, Cmd.none)
+            Effect.return {model | handle = handle}
 
         JoinGame ->
+            -- TODO check handle length
+
             let
                 joinCommandJson = initJoinCommand model.handle
                     |> encodeJoinCommand
                     |> encode 0
             in
-                (model, WebSocket.send model.address joinCommandJson)
+                Effects.init model [WsSendMessage joinCommandJson]
 
         OnJoinResponse response ->
             case response of
                 ResponseErr responseError ->
-                    ({model | error = Just responseError.error}, Cmd.none)
+                    Effects.return {model | error = Just responseError.error}
                 JoinResp joinResponse ->
-                    ({model | playerId = joinResponse.playerId}, Cmd.none)
+                    Effects.init {model | playerId = joinResponse.playerId}
+                        [UpdateGameState Pending]
 
 -- View
 

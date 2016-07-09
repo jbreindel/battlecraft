@@ -1,0 +1,3 @@
+module Message exposing (..)
+
+-- TODO parse ws messages...
