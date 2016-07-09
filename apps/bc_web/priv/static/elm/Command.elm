@@ -23,44 +23,44 @@ encodeJoinCommand joinCmd =
 
 -- Response types
 
-type alias ErrorResponse = {
+type alias JoinErrorResponse = {
     responseType : String,
     error : String
 }
 
-errorResponse : Json.Decode.Decoder ResponseError
-errorResponse =
-    object2 ErrorResponse
+joinErrorResponse : Json.Decode.Decoder JoinErrorResponse
+joinErrorResponse =
+    object2 JoinErrorResponse
         ("response_type" := Json.Decode.string)
         ("error" := Json.Decode.string)
 
-type alias JoinResponse = {
+type alias JoinSuccessResponse = {
     responseType : String,
     playerId : Int
 }
 
-joinResponse : Json.Decode.Decoder JoinResponse
-joinResponse =
-    object2 JoinResponse
+joinSuccessResponse : Json.Decode.Decoder JoinSuccessResponse
+joinSuccessResponse =
+    object2 JoinSuccessResponse
         ("response_type" := Json.Decode.string)
         ("player_id" := Json.Decode.int)
 
 -- Aggregate types
 
-type Response =
-    ErrorResp ErrorResponse |
-    JoinResp JoinResponse
+type JoinResponse =
+    JoinErr JoinErrorResponse |
+    JoinSucc JoinSuccessResponse
 
-responseInfo : String -> Decoder Response
-responseInfo responseType =
+joinResponseInfo : String -> Decoder JoinResponse
+joinResponseInfo responseType =
     case responseType of
         "join_response" ->
-            object1 JoinResp joinResponse
+            object1 JoinSucc joinSuccessResponse
         "join_error" ->
-            object1 JoinError errorResponse
+            object1 JoinErr joinErrorResponse
         _ ->
-            object1 JoinError errorResponse
+            object1 JoinErr joinErrorResponse
 
-response : Decoder Response
-response =
-    at ["command_response", "response_type"] string `andThen` responseInfo
+joinResponse : Decoder JoinResponse
+joinResponse =
+    at ["command_response", "response_type"] Json.Decode.string `andThen` joinResponseInfo

@@ -11,7 +11,8 @@ import Effects exposing (Effects)
 -- Local imports
 
 import Join
-import GameState exposing(GameState)
+import GameState exposing (GameState)
+import Message exposing (..)
 
 -- Action
 
@@ -36,11 +37,10 @@ type alias Model = {
 init : Flags -> Effects Model (Cmd Msg)
 init flags =
     let
-        (joinModel, joinEffects) = Join.init flags.address
+        (joinModel, joinEffects) = Join.init
     in
-        -- (Model Joining flags.address joinModel, Cmd.none)
         Effects.return {
-            state = Joining,
+            state = GameState.Joining,
             address = flags.address,
             joinModel = joinModel
         } `Effects.andThen` Effects.handle handleJoinEffect joinEffects
@@ -63,13 +63,24 @@ update msg model =
                     `Effects.andThen` Effects.handle handleJoinEffect joinEffects
 
         WsReceiveMessage str ->
-            
-
-            Effects.return model
+            case decodeString message str of
+                Ok message ->
+                    onWsReceiveMessage message model
+                Err reason ->
+                    -- TODO handle error
+                    Effects.return model
 
         WsSendMessage str ->
-            Effects.init model [Websocket.send model.address str]
+            Effects.init model [WebSocket.send model.address str]
 
+onWsReceiveMessage : Message -> Model -> Effects Model (Cmd Msg)
+onWsReceiveMessage message model =
+    case message of
+        JoinResp joinResp ->
+            update (JoinMsg (Join.OnJoinResponse joinResp)) model
+        GameEv gameEv ->
+            -- TODO handle game event
+            Effects.return model
 
 handleJoinEffect : Effects.Handler Join.Effect Model (Cmd Msg)
 handleJoinEffect effect model =
@@ -77,14 +88,14 @@ handleJoinEffect effect model =
         Join.UpdateGameState state ->
             update (UpdateGameState state) model
 
-        Join.SendWsMessage str ->
-            update (SendWsMessage str) model
+        Join.WsSendMessage str ->
+            update (WsSendMessage str) model
 
 -- Subscriptions
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    WebSocket.listen model.address WsMessage
+    WebSocket.listen model.address WsReceiveMessage
 
 -- View
 
@@ -94,14 +105,14 @@ view model =
         body =
             case model.state of
 
-                Joining ->
+                GameState.Joining ->
                     App.map JoinMsg <| Join.view model.joinModel
 
-                Pending ->
+                GameState.Pending ->
                     -- TODO create pending view
                     div [] []
 
-                Started ->
+                GameState.Started ->
                     -- TODO create map view
                     div [] []
 
@@ -115,7 +126,11 @@ view model =
 main : Program Flags
 main =
     App.programWithFlags {
-        init = init |> Effects.toCmd
+        init = \flags ->
+                    let
+                        (model, effects) = init flags
+                    in
+                        (model, effects) |> Effects.toCmd,
         view = view,
         update = \msg model -> update msg model |> Effects.toCmd,
         subscriptions = subscriptions

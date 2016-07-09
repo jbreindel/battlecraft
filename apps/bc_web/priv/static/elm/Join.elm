@@ -1,4 +1,4 @@
-module Join exposing (..)
+module Join exposing (Effect(..), Model, init, Msg(..), update, view)
 
 import Html exposing (..)
 import Html.App as App
@@ -25,7 +25,7 @@ type alias Model = {
     error : Maybe String
 }
 
-init : Effects Model (Cmd Msg)
+init : Effects Model Effect
 init =
     Effects.return {
         handle = "",
@@ -38,14 +38,14 @@ init =
 type Msg =
     JoinGame |
     UpdateHandle String |
-    OnJoinResponse Response
+    OnJoinResponse JoinResponse
 
 update : Msg -> Model -> Effects Model Effect
 update msg model =
     case msg of
 
         UpdateHandle handle ->
-            Effect.return {model | handle = handle}
+            Effects.return {model | handle = handle}
 
         JoinGame ->
             -- TODO check handle length
@@ -57,12 +57,12 @@ update msg model =
             in
                 Effects.init model [WsSendMessage joinCommandJson]
 
-        OnJoinResponse response ->
-            case response of
-                ResponseErr responseError ->
-                    Effects.return {model | error = Just responseError.error}
-                JoinResp joinResponse ->
-                    Effects.init {model | playerId = joinResponse.playerId}
+        OnJoinResponse joinResponse ->
+            case joinResponse of
+                JoinErr joinErrorResp ->
+                    Effects.return {model | error = Just joinErrorResp.error}
+                JoinSucc joinSuccResp ->
+                    Effects.init {model | playerId = joinSuccResp.playerId}
                         [UpdateGameState Pending]
 
 -- View
