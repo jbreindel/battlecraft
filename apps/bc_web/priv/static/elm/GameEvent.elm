@@ -72,20 +72,3 @@ gameEventInfo eventType =
 gameEvent : Decoder GameEvent
 gameEvent =
     at ["game_event", "event_type"] string `andThen` gameEventInfo
-
-{--
-
-type Message =
-    GameEvent
-
-messageInfo : String -> Decoder Message
-messageInfo messageType =
-    case messageType of
-        "game_event" ->
-            gameEvent
-
-message : Decoder Message
-message =
-    ("type" := string) `andThen` messageInfo
-
---}
