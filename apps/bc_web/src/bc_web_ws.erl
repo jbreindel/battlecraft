@@ -38,13 +38,15 @@ websocket_handle({text, Json} = Frame, Req, #state{game_id = GameId} = State) ->
 			Handle = maps:get(<<"handle">>, CommandMap),
 			case join_game(GameId, Handle) of
 				{ok, PlayerId, BcPlayerServ} ->
-					ReplyMap = #{response_type => join_response,
-								 player_id => PlayerId},
+					ReplyMap = #{type => command_response,
+								 command_response => #{response_type => join_response,
+													   player_id => PlayerId}},
 					ReplyJson = jsx:encode(ReplyMap),
 					{reply, {text, ReplyJson}, Req, State#state{player_id = PlayerId}};
 				{error, Reason} = Error ->
-					ErrorMap = #{response_type => response_error,
-								 error => Reason},
+					ErrorMap = #{type => command_response,
+								 command_response => #{response_type => join_error, 
+													   error => Reason}},
 					ReplyJson = jsx:encode(ErrorMap),
 					{reply, {text, ReplyJson}, Req, State}
 			end;
