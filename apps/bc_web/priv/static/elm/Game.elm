@@ -67,8 +67,9 @@ update msg model =
                 Ok message ->
                     onWsReceiveMessage message model
                 Err reason ->
+                    Debug.crash reason
                     -- TODO handle error
-                    Effects.return model
+                    -- Effects.return model
 
         WsSendMessage str ->
             Effects.init model [WebSocket.send model.address str]
@@ -110,7 +111,9 @@ view model =
 
                 GameState.Pending ->
                     -- TODO create pending view
-                    div [] []
+                    div [] [
+                        text "Waiting for others to join..."
+                    ]
 
                 GameState.Started ->
                     -- TODO create map view

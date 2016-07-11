@@ -30,7 +30,7 @@ type alias JoinErrorResponse = {
 
 joinErrorResponse : Json.Decode.Decoder JoinErrorResponse
 joinErrorResponse =
-    object2 JoinErrorResponse
+    at ["command_response"] <| object2 JoinErrorResponse
         ("response_type" := Json.Decode.string)
         ("error" := Json.Decode.string)
 
@@ -41,7 +41,7 @@ type alias JoinSuccessResponse = {
 
 joinSuccessResponse : Json.Decode.Decoder JoinSuccessResponse
 joinSuccessResponse =
-    object2 JoinSuccessResponse
+    at ["command_response"] <| object2 JoinSuccessResponse
         ("response_type" := Json.Decode.string)
         ("player_id" := Json.Decode.int)
 
@@ -63,4 +63,5 @@ joinResponseInfo responseType =
 
 joinResponse : Decoder JoinResponse
 joinResponse =
-    at ["command_response", "response_type"] Json.Decode.string `andThen` joinResponseInfo
+    at ["command_response", "response_type"] Json.Decode.string
+        `andThen` joinResponseInfo

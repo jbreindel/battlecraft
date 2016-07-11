@@ -26,7 +26,7 @@ type alias PlayerEvent = {
 
 playerEvent : Decoder PlayerEvent
 playerEvent =
-    object2 PlayerEvent
+    at ["game_event"] <| object2 PlayerEvent
         ("event_type" := string)
         ("player" := player)
 
@@ -37,7 +37,7 @@ type alias GameStartedEvent = {
 
 gameStartedEvent : Decoder GameStartedEvent
 gameStartedEvent =
-    object2 GameStartedEvent
+    at ["game_event"] <| object2 GameStartedEvent
         ("event_type" := string)
         ("players" := list player)
 
@@ -48,7 +48,7 @@ type alias GameErrorEvent = {
 
 gameErrorEvent : Decoder GameErrorEvent
 gameErrorEvent =
-    object2 GameErrorEvent
+    at ["game_event"] <| object2 GameErrorEvent
         ("event_type" := string)
         ("reason" := string)
 
