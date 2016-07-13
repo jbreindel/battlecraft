@@ -136,5 +136,5 @@ tmxMap =
         |: ("tilesets" := list tmxTileSet)
 
 type alias Model = {
-    map : TmxMap
+    map : Maybe TmxMap
 }
