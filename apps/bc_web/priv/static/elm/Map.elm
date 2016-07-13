@@ -71,6 +71,22 @@ tmxObjectLayer =
         |: ("x" := int)
         |: ("y" := int)
 
+type TmxLayer =
+    TmxTlLayer TmxTileLayer |
+    TmxObjLayer TmxObjectLayer
+
+tmxLayerInfo : String -> Decoder TmxLayer
+tmxLayerInfo layerType =
+    case layerType of
+        "tilelayer" ->
+            object1 TmxTlLayer tmxTileLayer
+        "objectgroup" ->
+            object1 TmxObjLayer tmxObjectLayer
+
+tmxLayer : Decoder TmxLayer
+tmxLayer =
+    at ["type"] tmxLayerInfo
+
 type alias TmxTileSet = {
     name : String,
     firstGid : Int,
@@ -105,8 +121,7 @@ type alias TmxMap = {
     width : Int,
     tileHeight : Int,
     tileWidth : Int,
-    tileLayers : List TmxTileLayer,
-    objectLayers : List TmxObjectLayer,
+    layers : List TmxLayer,
     tileSets : List TmxTileSet
 }
 
@@ -117,9 +132,7 @@ tmxMap =
         |: ("width" := int)
         |: ("tileheight" := int)
         |: ("tilewidth" := int)
-        -- FIXME parse lists correctly
-        |: ("layers" := list tmxTileLayer)
-        |: ("layers" := list tmxTileLayer)
+        |: ("layers" := list tmxLayer)
         |: ("tilesets" := list tmxTileSet)
 
 type alias Model = {
