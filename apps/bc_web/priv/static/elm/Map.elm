@@ -3,6 +3,7 @@ module Map exposing (..)
 import Json.Decode exposing (..)
 import Json.Decode.Extra exposing (..)
 import Effects exposing (Effects)
+import Http
 
 -- Actions
 
@@ -11,8 +12,8 @@ type Effect =
     NoOp
 
 type Msg = 
-    MapRetrieveSuccess TmxMap |
-    MapRetrieveFail String
+    MapGetSuccess TmxMap |
+    MapGetFail String
 
 -- Model
 
@@ -148,3 +149,13 @@ tmxMap =
 type alias Model = {
     map : Maybe TmxMap
 }
+
+getMap : Task Error TmxMap
+getMap =
+    Http.get tmxMap "/static/map.json"
+
+init : Effects Model Effect
+init =
+    Effects.init {
+        map = Nothing
+    } [PerformTask MapGetSuccess MapGetFail getMap]
