@@ -13,11 +13,18 @@ import Effects exposing (Effects)
 import Command exposing (..)
 import GameState exposing (..)
 
--- Model
+-- Actions
 
 type Effect =
     UpdateGameState GameState |
     WsSendMessage String
+
+type Msg =
+    JoinGame |
+    UpdateHandle String |
+    OnJoinResponse JoinResponse
+
+-- Model
 
 type alias Model = {
     handle : String,
@@ -34,11 +41,6 @@ init =
     }
 
 -- Update
-
-type Msg =
-    JoinGame |
-    UpdateHandle String |
-    OnJoinResponse JoinResponse
 
 update : Msg -> Model -> Effects Model Effect
 update msg model =
