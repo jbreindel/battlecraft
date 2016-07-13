@@ -1,4 +1,4 @@
-module Join exposing (Effect(..), Model, init, Msg(..), update, view)
+module Join exposing (Effect(..), Msg(..), Model, init, update, view)
 
 import Html exposing (..)
 import Html.App as App
