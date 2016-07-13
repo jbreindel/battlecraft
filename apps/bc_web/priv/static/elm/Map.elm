@@ -4,6 +4,16 @@ import Json.Decode exposing (..)
 import Json.Decode.Extra exposing (..)
 import Effects exposing (Effects)
 
+-- Actions
+
+type Effect =
+    PerformTask Msg Msg Task |
+    NoOp
+
+type Msg = 
+    MapRetrieveSuccess TmxMap |
+    MapRetrieveFail String
+
 -- Model
 
 type alias TmxTileLayer = {
