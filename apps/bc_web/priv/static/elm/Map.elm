@@ -1,19 +1,20 @@
-module Map exposing (..)
+module Map exposing (Effect(..), Msg(..), Model, init, update, view)
 
 import Json.Decode exposing (..)
 import Json.Decode.Extra exposing (..)
 import Effects exposing (Effects)
+import Task exposing (Task)
 import Http
 
 -- Actions
 
 type Effect =
-    PerformTask Msg Msg Task |
+    PerformTask (TmxMap -> Msg) (Http.Error -> Msg) (Task Http.Error TmxMap) |
     NoOp
 
-type Msg = 
+type Msg =
     MapGetSuccess TmxMap |
-    MapGetFail String
+    MapGetFail Http.Error
 
 -- Model
 
@@ -93,10 +94,12 @@ tmxLayerInfo layerType =
             object1 TmxTlLayer tmxTileLayer
         "objectgroup" ->
             object1 TmxObjLayer tmxObjectLayer
+        lyrType ->
+            Debug.crash lyrType
 
 tmxLayer : Decoder TmxLayer
 tmxLayer =
-    at ["type"] tmxLayerInfo
+    at ["type"] string `andThen` tmxLayerInfo
 
 type alias TmxTileSet = {
     name : String,
@@ -150,7 +153,7 @@ type alias Model = {
     map : Maybe TmxMap
 }
 
-getMap : Task Error TmxMap
+getMap : Task Http.Error TmxMap
 getMap =
     Http.get tmxMap "/static/map.json"
 
@@ -159,3 +162,20 @@ init =
     Effects.init {
         map = Nothing
     } [PerformTask MapGetSuccess MapGetFail getMap]
+
+-- Update
+
+update : Msg -> Model -> Effects Model Effect
+update msg model =
+    case msg of
+        MapGetSuccess tmxMap ->
+            Effects.return {model | map = Just tmxMap}
+
+        MapGetFail httpError ->
+            Debug.crash httpError
+
+-- View
+
+view : Msg -> Http.Msg
+view =
+    div [] []
