@@ -177,6 +177,14 @@ update msg model =
 
 -- View
 
-view : Msg -> Http.Msg
-view =
-    div [] []
+view : Model -> Html Msg
+view model =
+    case model.map of
+    
+        Just map ->
+            -- TODO populate collage
+            div [] []
+            
+        Nothing ->
+            -- TODO maybe loading screen
+            div [] []
