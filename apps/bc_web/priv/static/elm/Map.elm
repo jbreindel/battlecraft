@@ -1,5 +1,6 @@
 module Map exposing (Effect(..), Msg(..), Model, init, update, view)
 
+import Html exposing (..)
 import Json.Decode exposing (..)
 import Json.Decode.Extra exposing (..)
 import Effects exposing (Effects)
@@ -9,7 +10,7 @@ import Http
 -- Actions
 
 type Effect =
-    PerformTask (TmxMap -> Msg) (Http.Error -> Msg) (Task Http.Error TmxMap) |
+    Cmd Msg |
     NoOp
 
 type Msg =
@@ -161,7 +162,7 @@ init : Effects Model Effect
 init =
     Effects.init {
         map = Nothing
-    } [PerformTask MapGetSuccess MapGetFail getMap]
+    } [Task.perform MapGetSuccess MapGetFail getMap]
 
 -- Update
 

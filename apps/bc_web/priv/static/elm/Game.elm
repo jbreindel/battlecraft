@@ -5,12 +5,14 @@ import Html.App as App
 import Html.Attributes exposing (..)
 import Html.Events exposing (onInput, onClick)
 import Json.Decode exposing (..)
+import Task exposing (Task)
 import WebSocket
 import Effects exposing (Effects)
 
 -- Local imports
 
 import Join
+import Map
 import GameState exposing (GameState)
 import Message exposing (..)
 
@@ -19,6 +21,8 @@ import Message exposing (..)
 type Msg =
     UpdateGameState GameState |
     JoinMsg Join.Msg |
+    MapMsg Map.Msg |
+    PerformCmd (Cmd Msg) |
     WsReceiveMessage String |
     WsSendMessage String
 
@@ -31,19 +35,23 @@ type alias Flags = {
 type alias Model = {
     state : GameState,
     address: String,
-    joinModel : Join.Model
+    joinModel : Join.Model,
+    mapModel : Map.Model
 }
 
 init : Flags -> Effects Model (Cmd Msg)
 init flags =
     let
         (joinModel, joinEffects) = Join.init
+
+        (mapModel, mapEffects) = Map.init
     in
         Effects.return {
             state = GameState.Joining,
             address = flags.address,
             joinModel = joinModel
         } `Effects.andThen` Effects.handle handleJoinEffect joinEffects
+            `Effects.andThen` Effects.handle handleMapEffects mapEffects
 
 -- Update
 
@@ -62,6 +70,17 @@ update msg model =
                 Effects.return {model | joinModel = updateJoinModel}
                     `Effects.andThen` Effects.handle handleJoinEffect joinEffects
 
+        MapMsg sub ->
+            let
+                (updateMapModel, mapEffects) =
+                    Map.update sub model.mapModel
+            in
+                Effects.return {model | mapModel = updateMapModel}
+                    `Effects.andThen` Effects.handle handleMapEffect mapEffects
+
+        PerformCmd Cmd msg ->
+            Effects.init model [msg]
+
         WsReceiveMessage str ->
             case decodeString message str of
                 Ok message ->
@@ -77,8 +96,10 @@ update msg model =
 onWsReceiveMessage : Message -> Model -> Effects Model (Cmd Msg)
 onWsReceiveMessage message model =
     case message of
+
         JoinResp joinResp ->
             update (JoinMsg (Join.OnJoinResponse joinResp)) model
+
         GameEv gameEv ->
             -- TODO handle game event
             Effects.return model
@@ -86,11 +107,22 @@ onWsReceiveMessage message model =
 handleJoinEffect : Effects.Handler Join.Effect Model (Cmd Msg)
 handleJoinEffect effect model =
     case effect of
+
         Join.UpdateGameState state ->
             update (UpdateGameState state) model
 
         Join.WsSendMessage str ->
             update (WsSendMessage str) model
+
+handleMapEffect : Effects.Handler Map.Effect Model (Cmd Msg)
+handleMapEffect effect model =
+    case effect of
+
+        Map.Cmd msg ->
+            update (PerformCmd (Cmd msg)) model
+
+        NoOp ->
+            Effects.ignoreUnused
 
 -- Subscriptions
 
