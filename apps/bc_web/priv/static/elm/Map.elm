@@ -91,10 +91,13 @@ type TmxLayer =
 tmxLayerInfo : String -> Decoder TmxLayer
 tmxLayerInfo layerType =
     case layerType of
+    
         "tilelayer" ->
             object1 TmxTlLayer tmxTileLayer
+            
         "objectgroup" ->
             object1 TmxObjLayer tmxObjectLayer
+            
         lyrType ->
             Debug.crash lyrType
 
@@ -169,6 +172,7 @@ init =
 update : Msg -> Model -> Effects Model Effect
 update msg model =
     case msg of
+    
         MapGetSuccess tmxMap ->
             Effects.return {model | map = Just tmxMap}
 
