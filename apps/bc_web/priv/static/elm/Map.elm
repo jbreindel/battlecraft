@@ -158,7 +158,8 @@ tmxMap =
 type alias Model = {
     map : Maybe TmxMap,
     x : Int,
-    y : Int
+    y : Int,
+    zoom : Float
 }
 
 getMap : Task Http.Error TmxMap
@@ -194,7 +195,7 @@ createMap model =
         backgroundImageForm =
             Element.fittedImage 3200 3200 "/static/map.png"
                 |> Collage.toForm
-                |> Collage.scale model.scale
+                |> Collage.scale model.zoom
     in
         Collage.collage 960 700 [backgroundImageForm]
 
@@ -203,7 +204,7 @@ view model =
     case model.map of
 
         Just map ->
-            createMap model |> Collage.toHtml
+            createMap model |> Element.toHtml
 
         Nothing ->
             -- TODO maybe loading screen
