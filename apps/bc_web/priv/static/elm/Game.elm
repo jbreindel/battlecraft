@@ -8,6 +8,7 @@ import Json.Decode exposing (..)
 import Task exposing (Task)
 import WebSocket
 import Effects exposing (Effects)
+import Keyboard.Extra as Keyboard
 
 -- Local imports
 
@@ -20,6 +21,7 @@ import Message exposing (..)
 
 type Msg =
     UpdateGameState GameState |
+    KeyboardMsg Keyboard.Msg |
     JoinMsg Join.Msg |
     MapMsg Map.Msg |
     PerformCmd (Cmd Msg) |
@@ -35,6 +37,7 @@ type alias Flags = {
 type alias Model = {
     state : GameState,
     address: String,
+    keyboardModel : Keyboard.Model,
     joinModel : Join.Model,
     mapModel : Map.Model
 }
@@ -45,13 +48,18 @@ init flags =
         (joinModel, joinEffects) = Join.init
 
         (mapModel, mapEffects) = Map.init
+
+        (keyboardModel, keyboardCmd) = Keyboard.init
     in
-        Effects.return {
-            state = GameState.Joining,
+        Effects.init {
+            state = GameState.Pending,
             address = flags.address,
+            keyboardModel = keyboardModel,
             joinModel = joinModel,
             mapModel = mapModel
-        } `Effects.andThen` Effects.handle handleJoinEffect joinEffects
+        }
+        [Cmd.map KeyboardMsg keyboardCmd]
+        `Effects.andThen` Effects.handle handleJoinEffect joinEffects
             `Effects.andThen` Effects.handle handleMapEffect mapEffects
 
 -- Update
@@ -62,6 +70,18 @@ update msg model =
 
         UpdateGameState state ->
             Effects.return {model | state = state}
+
+        KeyboardMsg keyMsg ->
+            let
+                (keyboardModel, keyboardCmd) =
+                    Keyboard.update keyMsg model.keyboardModel
+
+                (updateMapModel, mapEffects) =
+                    Map.update (Map.KeyboardMsg model.keyboardModel) model.mapModel
+            in
+                Effects.init {model | keyboardModel = keyboardModel}
+                    [Cmd.map KeyboardMsg keyboardCmd]
+                    `Effects.andThen` Effects.handle handleMapEffect mapEffects
 
         JoinMsg sub ->
             let
@@ -132,7 +152,10 @@ handleMapEffect effect model =
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    WebSocket.listen model.address WsReceiveMessage
+    Sub.batch [
+        WebSocket.listen model.address WsReceiveMessage,
+        Sub.map KeyboardMsg Keyboard.subscriptions
+    ]
 
 -- View
 

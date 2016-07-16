@@ -7,6 +7,7 @@ import Json.Decode exposing (..)
 import Json.Decode.Extra exposing (..)
 import Effects exposing (Effects)
 import Task exposing (Task)
+import Keyboard.Extra as Keyboard
 import Http
 
 -- Actions
@@ -17,7 +18,8 @@ type Effect =
 
 type Msg =
     MapGetSuccess TmxMap |
-    MapGetFail Http.Error
+    MapGetFail Http.Error |
+    KeyboardMsg Keyboard.Model
 
 -- Model
 
@@ -157,6 +159,7 @@ tmxMap =
 
 type alias Model = {
     map : Maybe TmxMap,
+    step : Int,
     x : Int,
     y : Int,
     zoom : Float
@@ -170,6 +173,7 @@ init : Effects Model Effect
 init =
     Effects.init {
         map = Nothing,
+        step = 100,
         x = 0,
         y = 0,
         zoom = 0.65
@@ -187,17 +191,66 @@ update msg model =
         MapGetFail httpError ->
             Debug.crash "Http request failed!"
 
+        KeyboardMsg keyboardModel ->
+            let
+                direction = Keyboard.arrowsDirection keyboardModel
+            in
+                Effects.return <| updatePos model direction
+
+updatePos : Model -> Keyboard.Direction -> Model
+updatePos model direction =
+    case direction of
+
+        Keyboard.North ->
+            {model | y = model.y + model.step}
+
+        Keyboard.NorthEast ->
+            {model |
+                x = model.x + model.step,
+                y = model.y + model.step}
+
+        Keyboard.East ->
+            {model | x = model.x + model.step}
+
+        Keyboard.SouthEast ->
+            {model |
+                x = model.x + model.step,
+                y = model.y - model.step}
+
+        Keyboard.South ->
+            {model | y = model.y - model.step}
+
+        Keyboard.SouthWest ->
+            {model |
+                x = model.x - model.step,
+                y = model.y - model.step}
+
+        Keyboard.West ->
+            {model | x = model.x - model.step}
+
+        Keyboard.NorthWest ->
+            {model |
+                x = model.x - model.step,
+                y = model.y + model.step}
+
+        Keyboard.NoDirection ->
+            model
+
 -- View
+
+backgroundImageForm : Model -> Collage.Form
+backgroundImageForm model =
+    Element.fittedImage 3200 3200 "/static/map.png"
+        |> Collage.toForm
+        |> Collage.scale model.zoom
+        |> Collage.move (toFloat model.x, toFloat model.y)
 
 createMap : Model -> Element
 createMap model =
     let
-        backgroundImageForm =
-            Element.fittedImage 3200 3200 "/static/map.png"
-                |> Collage.toForm
-                |> Collage.scale model.zoom
+        backgroundForm = backgroundImageForm model
     in
-        Collage.collage 960 700 [backgroundImageForm]
+        Collage.collage 960 700 [backgroundForm]
 
 view : Model -> Html Msg
 view model =
