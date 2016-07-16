@@ -165,7 +165,7 @@ init : Effects Model Effect
 init =
     Effects.init {
         map = Nothing
-    } [PerformCmd <| Task.perform MapGetSuccess MapGetFail getMap]
+    } [PerformCmd <| Task.perform MapGetFail MapGetSuccess getMap]
 
 -- Update
 
@@ -177,7 +177,7 @@ update msg model =
             Effects.return {model | map = Just tmxMap}
 
         MapGetFail httpError ->
-            Debug.crash httpError
+            Debug.crash "Http request failed!"
 
 -- View
 

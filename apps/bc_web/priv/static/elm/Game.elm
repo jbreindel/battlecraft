@@ -49,9 +49,10 @@ init flags =
         Effects.return {
             state = GameState.Joining,
             address = flags.address,
-            joinModel = joinModel
+            joinModel = joinModel,
+            mapModel = mapModel
         } `Effects.andThen` Effects.handle handleJoinEffect joinEffects
-            `Effects.andThen` Effects.handle handleMapEffects mapEffects
+            `Effects.andThen` Effects.handle handleMapEffect mapEffects
 
 -- Update
 
@@ -78,8 +79,8 @@ update msg model =
                 Effects.return {model | mapModel = updateMapModel}
                     `Effects.andThen` Effects.handle handleMapEffect mapEffects
 
-        PerformCmd Cmd msg ->
-            Effects.init model [msg]
+        PerformCmd cmd ->
+            Effects.init model [cmd]
 
         WsReceiveMessage str ->
             case decodeString message str of
@@ -118,11 +119,14 @@ handleMapEffect : Effects.Handler Map.Effect Model (Cmd Msg)
 handleMapEffect effect model =
     case effect of
 
-        Map.PerformCmd (Cmd msg) ->
-            update (PerformCmd (Cmd msg)) model
+        Map.PerformCmd mapCmdMsg ->
+            let
+                cmdMsg = Cmd.map MapMsg mapCmdMsg
+            in
+                update (PerformCmd cmdMsg) model
 
         Map.NoOp ->
-            Effects.ignoreUnused
+            Effects.return model
 
 -- Subscriptions
 
