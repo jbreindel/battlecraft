@@ -10,7 +10,7 @@ import Http
 -- Actions
 
 type Effect =
-    Cmd Msg |
+    PerformCmd (Cmd Msg) |
     NoOp
 
 type Msg =
@@ -91,13 +91,13 @@ type TmxLayer =
 tmxLayerInfo : String -> Decoder TmxLayer
 tmxLayerInfo layerType =
     case layerType of
-    
+
         "tilelayer" ->
             object1 TmxTlLayer tmxTileLayer
-            
+
         "objectgroup" ->
             object1 TmxObjLayer tmxObjectLayer
-            
+
         lyrType ->
             Debug.crash lyrType
 
@@ -165,14 +165,14 @@ init : Effects Model Effect
 init =
     Effects.init {
         map = Nothing
-    } [Task.perform MapGetSuccess MapGetFail getMap]
+    } [PerformCmd <| Task.perform MapGetSuccess MapGetFail getMap]
 
 -- Update
 
 update : Msg -> Model -> Effects Model Effect
 update msg model =
     case msg of
-    
+
         MapGetSuccess tmxMap ->
             Effects.return {model | map = Just tmxMap}
 
@@ -184,11 +184,11 @@ update msg model =
 view : Model -> Html Msg
 view model =
     case model.map of
-    
+
         Just map ->
             -- TODO populate collage
             div [] []
-            
+
         Nothing ->
             -- TODO maybe loading screen
             div [] []

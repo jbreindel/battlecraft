@@ -118,10 +118,10 @@ handleMapEffect : Effects.Handler Map.Effect Model (Cmd Msg)
 handleMapEffect effect model =
     case effect of
 
-        Map.Cmd msg ->
+        Map.PerformCmd (Cmd msg) ->
             update (PerformCmd (Cmd msg)) model
 
-        NoOp ->
+        Map.NoOp ->
             Effects.ignoreUnused
 
 -- Subscriptions
