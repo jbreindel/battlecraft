@@ -1,6 +1,8 @@
 module Map exposing (Effect(..), Msg(..), Model, init, update, view)
 
 import Html exposing (..)
+import Element exposing (..)
+import Collage exposing (..)
 import Json.Decode exposing (..)
 import Json.Decode.Extra exposing (..)
 import Effects exposing (Effects)
@@ -154,7 +156,9 @@ tmxMap =
         |: ("tilesets" := list tmxTileSet)
 
 type alias Model = {
-    map : Maybe TmxMap
+    map : Maybe TmxMap,
+    x : Int,
+    y : Int
 }
 
 getMap : Task Http.Error TmxMap
@@ -164,7 +168,10 @@ getMap =
 init : Effects Model Effect
 init =
     Effects.init {
-        map = Nothing
+        map = Nothing,
+        x = 0,
+        y = 0,
+        zoom = 0.65
     } [PerformCmd <| Task.perform MapGetFail MapGetSuccess getMap]
 
 -- Update
@@ -181,13 +188,22 @@ update msg model =
 
 -- View
 
+createMap : Model -> Element
+createMap model =
+    let
+        backgroundImageForm =
+            Element.fittedImage 3200 3200 "/static/map.png"
+                |> Collage.toForm
+                |> Collage.scale model.scale
+    in
+        Collage.collage 960 700 [backgroundImageForm]
+
 view : Model -> Html Msg
 view model =
     case model.map of
 
         Just map ->
-            -- TODO populate collage
-            div [] []
+            createMap model |> Collage.toHtml
 
         Nothing ->
             -- TODO maybe loading screen

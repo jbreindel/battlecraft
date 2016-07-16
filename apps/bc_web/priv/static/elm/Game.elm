@@ -146,10 +146,7 @@ view model =
                     App.map JoinMsg <| Join.view model.joinModel
 
                 GameState.Pending ->
-                    -- TODO create pending view
-                    div [] [
-                        text "Waiting for others to join..."
-                    ]
+                    App.map MapMsg <| Map.view model.mapModel
 
                 GameState.Started ->
                     -- TODO create map view
