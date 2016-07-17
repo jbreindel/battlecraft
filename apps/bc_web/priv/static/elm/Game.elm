@@ -73,14 +73,16 @@ update msg model =
 
         KeyboardMsg keyMsg ->
             let
-                (keyboardModel, keyboardCmd) =
+                (updatedKeyboardModel, keyboardCmd) =
                     Keyboard.update keyMsg model.keyboardModel
 
-                (updateMapModel, mapEffects) =
-                    Map.update (Map.KeyboardMsg model.keyboardModel) model.mapModel
+                (updatedMapModel, mapEffects) =
+                    Map.update (Map.KeyboardMsg updatedKeyboardModel) model.mapModel
             in
-                Effects.init {model | keyboardModel = keyboardModel}
-                    [Cmd.map KeyboardMsg keyboardCmd]
+                Effects.init {model |
+                    keyboardModel = updatedKeyboardModel,
+                    mapModel = updatedMapModel
+                } [Cmd.map KeyboardMsg keyboardCmd]
                     `Effects.andThen` Effects.handle handleMapEffect mapEffects
 
         JoinMsg sub ->

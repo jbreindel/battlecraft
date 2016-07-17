@@ -193,45 +193,47 @@ update msg model =
 
         KeyboardMsg keyboardModel ->
             let
-                direction = Keyboard.arrowsDirection keyboardModel
+                direction = Keyboard.wasdDirection keyboardModel
+
+                updatedModel = updatePos model direction
             in
-                Effects.return <| updatePos model direction
+                Effects.return updatedModel
 
 updatePos : Model -> Keyboard.Direction -> Model
 updatePos model direction =
     case direction of
 
         Keyboard.North ->
-            {model | y = model.y + model.step}
+            {model | y = model.y - model.step}
 
         Keyboard.NorthEast ->
             {model |
-                x = model.x + model.step,
-                y = model.y + model.step}
+                x = model.x - model.step,
+                y = model.y - model.step}
 
         Keyboard.East ->
-            {model | x = model.x + model.step}
+            {model | x = model.x - model.step}
 
         Keyboard.SouthEast ->
             {model |
-                x = model.x + model.step,
-                y = model.y - model.step}
+                x = model.x - model.step,
+                y = model.y + model.step}
 
         Keyboard.South ->
-            {model | y = model.y - model.step}
+            {model | y = model.y + model.step}
 
         Keyboard.SouthWest ->
             {model |
-                x = model.x - model.step,
-                y = model.y - model.step}
+                x = model.x + model.step,
+                y = model.y + model.step}
 
         Keyboard.West ->
-            {model | x = model.x - model.step}
+            {model | x = model.x + model.step}
 
         Keyboard.NorthWest ->
             {model |
-                x = model.x - model.step,
-                y = model.y + model.step}
+                x = model.x + model.step,
+                y = model.y - model.step}
 
         Keyboard.NoDirection ->
             model
