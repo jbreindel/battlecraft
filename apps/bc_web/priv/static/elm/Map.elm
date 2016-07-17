@@ -176,7 +176,7 @@ init =
         step = 100,
         x = 0,
         y = 0,
-        zoom = 0.65
+        zoom = 0.5
     } [PerformCmd <| Task.perform MapGetFail MapGetSuccess getMap]
 
 -- Update
