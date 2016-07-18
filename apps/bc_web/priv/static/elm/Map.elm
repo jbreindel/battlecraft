@@ -208,11 +208,11 @@ update msg model =
 updateX : Model -> Float -> Float
 updateX model delta =
     let
-        windowAdj = (toFloat model.windowWidth) / 2.0
-
         mapWidth = (toFloat 3200) * model.zoom
+        
+        windowAdj = mapWidth - (toFloat model.windowWidth)
 
-        maxX = mapWidth - windowAdj
+        maxX = windowAdj / 2
 
         minX = -1.0 * maxX
 
@@ -230,11 +230,11 @@ updateX model delta =
 updateY : Model -> Float -> Float
 updateY model delta =
     let
-        windowAdj = (toFloat model.windowHeight) / 2.0
-
         mapHeight = (toFloat 3200) * model.zoom
+        
+        windowAdj = mapHeight - (toFloat model.windowHeight)
 
-        maxY = mapHeight - windowAdj
+        maxY = windowAdj / 2
 
         minY = -1.0 * maxY
 
