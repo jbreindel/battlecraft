@@ -154,10 +154,25 @@ handleMapEffect effect model =
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    Sub.batch [
-        WebSocket.listen model.address WsReceiveMessage,
-        Sub.map KeyboardMsg Keyboard.subscriptions
-    ]
+    case model.state of
+
+        GameState.Joining ->
+            WebSocket.listen model.address WsReceiveMessage
+
+        GameState.Pending ->
+            Sub.batch [
+                WebSocket.listen model.address WsReceiveMessage,
+                Sub.map KeyboardMsg Keyboard.subscriptions
+            ]
+            
+        GameState.Started ->
+            Sub.batch [
+                WebSocket.listen model.address WsReceiveMessage,
+                Sub.map KeyboardMsg Keyboard.subscriptions
+            ]
+            
+        _ -> 
+            WebSocket.listen model.address WsReceiveMessage
 
 -- View
 
