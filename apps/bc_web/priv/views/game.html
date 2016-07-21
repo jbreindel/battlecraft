@@ -1,12 +1,19 @@
-{% extends "template/template.html" %}
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>{{ title }}</title>
+		<meta name="description" content="{{ description }}">
+		<meta name="viewport" content="width=device-width, height=device-height, initial-scale=1.0, user-scalable=no">
+		<link rel="stylesheet" href="/static/css/app.css">
+	</head>
+	<body>
+        <div id="game" class="is-full-width"></div>
+        <script src="/static/js/join.js"></script>
+        <script>
+            var address = 'ws://localhost:8080/ws/game/{{ game_id }}/';
 
-{% block content %}
-	<div id="game"></div>
-	<script src="/static/js/join.js"></script>
-	<script>
-		var address = 'ws://localhost:8080/ws/game/{{ game_id }}/';
-
-		var node = document.getElementById('game');
-		var app = Elm.Game.embed(node, {address: address});
-	</script>
-{% endblock %}
+            var node = document.getElementById('game');
+            var app = Elm.Game.embed(node, {address: address});
+        </script>
+	</body>
+</html>

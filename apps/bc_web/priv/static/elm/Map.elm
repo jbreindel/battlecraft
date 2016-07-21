@@ -8,6 +8,7 @@ import Json.Decode.Extra exposing (..)
 import Effects exposing (Effects)
 import Task exposing (Task)
 import Keyboard.Extra as Keyboard
+import Window
 import Http
 
 -- Actions
@@ -19,7 +20,8 @@ type Effect =
 type Msg =
     MapGetSuccess TmxMap |
     MapGetFail Http.Error |
-    KeyboardMsg Keyboard.Model
+    KeyboardMsg Keyboard.Model |
+    WindowMsg Window.Size
 
 -- Model
 
@@ -178,9 +180,9 @@ init =
         step = 50.0,
         x = 0.0,
         y = 0.0,
-        zoom = 0.5,
-        windowHeight = 700,
-        windowWidth = 960
+        zoom = 0.6,
+        windowHeight = 800,
+        windowWidth = 550
     } [PerformCmd <| Task.perform MapGetFail MapGetSuccess getMap]
 
 -- Update
@@ -200,16 +202,19 @@ update msg model =
                 direction = Keyboard.wasdDirection keyboardModel
 
                 updatedModel = updatePos model direction
-
-                str = toString (updatedModel.x, updatedModel.y)
             in
                 Effects.return updatedModel
+
+        WindowMsg windowSize ->
+            Effects.return {model |
+                            windowHeight = windowSize.height,
+                            windowWidth = windowSize.width}
 
 updateX : Model -> Float -> Float
 updateX model delta =
     let
         mapWidth = (toFloat 3200) * model.zoom
-        
+
         windowAdj = mapWidth - (toFloat model.windowWidth)
 
         maxX = windowAdj / 2
@@ -231,7 +236,7 @@ updateY : Model -> Float -> Float
 updateY model delta =
     let
         mapHeight = (toFloat 3200) * model.zoom
-        
+
         windowAdj = mapHeight - (toFloat model.windowHeight)
 
         maxY = windowAdj / 2
