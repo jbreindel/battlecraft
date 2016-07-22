@@ -72,9 +72,9 @@ pending({player_join, #{player_pid := PlayerPid,
 													lists:map(fun({_, V}) -> 
 															  	maps:get(player, V) 
 															  end, dict:to_list(UpdatedPlayers))}),
-					{reply, {ok, PlayerId, BcPlayerServ}, started, UpdatedState};
+					{reply, {ok, PlayerId, Team, BcPlayerServ}, started, UpdatedState};
 				{ok, pending} ->
-					{reply, {ok, PlayerId, BcPlayerServ}, pending, UpdatedState};
+					{reply, {ok, PlayerId, Team, BcPlayerServ}, pending, UpdatedState};
 				{error, Reason} = Error ->
 					gen_event:notify(GameEventPid, {game_error, Reason}),
 					gen_event:stop(GameEventPid),
