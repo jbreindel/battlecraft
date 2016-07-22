@@ -1,9 +1,10 @@
 
 -module(bc_player).
 
--export([create/3, 
+-export([create/4, 
 		 id/1, 
-		 handle/1, 
+		 handle/1,
+		 team/1, 
 		 pid/1]).
 
 %%

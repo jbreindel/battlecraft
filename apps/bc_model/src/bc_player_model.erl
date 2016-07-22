@@ -6,7 +6,7 @@
 -export([player_ids/1, 
 		 in_player_ids/1,
 		 game_players/1,
-		 save/2,
+		 save/3,
 		 update_out/2, 
 		 delete/2]).
  
@@ -54,7 +54,8 @@ game_players(GameIds) ->
 	end.
 
 -spec save(GameId :: integer(), 
-		   Handle :: string()) -> {ok, PlayerId :: integer()} | {error, Reason :: string()}.
+		   Handle :: string(),
+		   Team :: integer()) -> {ok, PlayerId :: integer()} | {error, Reason :: string()}.
 save(GameId, Handle, Team) ->
 	Now = erlang:system_time(seconds),
 	PlayerId = bc_model:gen_id(player),
