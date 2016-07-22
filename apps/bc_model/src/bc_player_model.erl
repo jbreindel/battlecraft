@@ -37,11 +37,13 @@ game_players(GameIds) ->
 						{ok, Players} ->
 							UpdatedPlayers = Players ++ [#{id => Player#player.id,
 														  handle => Player#player.handle,
+														  team => Player#player.team,
 														  is_out => Player#player.is_out}],
 							dict:store(GameId, UpdatedPlayers, GpDict);
 						error ->
 							dict:store(GameId, [#{id => Player#player.id,
 												  handle => Player#player.handle,
+												  team => Player#player.team,
 												  is_out => Player#player.is_out}], GpDict)
 					end
 				 end, dict:from_list([{Gid, []} || Gid <- GameIds]), GpQh)	end) of
@@ -53,11 +55,12 @@ game_players(GameIds) ->
 
 -spec save(GameId :: integer(), 
 		   Handle :: string()) -> {ok, PlayerId :: integer()} | {error, Reason :: string()}.
-save(GameId, Handle) ->
+save(GameId, Handle, Team) ->
 	Now = erlang:system_time(seconds),
 	PlayerId = bc_model:gen_id(player),
 	Player = #player{id = PlayerId,
 					 handle = Handle,
+					 team = Team,
 					 is_out = false,
 					 created = Now,
 					 modified = Now},

@@ -8,6 +8,8 @@
 			id,
 			%% username handle
 			handle,
+			%% team that player is on
+			team,
 			%% out status of the game
 			is_out,
 			%% timestamp for created

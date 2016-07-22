@@ -10,6 +10,7 @@
 %% state rec
 -record(state, {input_serv,
 				game,
+				team,
 				players}).
 
 %%====================================================================
@@ -43,24 +44,27 @@ init([GameId, GameEventPid, BcInputSup]) ->
 	}),
 	{ok, pending, #state{input_serv = BcInputServ,
 						 game = BcGame,
+						 team = 1,
 						 players = dict:new()}}.
 
 pending({player_join, #{player_pid := PlayerPid, 
 						handle := Handle}},
 			_From, #state{input_serv = BcInputServ,
 				   		  game = BcGame,
+						  team = Team,
 				   		  players = Players} = State) ->
 	GameId = bc_game:id(BcGame),
-	case bc_player_model:save(GameId, Handle) of
+	case bc_player_model:save(GameId, Handle, Team) of
 		{ok, PlayerId} ->
-			BcPlayer = bc_player:create(PlayerId, Handle, PlayerPid),
+			BcPlayer = bc_player:create(PlayerId, Handle, Team, PlayerPid),
 			GameEventPid = bc_game:event(BcGame),
 			gen_event:notify(GameEventPid, {player_joined, BcPlayer}),
 			gen_event:add_handler(GameEventPid, {bc_game_event, PlayerId},
 								  				{player, BcPlayer}),
 			UpdatedPlayers = dict:store(PlayerId, #{player => BcPlayer,
 										  			monitor => erlang:monitor(process, PlayerPid)}, Players),
-			UpdatedState = State#state{players = UpdatedPlayers},
+			UpdateTeam = toggle_team(Team),
+			UpdatedState = State#state{team = UpdateTeam, players = UpdatedPlayers},
 			{ok, BcPlayerServ} = bc_input_serv:create_player_serv(BcInputServ, BcPlayer),
 			case pending_players_changed(GameId, UpdatedPlayers) of
 				{ok, started} ->
@@ -85,6 +89,7 @@ pending({player_join, #{player_pid := PlayerPid,
 pending({player_quit, PlayerId},
 			#state{input_serv = BcInputServ,
 				   game = BcGame,
+				   team = Team,
 				   players = Players} = State) ->
 	GameId = bc_game:id(BcGame),
 	case bc_player_model:delete(GameId, PlayerId) of
@@ -95,7 +100,7 @@ pending({player_quit, PlayerId},
 			gen_event:notify(GameEventPid, {player_quit, BcPlayer}),
 			erlang:demonitor(Monitor),
 			UpdatedPlayers = dict:erase(PlayerId, Players),
-			UpdatedState = State#state{players = UpdatedPlayers},
+			UpdatedState = State#state{team = toggle_team(Team), players = UpdatedPlayers},
 			case pending_players_changed(GameId, UpdatedPlayers) of
 				{ok, quit} ->
 					gen_event:stop(GameEventPid),
@@ -163,6 +168,12 @@ handle_info({'DOWN', Ref, process, Pid, _},
 %%====================================================================
 %% Internal functions
 %%====================================================================
+
+toggle_team(Team) ->
+	case Team of
+		1 -> 2;
+		2 -> 1
+	end.
 
 pending_players_changed(GameId, Players) ->
 	case dict:size(Players) of
