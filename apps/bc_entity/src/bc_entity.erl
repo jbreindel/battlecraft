@@ -11,7 +11,8 @@
 		 health/1, 
 		 ai_fsm/1, 
 		 damage/1,
-		 to_tuple/1]).
+		 to_tuple/1,
+		 from_tuple/1]).
 
 %%
 %% @doc base entity type for saving and transfering entities.
@@ -89,3 +90,13 @@ to_tuple(BcEntity) ->
 	 entity_type(BcEntity), 
 	 health(BcEntity), 
 	 ai_fsm(BcEntity)}.
+
+-spec from_tuple(tuple()) -> entity().
+from_tuple(
+	{Uuid, 
+	 PlayerId, 
+	 Team, 
+	 EntityType, 
+	 Health, 
+	 AiFsm}) ->
+	create(Uuid, PlayerId, Team, EntityType, Health, AiFsm).
