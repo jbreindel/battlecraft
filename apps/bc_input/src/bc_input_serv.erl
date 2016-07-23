@@ -13,7 +13,8 @@
 %% state rec
 -record(state, {input_sup,
 				game,
-				map_graph}).
+				map,
+				entities}).
 
 %%====================================================================
 %% API functions
@@ -35,15 +36,18 @@ create_player_serv(BcInputServ, BcPlayer) ->
 %%====================================================================
 
 init([BcInputSup, BcGame]) ->
-	MapGraph = bc_map:init(BcInputSup),
+	BcMap = bc_map:init(BcInputSup),
+	BcEntities = bc_entities:init(BcInputSup),
 	{ok, #state{input_sup = BcInputSup,
 		   		game = BcGame,
-				map_graph = MapGraph}}.
+				map = BcMap,
+				entities = BcEntities}}.
 
 handle_call({create_player_serv, BcPlayer}, _From, 
 	#state{input_sup = BcInputSup,
 		   game = BcGame,
-		   map_graph = MapGraph} = State) ->
+		   map = BcMap,
+		   entities = BcEntities} = State) ->
 	PlayerId = bc_player:id(BcPlayer),
 	{ok, BcPlayerSup} = supervisor:start_child(BcInputSup, #{
 		id => PlayerId,
@@ -55,7 +59,7 @@ handle_call({create_player_serv, BcPlayer}, _From,
 	BcGoldFsm = start_gold_fsm(BcPlayerSup, BcGame, BcPlayer),
 	{ok, BcPlayerServ} = supervisor:start_child(BcPlayerSup, #{
 		id => player_serv,
-		start => {bc_player_serv, start_link, [BcPlayerSup, BcGame, BcPlayer, BcGoldFsm, MapGraph]},
+		start => {bc_player_serv, start_link, [BcPlayerSup, BcGame, BcPlayer, BcGoldFsm, BcMap, BcEntities]},
 		modules => [bc_player_serv]
 	}),
 	{reply, {ok, BcPlayerServ}, State}.
