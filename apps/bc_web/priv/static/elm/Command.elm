@@ -36,7 +36,8 @@ joinErrorResponse =
 
 type alias JoinSuccessResponse = {
     responseType : String,
-    playerId : Int
+    playerId : Int,
+    team : Int
 }
 
 joinSuccessResponse : Json.Decode.Decoder JoinSuccessResponse
@@ -44,6 +45,7 @@ joinSuccessResponse =
     at ["command_response"] <| object2 JoinSuccessResponse
         ("response_type" := Json.Decode.string)
         ("player_id" := Json.Decode.int)
+        ("team" := Json.Decode.int)
 
 -- Aggregate types
 

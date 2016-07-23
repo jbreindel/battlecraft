@@ -8,6 +8,7 @@ import Json.Decode.Extra exposing (..)
 import Effects exposing (Effects)
 import Task exposing (Task)
 import Keyboard.Extra as Keyboard
+import Window
 import Http
 
 -- Actions
@@ -19,7 +20,8 @@ type Effect =
 type Msg =
     MapGetSuccess TmxMap |
     MapGetFail Http.Error |
-    KeyboardMsg Keyboard.Model
+    KeyboardMsg Keyboard.Model |
+    WindowMsg Window.Size
 
 -- Model
 
@@ -159,10 +161,12 @@ tmxMap =
 
 type alias Model = {
     map : Maybe TmxMap,
-    step : Int,
-    x : Int,
-    y : Int,
-    zoom : Float
+    step : Float,
+    x : Float,
+    y : Float,
+    zoom : Float,
+    windowHeight : Int,
+    windowWidth : Int
 }
 
 getMap : Task Http.Error TmxMap
@@ -173,10 +177,12 @@ init : Effects Model Effect
 init =
     Effects.init {
         map = Nothing,
-        step = 100,
-        x = 0,
-        y = 0,
-        zoom = 0.5
+        step = 50.0,
+        x = 0.0,
+        y = 0.0,
+        zoom = 0.6,
+        windowHeight = 800,
+        windowWidth = 550
     } [PerformCmd <| Task.perform MapGetFail MapGetSuccess getMap]
 
 -- Update
@@ -199,41 +205,146 @@ update msg model =
             in
                 Effects.return updatedModel
 
+        WindowMsg windowSize ->
+            Effects.return {model |
+                            windowHeight = windowSize.height,
+                            windowWidth = windowSize.width}
+
+updateX : Model -> Float -> Float
+updateX model delta =
+    let
+        mapWidth = (toFloat 3200) * model.zoom
+
+        windowAdj = mapWidth - (toFloat model.windowWidth)
+
+        maxX = windowAdj / 2
+
+        minX = -1.0 * maxX
+
+        deltaX = model.x + delta
+    in
+        if deltaX > maxX then
+            maxX
+
+        else if deltaX < minX then
+            minX
+
+        else
+            deltaX
+
+updateY : Model -> Float -> Float
+updateY model delta =
+    let
+        mapHeight = (toFloat 3200) * model.zoom
+
+        windowAdj = mapHeight - (toFloat model.windowHeight)
+
+        maxY = windowAdj / 2
+
+        minY = -1.0 * maxY
+
+        deltaY = model.y + delta
+    in
+        if deltaY > maxY then
+            maxY
+
+        else if deltaY < minY then
+            minY
+
+        else
+            deltaY
+
 updatePos : Model -> Keyboard.Direction -> Model
 updatePos model direction =
     case direction of
 
         Keyboard.North ->
-            {model | y = model.y - model.step}
+            let
+                stepY = -1 * model.step
+
+                deltaY = updateY model stepY
+            in
+                {model | y = deltaY}
 
         Keyboard.NorthEast ->
-            {model |
-                x = model.x - model.step,
-                y = model.y - model.step}
+            let
+                stepY = -1 * model.step
+
+                stepX = -1 * model.step
+
+                deltaY = updateY model stepY
+
+                deltaX = updateX model stepX
+            in
+                {model |
+                    x = deltaX,
+                    y = deltaY}
 
         Keyboard.East ->
-            {model | x = model.x - model.step}
+            let
+                stepX = -1 * model.step
+
+                deltaX = updateX model stepX
+            in
+                {model | x = deltaX}
 
         Keyboard.SouthEast ->
-            {model |
-                x = model.x - model.step,
-                y = model.y + model.step}
+            let
+                stepX = -1 * model.step
+
+                stepY = model.step
+
+                deltaX = updateX model stepX
+
+                deltaY = updateY model stepY
+            in
+                {model |
+                    x = deltaX,
+                    y = deltaY}
 
         Keyboard.South ->
-            {model | y = model.y + model.step}
+            let
+                stepY = model.step
+
+                deltaY = updateY model stepY
+            in
+                {model | y = deltaY}
 
         Keyboard.SouthWest ->
-            {model |
-                x = model.x + model.step,
-                y = model.y + model.step}
+            let
+                stepX = model.step
+
+                stepY = model.step
+
+                deltaX = updateX model stepX
+
+                deltaY = updateY model stepY
+            in
+                {model |
+                    x = deltaX,
+                    y = deltaY}
 
         Keyboard.West ->
-            {model | x = model.x + model.step}
+            let
+                stepX = model.step
+
+                deltaX = updateX model stepX
+            in
+                {model | x = deltaX}
 
         Keyboard.NorthWest ->
-            {model |
-                x = model.x + model.step,
-                y = model.y - model.step}
+            let
+                stepX = model.step
+
+                stepY = -1 * model.step
+
+                deltaX = updateX model stepX
+
+                deltaY = updateY model stepY
+            in
+                {model |
+                    x = deltaX,
+                    y = deltaY}
 
         Keyboard.NoDirection ->
             model
@@ -245,14 +356,14 @@ backgroundImageForm model =
     Element.fittedImage 3200 3200 "/static/map.png"
         |> Collage.toForm
         |> Collage.scale model.zoom
-        |> Collage.move (toFloat model.x, toFloat model.y)
+        |> Collage.move (model.x, model.y)
 
 createMap : Model -> Element
 createMap model =
     let
         backgroundForm = backgroundImageForm model
     in
-        Collage.collage 960 700 [backgroundForm]
+        Collage.collage model.windowWidth model.windowHeight [backgroundForm]
 
 view : Model -> Html Msg
 view model =

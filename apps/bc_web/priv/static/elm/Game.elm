@@ -1,14 +1,15 @@
-port module Game exposing (..)
+module Game exposing (..)
 
 import Html exposing (..)
 import Html.App as App
 import Html.Attributes exposing (..)
 import Html.Events exposing (onInput, onClick)
 import Json.Decode exposing (..)
-import Task exposing (Task)
-import WebSocket
 import Effects exposing (Effects)
 import Keyboard.Extra as Keyboard
+import Task exposing (Task)
+import WebSocket
+import Window
 
 -- Local imports
 
@@ -22,6 +23,8 @@ import Message exposing (..)
 type Msg =
     UpdateGameState GameState |
     KeyboardMsg Keyboard.Msg |
+    WindowSize Window.Size |
+    WindowError String |
     JoinMsg Join.Msg |
     MapMsg Map.Msg |
     PerformCmd (Cmd Msg) |
@@ -50,6 +53,15 @@ init flags =
         (mapModel, mapEffects) = Map.init
 
         (keyboardModel, keyboardCmd) = Keyboard.init
+
+        gameKeyboardCmd = Cmd.map KeyboardMsg keyboardCmd
+
+        windowCmd = Task.perform WindowError WindowSize Window.size
+
+        cmdBatch = Cmd.batch [
+            gameKeyboardCmd,
+            windowCmd
+        ]
     in
         Effects.init {
             state = GameState.Pending,
@@ -58,7 +70,7 @@ init flags =
             joinModel = joinModel,
             mapModel = mapModel
         }
-        [Cmd.map KeyboardMsg keyboardCmd]
+        [cmdBatch]
         `Effects.andThen` Effects.handle handleJoinEffect joinEffects
             `Effects.andThen` Effects.handle handleMapEffect mapEffects
 
@@ -84,6 +96,18 @@ update msg model =
                     mapModel = updatedMapModel
                 } [Cmd.map KeyboardMsg keyboardCmd]
                     `Effects.andThen` Effects.handle handleMapEffect mapEffects
+
+        WindowSize windowSize ->
+            let
+                (updatedMapModel, mapEffects) =
+                    Map.update (Map.WindowMsg windowSize) model.mapModel
+            in
+                Effects.return {model |
+                    mapModel = updatedMapModel
+                } `Effects.andThen` Effects.handle handleMapEffect mapEffects
+
+        WindowError reason ->
+            Effects.return model
 
         JoinMsg sub ->
             let
@@ -154,10 +178,22 @@ handleMapEffect effect model =
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    Sub.batch [
-        WebSocket.listen model.address WsReceiveMessage,
-        Sub.map KeyboardMsg Keyboard.subscriptions
-    ]
+    case model.state of
+
+        GameState.Joining ->
+            WebSocket.listen model.address WsReceiveMessage
+
+        GameState.Pending ->
+            Sub.batch [
+                WebSocket.listen model.address WsReceiveMessage,
+                Sub.map KeyboardMsg Keyboard.subscriptions
+            ]
+
+        GameState.Started ->
+            Sub.batch [
+                WebSocket.listen model.address WsReceiveMessage,
+                Sub.map KeyboardMsg Keyboard.subscriptions
+            ]
 
 -- View
 
