@@ -22,7 +22,15 @@
   {git,"https://github.com/basho/lager.git",
        {ref,"840acab51ebfb731de0137d9c6d41e7db4a12793"}},
   0},
+ {<<"quickrand">>,
+  {git,"https://github.com/okeuday/quickrand.git",
+       {ref,"8b6810b73427745bb6d4f10ae9bfc66983b3b2a1"}},
+  1},
  {<<"ranch">>,
   {git,"https://github.com/ninenines/ranch.git",
        {ref,"adf1822defc2b7cfdc7aca112adabfa1d614043c"}},
-  1}].
+  1},
+ {<<"uuid">>,
+  {git,"https://github.com/okeuday/uuid.git",
+       {ref,"4b705b22f5d095970558d904e43c4354bd0e0a7f"}},
+  0}].

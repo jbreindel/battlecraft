@@ -31,10 +31,10 @@ insert(Tab, BcEntity) ->
 	ets:insert(Tab, Row).
 
 -spec query(Tab :: ets:tab(), 
-			Uuid :: uuid:uuid() || list(uuid:uuid()) -> [bc_entity:entity()].
+			Uuid :: uuid:uuid()) -> [bc_entity:entity()].
 query(Tab, Uuid) when is_binary(Uuid) ->
 	query(Tab, [Uuid]);
-query(Tab, Uuids) when is_list(Uuid) ->
+query(Tab, Uuids) when is_list(Uuids) ->
 	qlc:eval(qlc:q([bc_entity:from_tuple(BcEntityTuple) || 
 					  BcEntityTuple <- ets:table(Tab),
 					  lists:member(element(1, BcEntityTuple), Uuids)])).

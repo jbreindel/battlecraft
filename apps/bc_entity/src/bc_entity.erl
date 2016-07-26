@@ -10,14 +10,14 @@
 		 entity_type/1, 
 		 health/1, 
 		 ai_fsm/1, 
-		 damage/1,
+		 damage/2,
 		 to_tuple/1,
 		 from_tuple/1]).
 
 %%
 %% @doc base entity type for saving and transfering entities.
 %%
--type entity() :: #{uuid => uuid(), 
+-type entity() :: #{uuid => uuid:uuid(), 
 					player_id => integer(), 
 					team => integer(), 
 					entity_type => integer(), 
@@ -31,15 +31,15 @@
 %% API functions
 %%====================================================================
 
--spec create(Uuid :: uuid(), 
+-spec create(Uuid :: uuid:uuid(), 
 			 PlayerId :: integer(), 
 			 Team :: integer(), 
 			 EntityType :: integer(), 
 			 Health :: integer()) -> entity().
 create(Uuid, PlayerId, Team, EntityType, Health) ->
-	create(Uuid, PlayerId, Team, EntityType, Health, undefined);
+	create(Uuid, PlayerId, Team, EntityType, Health, undefined).
 
--spec create(Uuid :: uuid(), 
+-spec create(Uuid :: uuid:uuid(), 
 			 PlayerId :: integer(), 
 			 Team :: integer(), 
 			 EntityType :: integer(), 
@@ -53,7 +53,7 @@ create(Uuid, PlayerId, Team, EntityType, Health, AIFsm) ->
 	  health => Health,
 	  ai_fsm => AIFsm}.
 
--spec uuid(BcEntity :: entity()) -> uuid().
+-spec uuid(BcEntity :: entity()) -> uuid:uuid().
 uuid(BcEntity) ->
 	maps:get(uuid, BcEntity).
 
