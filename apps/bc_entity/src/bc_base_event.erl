@@ -2,10 +2,13 @@
 -module(bc_base_entities).
 -behavior(gen_event).
 
--export([init/1, handle_event/2]).
+-export([init/1, 
+		 handle_event/2]).
 
 %% internal state
--record(state, {base_uuid, game, player}).
+-record(state, {base_uuid, 
+				game, 
+				player}).
 
 %%====================================================================
 %% Public functions
