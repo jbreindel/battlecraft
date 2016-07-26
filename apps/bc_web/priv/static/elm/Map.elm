@@ -199,7 +199,7 @@ update msg model =
 
         KeyboardMsg keyboardModel ->
             let
-                direction = Keyboard.wasdDirection keyboardModel
+                direction = Keyboard.arrowsDirection keyboardModel
 
                 updatedModel = updatePos model direction
             in

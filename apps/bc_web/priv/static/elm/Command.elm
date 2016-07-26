@@ -42,7 +42,7 @@ type alias JoinSuccessResponse = {
 
 joinSuccessResponse : Json.Decode.Decoder JoinSuccessResponse
 joinSuccessResponse =
-    at ["command_response"] <| object2 JoinSuccessResponse
+    at ["command_response"] <| object3 JoinSuccessResponse
         ("response_type" := Json.Decode.string)
         ("player_id" := Json.Decode.int)
         ("team" := Json.Decode.int)
