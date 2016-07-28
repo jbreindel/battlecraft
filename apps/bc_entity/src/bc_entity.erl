@@ -2,14 +2,15 @@
 -module(bc_entity).
 
 %% API exports
--export([create/5, 
-		 create/6, 
+-export([create/6, 
+		 create/7, 
 		 uuid/1, 
 		 player_id/1, 
 		 team/1, 
 		 entity_type/1, 
 		 health/1, 
-		 ai_fsm/1, 
+		 ai_fsm/1,
+		 vertices/1,
 		 damage/2,
 		 to_tuple/1,
 		 from_tuple/1]).
@@ -22,7 +23,8 @@
 					team => integer(), 
 					entity_type => integer(), 
 					health => integer(), 
-					ai_fsm => pid() | undefined}.
+					ai_fsm => pid() | undefined,
+					vertices => [bc_vertex:vertex()]}.
 
 %% type exports
 -export_type([entity/0]).
@@ -35,22 +37,25 @@
 			 PlayerId :: integer(), 
 			 Team :: integer(), 
 			 EntityType :: integer(), 
-			 Health :: integer()) -> entity().
-create(Uuid, PlayerId, Team, EntityType, Health) ->
-	create(Uuid, PlayerId, Team, EntityType, Health, undefined).
+			 Health :: integer(),
+			 Vertices :: [bc_vertex:vertex()]) -> entity().
+create(Uuid, PlayerId, Team, EntityType, Health, Vertices) ->
+	create(Uuid, PlayerId, Team, EntityType, Health, Vertices, undefined).
 
 -spec create(Uuid :: uuid:uuid(), 
 			 PlayerId :: integer(), 
 			 Team :: integer(), 
 			 EntityType :: integer(), 
 			 Health :: integer(),
+			 Vertices :: [bc_vertex:vertex()],
 			 AIFsm :: pid()) -> entity().
-create(Uuid, PlayerId, Team, EntityType, Health, AIFsm) ->
+create(Uuid, PlayerId, Team, EntityType, Health, Vertices, AIFsm) ->
 	#{uuid => Uuid,
 	  player_id => PlayerId,
 	  team => Team,
 	  entity_type => EntityType,
 	  health => Health,
+	  vertices => Vertices,
 	  ai_fsm => AIFsm}.
 
 -spec uuid(BcEntity :: entity()) -> uuid:uuid().
@@ -76,6 +81,10 @@ health(BcEntity) ->
 -spec ai_fsm(BcEntity :: entity()) -> pid() | undefined.
 ai_fsm(BcEntity) ->
 	maps:get(ai_fsm, BcEntity).
+	
+-spec vertices(BcEntity :: entity()) -> [bc_vertex:vertex()].
+vertices(BcEntity) ->
+	maps:get(vertices, BcEntity).
 
 -spec damage(BcEntity :: entity(), Damage :: integer()) -> entity().
 damage(BcEntity, Damage) ->
