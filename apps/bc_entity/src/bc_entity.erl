@@ -12,6 +12,7 @@
 		 ai_fsm/1,
 		 vertices/1,
 		 damage/2,
+		 to_collision/1,
 		 to_tuple/1,
 		 from_tuple/1]).
 
@@ -90,6 +91,12 @@ vertices(BcEntity) ->
 damage(BcEntity, Damage) ->
 	Health = maps:get(BcEntity, health),
 	maps:update(health, Health - Damage, BcEntity).
+
+-spec to_collision(BcEntity :: entity()) -> bc_collision:collision().
+to_collision(BcEntity) ->
+	Uuid = uuid(BcEntity),
+	Vertices = vertices(BcEntity),
+	bc_collision:init(Uuid, Vertices).
 
 -spec to_tuple(BcEntity :: entity()) -> tuple().
 to_tuple(BcEntity) ->

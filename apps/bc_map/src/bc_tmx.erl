@@ -86,7 +86,7 @@ inside_object(DimMap, ObjectMapList, Row, Col) ->
 
 -spec object_verticies(MapGraph :: digraph:graph(), 
 					   DimMap :: bc_tmx:dims(), 
-					   ObjectMapList :: [bc_tmx:object()]) -> [bc_map_serv:vertex()].
+					   ObjectMapList :: [bc_tmx:object()]) -> [bc_vertex:vertex()].
 object_verticies(MapGraph, DimMap, ObjectMapList) ->
 	object_verticies(MapGraph, DimMap, ObjectMapList, []).
 
@@ -94,8 +94,8 @@ object_verticies(_, _, [], Verticies) ->
 	Verticies;
 object_verticies(MapGraph, Dims, [ObjectMap|ObjectMaps], Verticies) ->
 	VerticiesAcc = Verticies ++ lists:filter(fun(Vertex) ->
-												Row = maps:get(row, Vertex),
-												Col = maps:get(col, Vertex),
+												Row = bc_vertex:row(Vertex),
+												Col = bc_vertex:col(Vertex),
 												tile_inside_object(Dims, ObjectMap, Row, Col)
 											end, digraph:vertices(MapGraph)),
 	object_verticies(MapGraph, Dims, ObjectMaps, VerticiesAcc).
@@ -190,8 +190,8 @@ populate_edges(MapGraph, #{height := Height, width := Width} = Dims, Vertex, [Ne
 	populate_edges(MapGraph, Dims, Vertex, Neighbors).
 
 populate_vertices(MapGraph, Dims, Vertex) ->
-	Row = maps:get(row, Vertex),
-	Col = maps:get(col, Vertex),
+	Row = bc_vertex:row(Vertex),
+	Col = bc_vertex:col(Vertex),
 	Neighbors = [
 				 	Vertex#{row := Row - 1},
 					Vertex#{col := Col + 1},
@@ -210,7 +210,7 @@ do_build_map(MapGraph, Dims, ObjectMapList, Row, Col) ->
 		false ->
 			case inside_object(Dims, ObjectMapList,  Row, Col) of
 				false ->
-					Vertex = #{row => Row, col => Col},
+					Vertex = bc_vertex:init(Row, Col),
 					populate_vertices(MapGraph, Dims, Vertex);
 				true ->
 					MapGraph
