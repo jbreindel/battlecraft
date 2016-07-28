@@ -23,8 +23,8 @@
 					team => integer(), 
 					entity_type => integer(), 
 					health => integer(), 
-					ai_fsm => pid() | undefined,
-					vertices => [bc_vertex:vertex()]}.
+					vertices => [bc_vertex:vertex()],
+					ai_fsm => pid() | undefined}.
 
 %% type exports
 -export_type([entity/0]).
