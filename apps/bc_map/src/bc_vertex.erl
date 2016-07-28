@@ -1,7 +1,7 @@
 
 -module(bc_vertex).
 
--export([create/2, 
+-export([init/2, 
 		 row/1, 
 		 col/1]).
 		 
@@ -13,9 +13,9 @@
 %% type exports
 -export_type([vertex/0]).
 
--spec create(Row :: integer(), 
-			 Col :: integer()) -> vertex().
-create(Row, Col) ->
+-spec init(Row :: integer(), 
+		   Col :: integer()) -> vertex().
+init(Row, Col) ->
 	#{row => Row, col => Col}.
 	
 -spec row(BcVertex :: vertex()) -> integer().

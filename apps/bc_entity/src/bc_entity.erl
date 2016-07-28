@@ -2,8 +2,8 @@
 -module(bc_entity).
 
 %% API exports
--export([create/6, 
-		 create/7, 
+-export([init/6, 
+		 init/7, 
 		 uuid/1, 
 		 player_id/1, 
 		 team/1, 
@@ -33,23 +33,23 @@
 %% API functions
 %%====================================================================
 
--spec create(Uuid :: uuid:uuid(), 
+-spec init(Uuid :: uuid:uuid(), 
 			 PlayerId :: integer(), 
 			 Team :: integer(), 
 			 EntityType :: integer(), 
 			 Health :: integer(),
 			 Vertices :: [bc_vertex:vertex()]) -> entity().
-create(Uuid, PlayerId, Team, EntityType, Health, Vertices) ->
-	create(Uuid, PlayerId, Team, EntityType, Health, Vertices, undefined).
+init(Uuid, PlayerId, Team, EntityType, Health, Vertices) ->
+	init(Uuid, PlayerId, Team, EntityType, Health, Vertices, undefined).
 
--spec create(Uuid :: uuid:uuid(), 
+-spec init(Uuid :: uuid:uuid(), 
 			 PlayerId :: integer(), 
 			 Team :: integer(), 
 			 EntityType :: integer(), 
 			 Health :: integer(),
 			 Vertices :: [bc_vertex:vertex()],
 			 AIFsm :: pid()) -> entity().
-create(Uuid, PlayerId, Team, EntityType, Health, Vertices, AIFsm) ->
+init(Uuid, PlayerId, Team, EntityType, Health, Vertices, AIFsm) ->
 	#{uuid => Uuid,
 	  player_id => PlayerId,
 	  team => Team,
@@ -108,4 +108,4 @@ from_tuple(
 	 EntityType, 
 	 Health, 
 	 AiFsm}) ->
-	create(Uuid, PlayerId, Team, EntityType, Health, AiFsm).
+	init(Uuid, PlayerId, Team, EntityType, Health, AiFsm).

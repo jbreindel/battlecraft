@@ -18,10 +18,6 @@
 		 update_collision/3, 
 		 delete_collision/2]).
 
-%% vertex inside the graph
--type vertex() :: #{row => integer(),
-					col => integer()}.
-
 %%
 %% @doc map for graph and collisions
 %%
@@ -30,15 +26,15 @@
 %%
 %% @doc collision map
 %%
--type collision() :: #{id => string(), vertices => [bc_map:vertex()]}.
+-type collision() :: #{id => string(), vertices => [bc_vertex:vertex()]}.
 
 %%
 %% @doc query result rows
 %%
--type query_res() :: #{id => string(), vertex => bc_map:vertex()}.
+-type query_res() :: #{id => string(), vertex => bc_vertex:vertex()}.
 
 %% type exports
--export_type([vertex/0, map_graph/0, collision/0, query_res/0]).
+-export_type([map_graph/0, collision/0, query_res/0]).
 
 %%====================================================================
 %% API functions
@@ -64,42 +60,43 @@ insert_collision(#{coll_tab := Tab}, CollisionMap) ->
 	ets:insert_new(Tab, Rows).
 
 -spec query_collisions(MapGraph :: map_graph(),
-					   Vertices :: [bc_map:vertex()]) -> [query_res()].
+					   Vertices :: [bc_vertex:vertex()]) -> [query_res()].
 query_collisions(#{coll_tab := Tab}, Vertices) ->
 	Ms = collision_ms(Vertices),
 	case ets:select(Tab, Ms) of
 		Results when is_list(Results) ->
 			lists:map(fun({{Row, Col}, Id}) -> #{id => Id, 
-												 vertex => #{row => Row, 
-															 col => Col}} end, Results);
+												 vertex => bc_vertex:init(Row, Col)} end, Results);
 		_ ->
 			{error, "Unable to query collisions."}
 	end.
 
 -spec compute_path(MapGraph :: map_graph(), 
-				   Vertex1 :: vertex(), 
-				   Vertex2 :: vertex()) -> [vertex()] | false.
+				   Vertex1 :: bc_vertex:vertex(), 
+				   Vertex2 :: bc_vertex:vertex()) -> [bc_vertex:vertex()] | false.
 compute_path(#{graph := MapGraph}, Vertex1, Vertex2) ->
 	digraph:get_path(MapGraph, Vertex1, Vertex2).
 
 -spec are_neighbors(MapGraph :: map_graph(), 
-					Vertex :: vertex(), 
-					Neighbor:: vertex()) -> boolean().
-are_neighbors(#{graph := MapGraph}, Vertex, #{row := NeighborRow, col := NeighborCol}) ->
+					Vertex :: bc_vertex:vertex(), 
+					Neighbor:: bc_vertex:vertex()) -> boolean().
+are_neighbors(#{graph := MapGraph}, Vertex, Neighbor) ->
+	NeighborRow = bc_vertex:row(Neighbor),
+	NeighborCol = bc_vertex:col(Neighbor),
 	InNeighbors = digraph:in_neighbours(MapGraph, Vertex),
 	OutNeighbors = digraph:out_neighbours(MapGraph, Vertex),
 	lists:any(fun(InNeighbor) -> 
-				maps:get(row, InNeighbor) =:= NeighborRow andalso
-				maps:get(col, InNeighbor) =:= NeighborCol
+				bc_vertex:row(InNeighbor) =:= NeighborRow andalso
+				bc_vertex:col(InNeighbor) =:= NeighborCol
 		   	end, InNeighbors) andalso
 	 lists:any(fun(OutNeighbor) -> 
-					maps:get(row, OutNeighbor) =:= NeighborRow andalso
-					maps:get(col, OutNeighbor) =:= NeighborCol
+					bc_vertex:row(OutNeighbor) =:= NeighborRow andalso
+					bc_vertex:col(OutNeighbor) =:= NeighborCol
 			    end, OutNeighbors).
 
 -spec reaching_neighbors(MapGraph :: map_graph(), 
-						 Vertex :: vertex(), 
-						 MaxDist :: integer()) -> [vertex()].
+						 Vertex :: bc_vertex:vertex(), 
+						 MaxDist :: integer()) -> [bc_vertex:vertex()].
 reaching_neighbors(#{graph := MapGraph}, Vertex, MaxDist) ->
 	Neighbors = reaching_neighbors(MapGraph, [Vertex], MaxDist, []),
 	lists:delete(Vertex, Neighbors).
@@ -152,7 +149,11 @@ vertex_rows(#{id := Id, vertices := Vertices} = CollisionMap) when erlang:is_map
 	vertex_rows(Id, Vertices).
 
 vertex_rows(Id, Vertices) when erlang:is_list(Vertices) ->
-	lists:map(fun(#{row := Row, col := Col}) -> {{Row, Col}, Id} end, Vertices).
+	lists:map(fun(BcVertex) -> 
+				Row = bc_vertex:row(BcVertex), 
+				Col = bc_vertex:col(BcVertex), 
+				{{Row, Col}, Id} 
+			  end, Vertices).
 
 difference_vertices(#{vertices := Vertices1} = CollisionMap1,
 				    #{vertices := Vertices2} = CollisionMap2) ->
