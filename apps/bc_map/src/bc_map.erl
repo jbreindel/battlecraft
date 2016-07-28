@@ -24,17 +24,12 @@
 -type map_graph() :: #{graph => digraph:graph(), coll_tab => ets:tid()}.
 
 %%
-%% @doc collision map
-%%
--type collision() :: #{id => string(), vertices => [bc_vertex:vertex()]}.
-
-%%
 %% @doc query result rows
 %%
 -type query_res() :: #{id => string(), vertex => bc_vertex:vertex()}.
 
 %% type exports
--export_type([map_graph/0, collision/0, query_res/0]).
+-export_type([map_graph/0, query_res/0]).
 
 %%====================================================================
 %% API functions
@@ -54,9 +49,9 @@ init(Heir, MapFile) ->
 	  coll_tab => ets:new(collision, ?ETS_OPTIONS(Heir))}.
 
 -spec insert_collision(MapGraph :: map_graph(),
-					   CollisionMap :: collision()) -> boolean().
-insert_collision(#{coll_tab := Tab}, CollisionMap) ->
-	Rows = vertex_rows(CollisionMap),
+					   BcCollision :: bc_collision:collision()) -> boolean().
+insert_collision(#{coll_tab := Tab}, BcCollision) ->
+	Rows = vertex_rows(BcCollision),
 	ets:insert_new(Tab, Rows).
 
 -spec query_collisions(MapGraph :: map_graph(),
@@ -102,14 +97,14 @@ reaching_neighbors(#{graph := MapGraph}, Vertex, MaxDist) ->
 	lists:delete(Vertex, Neighbors).
 
 -spec update_collision(MapGraph :: map_graph(),
-					   OriginalCollisionMap :: collision(),
-					   UpdatedCollisionMap :: collision()) -> ok | {error, Reason :: string()}.
-update_collision(#{coll_tab := Tab}, OriginalCollisionMap, UpdatedCollisionMap) ->
-	case difference_vertices(UpdatedCollisionMap, OriginalCollisionMap) of
+					   OriginalBcCollision :: bc_collision:collision(),
+					   UpdatedBcCollision :: bc_collision:collision()) -> ok | {error, Reason :: string()}.
+update_collision(#{coll_tab := Tab}, OriginalBcCollision, UpdatedBcCollision) ->
+	case bc_collision:difference_vertices(OriginalBcCollision, UpdatedBcCollision) of
 		InsertRows when length(InsertRows) > 0 ->
 			case ets:insert_new(Tab, InsertRows) of
 				true ->
-					DifferenceRows = difference_vertices(OriginalCollisionMap, UpdatedCollisionMap),
+					DifferenceRows = bc_collision:difference_vertices(OriginalBcCollision, UpdatedBcCollision),
 					Ms = collision_ms(DifferenceRows),
 					ets:match_delete(Tab, Ms),
 					ok;
@@ -121,9 +116,9 @@ update_collision(#{coll_tab := Tab}, OriginalCollisionMap, UpdatedCollisionMap) 
 	end.
 
 -spec delete_collision(MapGraph :: map_graph(),
-					   CollisionMap :: collision()) -> true.
-delete_collision(#{coll_tab := Tab}, CollisionMap) ->
-	Ms = collision_ms(CollisionMap),
+					   BcCollision :: bc_collision:collision()) -> true.
+delete_collision(#{coll_tab := Tab}, BcCollision) ->
+	Ms = collision_ms(BcCollision),
 	ets:match_delete(Tab, Ms).
 
 %%====================================================================
@@ -155,14 +150,7 @@ vertex_rows(Id, Vertices) when erlang:is_list(Vertices) ->
 				{{Row, Col}, Id} 
 			  end, Vertices).
 
-difference_vertices(#{vertices := Vertices1} = CollisionMap1,
-				    #{vertices := Vertices2} = CollisionMap2) ->
-	Set1 = sets:from_list(Vertices1),
-	Set2 = sets:from_list(Vertices2),
-	DiffSet = sofs:difference(Set1, Set2),
-	sets:to_list(DiffSet).
-
-collision_ms(#{vertices := Vertices} = CollisionMap) when is_map(CollisionMap) ->
+collision_ms(#{vertices := Vertices} = BcCollision) when is_map(BcCollision) ->
 	collision_ms(Vertices);
 collision_ms(Vertices) when is_list(Vertices) ->
 	[{{{'$1','$2'},'_'},
