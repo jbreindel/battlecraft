@@ -15,7 +15,7 @@
 init([BcPlayer]) ->
 	{ok, #state{player = BcPlayer}}.
 
-handler_event({EntityEventType, BcEntity},
+handle_event({EntityEventType, BcEntity},
 			 #state{player = BcPlayer} = State) ->
 	PlayerPid = bc_player:pid(BcPlayer),
 	PlayerPid ! #{type => entity_event,

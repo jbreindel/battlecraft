@@ -1,5 +1,5 @@
 
--module(bc_base_entities).
+-module(bc_base_event).
 -behavior(gen_event).
 
 -export([init/1, 

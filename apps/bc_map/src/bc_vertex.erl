@@ -11,7 +11,7 @@
 -type vertex() :: #{row => integer(), col => integer()}.
 
 %% type exports
--export_type([vertex()]).
+-export_type([vertex/0]).
 
 -spec create(Row :: integer(), 
 			 Col :: integer()) -> vertex().
