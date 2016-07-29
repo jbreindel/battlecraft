@@ -114,14 +114,14 @@ insert_base_entity(BcPlayer, BaseUuid, BaseBcVertices, BcEntities) ->
 	end.
 
 spawn_player_bases([], _, _) ->
-	ok.
+	ok;
 spawn_player_bases([BcPlayer|BcPlayers], 
 				  #state{map = BcMap, 
 						 entities = BcEntities} = State, [BaseBcCollision|BaseBcCollisions]) ->
 	case bc_map:insert_collision(BaseBcCollision) of
 		true ->
 			BaseUuid = bc_collision:uuid(BaseBcCollision),
-			BaseBcVertices = bc_collision:vertices(BaseBcCollison),
+			BaseBcVertices = bc_collision:vertices(BaseBcCollision),
 			insert_base_entity(BcPlayer, BaseUuid, BaseBcVertices, BcEntities),
 			spawn_player_bases(BcPlayer, State, BaseBcCollisions);
 		false ->
