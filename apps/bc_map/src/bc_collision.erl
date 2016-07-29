@@ -33,6 +33,8 @@ uuid(BcCollision) ->
 vertices(BcCollision) ->
 	maps:get(vertices, BcCollision).
 
+-spec difference_vertices(BcCollision1 :: collision(), 
+						  BcCollision :: collision()) -> [bc_vertex:vertex()].
 difference_vertices(#{vertices := Vertices1} = BcCollision1,
 				    #{vertices := Vertices2} = BcCollision2) ->
 	Set1 = sets:from_list(Vertices1),
