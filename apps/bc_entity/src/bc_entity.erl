@@ -5,13 +5,16 @@
 -export([init/6, 
 		 init/7, 
 		 uuid/1, 
-		 player_id/1, 
+		 player_id/1,
+		 set_player_id/1, 
 		 team/1, 
+		 set_team/2,
 		 entity_type/1, 
 		 health/1, 
+		 set_health/2,
 		 ai_fsm/1,
 		 vertices/1,
-		 damage/2,
+		 set_vertices/2,
 		 to_collision/1,
 		 to_tuple/1,
 		 from_tuple/1]).
@@ -67,9 +70,17 @@ uuid(BcEntity) ->
 player_id(BcEntity)->
 	maps:get(player_id, BcEntity).
 
+-spec set_player_id(PlayerId :: integer(), BcEntity :: entity()) -> entity().
+set_player_id(PlayerId, BcEntity) ->
+	maps:update(player_id, PlayerId, BcEntity)
+
 -spec team(BcEntity :: entity()) -> integer().
 team(BcEntity) ->
 	maps:get(team, BcEntity).
+
+-spec set_team(Team :: integer(), BcEntity :: entity()) -> entity().
+set_team(Team, BcEntity) ->
+	maps:update(team, Team, BcEntity).
 
 -spec entity_type(BcEntity :: entity()) -> integer().
 entity_type(BcEntity) ->
@@ -90,6 +101,10 @@ ai_fsm(BcEntity) ->
 -spec vertices(BcEntity :: entity()) -> [bc_vertex:vertex()].
 vertices(BcEntity) ->
 	maps:get(vertices, BcEntity).
+
+-spec set_vertices(BcVertices :: [bc_vertex:vertex()], BcEntity :: entity()) -> entity().
+set_vertices(BcVertices, BcEntity) ->
+	maps:update(vertices, BcVertices, BcEntity).
 
 -spec to_collision(BcEntity :: entity()) -> bc_collision:collision().
 to_collision(BcEntity) ->
