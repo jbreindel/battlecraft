@@ -35,21 +35,21 @@
 %%====================================================================
 
 -spec init(Uuid :: uuid:uuid(), 
-			 PlayerId :: integer(), 
-			 Team :: integer(), 
-			 EntityType :: integer(), 
-			 Health :: integer(),
-			 Vertices :: [bc_vertex:vertex()]) -> entity().
+		   PlayerId :: integer(), 
+		   Team :: integer(), 
+		   EntityType :: integer(), 
+		   Health :: integer(),
+		   Vertices :: [bc_vertex:vertex()]) -> entity().
 init(Uuid, PlayerId, Team, EntityType, Health, Vertices) ->
 	init(Uuid, PlayerId, Team, EntityType, Health, Vertices, undefined).
 
 -spec init(Uuid :: uuid:uuid(), 
-			 PlayerId :: integer(), 
-			 Team :: integer(), 
-			 EntityType :: integer(), 
-			 Health :: integer(),
-			 Vertices :: [bc_vertex:vertex()],
-			 AIFsm :: pid()) -> entity().
+		   PlayerId :: integer(), 
+		   Team :: integer(), 
+		   EntityType :: integer(), 
+		   Health :: integer(),
+		   Vertices :: [bc_vertex:vertex()],
+		   AIFsm :: pid()) -> entity().
 init(Uuid, PlayerId, Team, EntityType, Health, Vertices, AIFsm) ->
 	#{uuid => Uuid,
 	  player_id => PlayerId,

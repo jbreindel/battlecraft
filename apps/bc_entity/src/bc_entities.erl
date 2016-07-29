@@ -19,7 +19,8 @@
 %%
 % @doc entities structure includes gen_event along with ets table.
 %%
--type entities() :: #{entities_event => pid(),
+-type entities() :: #{entities_config => dict(),
+					  entities_event => pid(),
 					  entities_tab => ets:tid()}.
 
 %% decl types
@@ -31,12 +32,17 @@
 
 -spec init(Heir :: pid()) -> entities().
 init(Heir) ->
-	#{entities_event => supervisor:start_child(Heir, #{
+	#{entities_config => load_entities_config(),
+	  entities_event => supervisor:start_child(Heir, #{
 		id => bc_entities_event,
 		start => {gen_event, start_link, []},
 		modules => [gen_event]
 	  }),
 	  entities_pid => ets:new(entities, ?ETS_OPTIONS(Heir))}.
+
+-spec entities_config(BcEntities :: entities()) -> dict().
+entities_config(#{entities_config := EntitiesConfigDict}) ->
+	EntitiesConfigDict.
 
 -spec table(BcEntities :: entities()) -> ets:tid().
 table(#{entities_tab := Tab}) ->
@@ -71,3 +77,15 @@ query(#{entities_tab := Tab}, Uuids) when is_list(Uuids) ->
 			 Uuid :: uuid:uuid()) -> true.
 delete(#{entities_tab := Tab}, Uuid) ->
 	ets:delete(Tab, Uuid).
+
+%%====================================================================
+%% Internal functions
+%%====================================================================
+
+load_entities_config() ->
+	EntitiesConfigFile = filename:join([code:priv_dir(bc_entity), "entities.config"]),
+	{ok, EntityConfigs} = file:consult(EntitiesConfigFile),
+	EntityTypeConfigs = lists:map(fun(EntityConfig) -> 
+									{element(1, EntityConfig), bc_entity_config:init(EntityConfig)} 
+								  end, EntityConfigs),
+	dict:from_list(EntityTypeConfigs).
