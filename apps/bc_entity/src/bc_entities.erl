@@ -40,9 +40,9 @@ init(Heir) ->
 	  }),
 	  entities_pid => ets:new(entities, ?ETS_OPTIONS(Heir))}.
 
--spec entities_config(BcEntities :: entities()) -> dict().
-entities_config(#{entities_config := EntitiesConfigDict}) ->
-	EntitiesConfigDict.
+-spec entities_config(EntityType :: atom(), BcEntities :: entities()) -> dict().
+entity_config(EntityType, #{entities_config := EntitiesConfig}) ->
+	dict:find(EntityType, EntitiesConfig).
 
 -spec table(BcEntities :: entities()) -> ets:tid().
 table(#{entities_tab := Tab}) ->

@@ -62,7 +62,14 @@ handle_call({create_player_serv, BcPlayer}, _From,
 		start => {bc_player_serv, start_link, [BcPlayerSup, BcGame, BcPlayer, BcGoldFsm, BcMap, BcEntities]},
 		modules => [bc_player_serv]
 	}),
-	{reply, {ok, BcPlayerServ}, State}.
+	{reply, {ok, BcPlayerServ}, State};
+
+handle_call({spawn_player_bases, BcPlayers}, _From,
+	#state{input_sup = BcInputSup,
+		   game = BcGame,
+		   map = BcMap,
+		   entities = BcEntities} = State) ->
+	
 
 %%====================================================================
 %% Internal functions
@@ -82,3 +89,6 @@ start_gold_fsm(BcPlayerSup, BcGame, BcPlayer) ->
 	EventPid = bc_game:event(BcGame),
 	gen_event:add_handler(EventPid, bc_gold_event, {gold_fsm, BcGoldFsm}),
 	BcGoldFsm.
+
+spawn_player_base(BcPlayer, BcMap, BcEntities, BaseNum) when BaseNum =:= 1 ->
+	

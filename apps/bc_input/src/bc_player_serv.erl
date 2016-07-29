@@ -13,26 +13,29 @@
 				game,
 				player,
 				gold,
-				map_graph}).
+				map,
+				entities}).
 
 %%====================================================================
 %% API functions
 %%====================================================================
 
-start_link(BcPlayerSup, BcGame, BcPlayer, BcGoldFsm, MapGraph) ->
+start_link(BcPlayerSup, BcGame, BcPlayer, BcGoldFsm, BcMap, BcEntities) ->
 	gen_server:start_link(?MODULE, [BcPlayerSup, 
 									BcGame, 
 									BcPlayer, 
 									BcGoldFsm, 
-									MapGraph], []).
+									BcMap, 
+									BcEntities], []).
 
 %%====================================================================
 %% Gen_server functions
 %%====================================================================
 
-init([BcPlayerSup, BcGame, BcPlayer, BcGoldFsm, MapGraph]) ->
+init([BcPlayerSup, BcGame, BcPlayer, BcGoldFsm, BcMap, BcEntities]) ->
 	{ok, #state{player_sup = BcPlayerSup,
 				game = BcGame, 
 				player = BcPlayer,
 				gold = BcGoldFsm,
-				map_graph = MapGraph}}.
+				map = BcMap,
+				entities = BcEntities}}.
