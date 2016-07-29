@@ -10,7 +10,11 @@
 %% api exports
 -export([init/1,
 		 init/2,
-		 insert_collision/2, 
+		 insert_collision/2,
+		 base1_vertices/1,
+		 base2_vertices/1,
+		 base3_vertices/1,
+		 base4_vertices/1,
 		 query_collisions/2,
 		 compute_path/3,
 		 are_neighbors/3,
@@ -21,12 +25,15 @@
 %%
 %% @doc map for graph and collisions
 %%
--type map_graph() :: #{graph => digraph:graph(), coll_tab => ets:tid()}.
+-type map_graph() :: #{graph => digraph:graph(), 
+					   base_vertices => map(), 
+					   coll_tab => ets:tid()}.
 
 %%
 %% @doc query result rows
 %%
--type query_res() :: #{id => string(), vertex => bc_vertex:vertex()}.
+-type query_res() :: #{id => string(), 
+					   vertex => bc_vertex:vertex()}.
 
 %% type exports
 -export_type([map_graph/0, query_res/0]).
@@ -45,7 +52,9 @@ init(Heir, MapFile) ->
 	{ok, Json} = file:read_file(MapFile),
 	TmxJsonMap = jsx:decode(Json, [return_maps]),
 	{ok, MapGraph} = bc_tmx:load_graph(TmxJsonMap),
+	{ok, BaseVertices} = bc_tmx:load_base_collisions(TmxJsonMap),
 	#{graph => MapGraph, 
+	  bases_vertices => BaseVertices, 
 	  coll_tab => ets:new(collision, ?ETS_OPTIONS(Heir))}.
 
 -spec insert_collision(MapGraph :: map_graph(),
@@ -53,6 +62,22 @@ init(Heir, MapFile) ->
 insert_collision(#{coll_tab := Tab}, BcCollision) ->
 	Rows = vertex_rows(BcCollision),
 	ets:insert_new(Tab, Rows).
+
+-spec base1_vertices(MapGraph :: map_graph()) -> [bc_vertex:vertex()].
+base1_vertices(#{base_vertices = BaseVertices}) ->
+	maps:get(base1, BaseVertices).
+
+-spec base2_vertices(MapGraph :: map_graph()) -> [bc_vertex:vertex()].
+base2_vertices(#{base_vertices = BaseVertices}) ->
+	maps:get(base2, BaseVertices).
+
+-spec base3_vertices(MapGraph :: map_graph()) -> [bc_vertex:vertex()].
+base2_vertices(#{base_vertices = BaseVertices}) ->
+	maps:get(base3, BaseVertices).
+
+-spec base4_vertices(MapGraph :: map_graph()) -> [bc_vertex:vertex()].
+base4_vertices(#{base_vertices = BaseVertices}) ->
+	maps:get(base4, BaseVertices).
 
 -spec query_collisions(MapGraph :: map_graph(),
 					   Vertices :: [bc_vertex:vertex()]) -> [query_res()].

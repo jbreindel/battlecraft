@@ -40,7 +40,7 @@ load_object_list(TmxJsonMap) ->
 	ObjectMaps = process_objects(TmxJsonMap),
 	{ok, lists:flatten(ObjectMaps)}.
 
--spec load_base_collision_verticies(map()) -> {ok, [object()]} | {error, string()}.
+-spec load_base_collision_verticies(map()) -> {ok, map()} | {error, string()}.
 load_base_collision_verticies(TmxJsonMap) ->
 	{ok, process_base_collisions(TmxJsonMap)}.
 
