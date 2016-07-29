@@ -52,29 +52,29 @@ table(#{entities_tab := Tab}) ->
 event(#{entities_event := EntitiesEventPid}) ->
 	EntitiesEventPid.
 
--spec insert_new(BcEntities :: entities(), 
-				 BcEntity :: bc_entity:entity()) -> boolean().
-insert_new(#{entities_tab := Tab}, BcEntity) ->
+-spec insert_new(BcEntity :: bc_entity:entity(),
+				 BcEntities :: entities()) -> boolean().
+insert_new(BcEntity, #{entities_tab := Tab}) ->
 	Row = bc_entity:to_tuple(BcEntity),
 	ets:insert_new(Tab, Row).
 
--spec insert(BcEntities :: entities(), 
-			 BcEntity :: bc_entity:entity()) -> true.
-insert(#{entities_tab := Tab}, BcEntity) ->
+-spec insert(BcEntity :: bc_entity:entity(),
+			 BcEntities :: entities()) -> true.
+insert(BcEntity, #{entities_tab := Tab}) ->
 	Row = bc_entity:to_tuple(BcEntity),
 	ets:insert(Tab, Row).
 
--spec query(BcEntities :: entities(), 
-			Uuid :: uuid:uuid()) -> [bc_entity:entity()].
-query(BcEntities, Uuid) when is_binary(Uuid) ->
-	query(BcEntities, [Uuid]);
-query(#{entities_tab := Tab}, Uuids) when is_list(Uuids) ->
+-spec query(Uuid :: uuid:uuid(),
+			BcEntities :: entities()) -> [bc_entity:entity()].
+query(Uuid, BcEntities) when is_binary(Uuid) ->
+	query([Uuid], BcEntities);
+query(Uuids, #{entities_tab := Tab}) when is_list(Uuids) ->
 	qlc:eval(qlc:q([bc_entity:from_tuple(BcEntityTuple) || 
 					  BcEntityTuple <- ets:table(Tab),
 					  lists:member(element(1, BcEntityTuple), Uuids)])).
 
--spec delete(BcEntities :: entities(), 
-			 Uuid :: uuid:uuid()) -> true.
+-spec delete(Uuid :: uuid:uuid(),
+			 BcEntities :: entities()) -> true.
 delete(#{entities_tab := Tab}, Uuid) ->
 	ets:delete(Tab, Uuid).
 

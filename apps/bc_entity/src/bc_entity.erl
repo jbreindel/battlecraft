@@ -79,6 +79,10 @@ entity_type(BcEntity) ->
 health(BcEntity) ->
 	maps:get(health, BcEntity).
 
+-spec set_health(BcEntity :: entity(), Health :: integer()) -> entity().
+set_health(BcEntity, Health) ->
+	maps:update(health, Health, BcEntity).
+
 -spec ai_fsm(BcEntity :: entity()) -> pid() | undefined.
 ai_fsm(BcEntity) ->
 	maps:get(ai_fsm, BcEntity).
@@ -86,11 +90,6 @@ ai_fsm(BcEntity) ->
 -spec vertices(BcEntity :: entity()) -> [bc_vertex:vertex()].
 vertices(BcEntity) ->
 	maps:get(vertices, BcEntity).
-
--spec damage(BcEntity :: entity(), Damage :: integer()) -> entity().
-damage(BcEntity, Damage) ->
-	Health = maps:get(BcEntity, health),
-	maps:update(health, Health - Damage, BcEntity).
 
 -spec to_collision(BcEntity :: entity()) -> bc_collision:collision().
 to_collision(BcEntity) ->
