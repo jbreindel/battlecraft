@@ -6,7 +6,7 @@
 		 init/7, 
 		 uuid/1, 
 		 player_id/1,
-		 set_player_id/1, 
+		 set_player_id/2, 
 		 team/1, 
 		 set_team/2,
 		 entity_type/1, 
@@ -72,7 +72,7 @@ player_id(BcEntity)->
 
 -spec set_player_id(PlayerId :: integer(), BcEntity :: entity()) -> entity().
 set_player_id(PlayerId, BcEntity) ->
-	maps:update(player_id, PlayerId, BcEntity)
+	maps:update(player_id, PlayerId, BcEntity).
 
 -spec team(BcEntity :: entity()) -> integer().
 team(BcEntity) ->

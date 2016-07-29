@@ -19,7 +19,7 @@
 %%
 % @doc entities structure includes gen_event along with ets table.
 %%
--type entities() :: #{entities_config => dict(),
+-type entities() :: #{entities_config => dict:dict(atom(), bc_entity_config:entity_config()),
 					  entities_event => pid(),
 					  entities_tab => ets:tid()}.
 
@@ -40,7 +40,7 @@ init(Heir) ->
 	  }),
 	  entities_pid => ets:new(entities, ?ETS_OPTIONS(Heir))}.
 
--spec entities_config(EntityType :: atom(), BcEntities :: entities()) -> dict().
+-spec entity_config(EntityType :: atom(), BcEntities :: entities()) -> dict:dict(atom(), bc_entity_config:entity_config()).
 entity_config(EntityType, #{entities_config := EntitiesConfig}) ->
 	dict:find(EntityType, EntitiesConfig).
 

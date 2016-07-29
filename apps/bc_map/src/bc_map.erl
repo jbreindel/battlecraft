@@ -64,19 +64,19 @@ insert_collision(#{coll_tab := Tab}, BcCollision) ->
 	ets:insert_new(Tab, Rows).
 
 -spec base1_vertices(MapGraph :: map_graph()) -> [bc_vertex:vertex()].
-base1_vertices(#{base_vertices = BaseVertices}) ->
+base1_vertices(#{base_vertices := BaseVertices}) ->
 	maps:get(base1, BaseVertices).
 
 -spec base2_vertices(MapGraph :: map_graph()) -> [bc_vertex:vertex()].
-base2_vertices(#{base_vertices = BaseVertices}) ->
+base2_vertices(#{base_vertices := BaseVertices}) ->
 	maps:get(base2, BaseVertices).
 
 -spec base3_vertices(MapGraph :: map_graph()) -> [bc_vertex:vertex()].
-base2_vertices(#{base_vertices = BaseVertices}) ->
+base3_vertices(#{base_vertices := BaseVertices}) ->
 	maps:get(base3, BaseVertices).
 
 -spec base4_vertices(MapGraph :: map_graph()) -> [bc_vertex:vertex()].
-base4_vertices(#{base_vertices = BaseVertices}) ->
+base4_vertices(#{base_vertices := BaseVertices}) ->
 	maps:get(base4, BaseVertices).
 
 -spec query_collisions(MapGraph :: map_graph(),
