@@ -69,7 +69,14 @@ handle_call({spawn_player_bases, BcPlayers}, _From,
 		   game = BcGame,
 		   map = BcMap,
 		   entities = BcEntities} = State) ->
-	
+	SortedBcPlayers = lists:sort(fun(BcPlayer1, BcPlayer2) -> 
+									bc_player:team(BcPlayer1) < bc_player:team(BcPlayer2) 
+								 end, BcPlayers),
+	BaseBcCollisions = [bc_collision:init(uuid:get_v4(), bc_map:base1_vertices(BcMap)),
+			 	 		bc_collision:init(uuid:get_v4(), bc_map:base2_vertices(BcMap)),
+			 	 		bc_collision:init(uuid:get_v4(), bc_map:base3_vertices(BcMap)),
+			 	 		bc_collision:init(uuid:get_v4(), bc_map:base4_vertices(BcMap))],
+	{reply, spawn_player_bases(SortedBcPlayers, State, BaseBcCollisions), State}.
 
 %%====================================================================
 %% Internal functions
@@ -90,5 +97,33 @@ start_gold_fsm(BcPlayerSup, BcGame, BcPlayer) ->
 	gen_event:add_handler(EventPid, bc_gold_event, {gold_fsm, BcGoldFsm}),
 	BcGoldFsm.
 
-spawn_player_base(BcPlayer, BcMap, BcEntities, BaseNum) when BaseNum =:= 1 ->
-	
+insert_base_entity(BcPlayer, BaseUuid, BaseBcVertices, BcEntities) ->
+	{ok, BaseBcEntityConfig} = bc_entities:entity_config(base),
+	%% TODO spawn ai impl
+	PlayerId = bc_player:id(BcPlayer),
+	Team = bc_player:team(BcPlayer),
+	Health = bc_entity_config:health(BaseBcEntityConfig),
+	BaseBcEntity = bc_entity:init(BaseUuid, PlayerId, Team, base, Health, BaseBcVertices),
+	case bc_entities:insert_new(BaseBcEntity, BcEntities) of
+		true ->
+			EntitiesEventPid = bc_entities:event(BcEntities),
+			gen_event:notify(EntitiesEventPid, {entity_spawned, BaseBcEntity}),
+			true;
+		false ->
+			false
+	end.
+
+spawn_player_bases([], _, _) ->
+	ok.
+spawn_player_bases([BcPlayer|BcPlayers], 
+				  #state{map = BcMap, 
+						 entities = BcEntities} = State, [BaseBcCollision|BaseBcCollisions]) ->
+	case bc_map:insert_collision(BaseBcCollision) of
+		true ->
+			BaseUuid = bc_collision:uuid(BaseBcCollision),
+			BaseBcVertices = bc_collision:vertices(BaseBcCollison),
+			insert_base_entity(BcPlayer, BaseUuid, BaseBcVertices, BcEntities),
+			spawn_player_bases(BcPlayer, State, BaseBcCollisions);
+		false ->
+			{error, "Could not spawn base for player " ++ bc_player:id(BcPlayer)}
+	end.
