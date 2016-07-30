@@ -3,6 +3,9 @@
 -behavior(gen_fsm).
 -include("../include/bc_game_state.hrl").
 
+%% number of players to start game
+-define(MAX_PLAYERS, 1).
+
 %% exported funcs
 -export([start_link/3, player_join/3, player_quit/2, player_out/2]).
 -export([init/1, pending/2, pending/3, started/2]).
@@ -68,10 +71,11 @@ pending({player_join, #{player_pid := PlayerPid,
 			{ok, BcPlayerServ} = bc_input_serv:create_player_serv(BcInputServ, BcPlayer),
 			case pending_players_changed(GameId, UpdatedPlayers) of
 				{ok, started} ->
-					gen_event:notify(GameEventPid, {game_started, 
-													lists:map(fun({_, V}) -> 
-															  	maps:get(player, V) 
-															  end, dict:to_list(UpdatedPlayers))}),
+					BcPlayers = lists:map(fun({_, V}) -> 
+											maps:get(player, V) 
+										  end, dict:to_list(UpdatedPlayers)),
+					bc_input_serv:spawn_player_bases(BcInputServ, BcPlayers),
+					gen_event:notify(GameEventPid, {game_started, BcPlayers}),
 					{reply, {ok, PlayerId, Team, BcPlayerServ}, started, UpdatedState};
 				{ok, pending} ->
 					{reply, {ok, PlayerId, Team, BcPlayerServ}, pending, UpdatedState};
@@ -177,7 +181,7 @@ toggle_team(Team) ->
 
 pending_players_changed(GameId, Players) ->
 	case dict:size(Players) of
-		Length when Length =:= 4 ->
+		Length when Length =:= ?MAX_PLAYERS ->
 			start_game(GameId);
 		Length when Length =:= 0 ->
 			quit_game(GameId);

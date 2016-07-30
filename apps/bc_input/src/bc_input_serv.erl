@@ -31,6 +31,12 @@ start_link(BcInputSup, BcGame) ->
 create_player_serv(BcInputServ, BcPlayer) ->
 	gen_server:call(BcInputServ, {create_player_serv, BcPlayer}).
 
+-spec spawn_player_bases(BcInputServ :: pid(), 
+						 BcPlayers :: [bc_player:player()]) -> ok | 
+															   {error, Reason :: string()}.
+spawn_player_bases(BcInputServ, BcPlayers) ->
+	gen_server:call(BcInputServ, {spawn_player_bases, BcPlayers}).
+
 %%====================================================================
 %% Gen_server callbacks
 %%====================================================================
