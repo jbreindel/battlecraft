@@ -52,7 +52,7 @@ init(Heir, MapFile) ->
 	{ok, Json} = file:read_file(MapFile),
 	TmxJsonMap = jsx:decode(Json, [return_maps]),
 	{ok, MapGraph} = bc_tmx:load_graph(TmxJsonMap),
-	{ok, BaseVertices} = bc_tmx:load_base_collisions(TmxJsonMap),
+	{ok, BaseVertices} = bc_tmx:load_base_collision_verticies(TmxJsonMap),
 	#{graph => MapGraph, 
 	  bases_vertices => BaseVertices, 
 	  coll_tab => ets:new(collision, ?ETS_OPTIONS(Heir))}.
