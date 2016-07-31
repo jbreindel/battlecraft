@@ -3,7 +3,7 @@
 -behavior(gen_server).
 
 %% api functions
--export([start_link/2,
+-export([start_link/3,
 		 create_player_serv/2]).
 
 %% gen_server callbacks
@@ -21,9 +21,10 @@
 %%====================================================================
 
 -spec start_link(BcInputSup :: pid(), 
-				 BcGame :: bc_game:game()) -> gen:start_ret().
-start_link(BcInputSup, BcGame) ->
-	gen_server:start_link(?MODULE, [BcInputSup, BcGame], []).
+				 BcGame :: bc_game:game(),
+				 BcEntities :: bc_entities:entities()) -> gen:start_ret().
+start_link(BcInputSup, BcGame, BcEntities) ->
+	gen_server:start_link(?MODULE, [BcInputSup, BcGame, BcEntities], []).
 
 -spec create_player_serv(BcInputServ :: pid(), 
 						 BcPlayer :: bc_player:player()) -> {ok, Pid :: pid()} | 
@@ -41,9 +42,8 @@ spawn_player_bases(BcInputServ, BcPlayers) ->
 %% Gen_server callbacks
 %%====================================================================
 
-init([BcInputSup, BcGame]) ->
+init([BcInputSup, BcGame, BcEntities]) ->
 	BcMap = bc_map:init(BcInputSup),
-	BcEntities = bc_entities:init(BcInputSup),
 	{ok, #state{input_sup = BcInputSup,
 		   		game = BcGame,
 				map = BcMap,

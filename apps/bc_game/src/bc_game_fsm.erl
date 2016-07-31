@@ -7,7 +7,7 @@
 -define(MAX_PLAYERS, 1).
 
 %% exported funcs
--export([start_link/3, player_join/3, player_quit/2, player_out/2]).
+-export([start_link/4, player_join/3, player_quit/2, player_out/2]).
 -export([init/1, pending/2, pending/3, started/2]).
 
 %% state rec
@@ -20,29 +20,43 @@
 %% Public functions
 %%====================================================================
 
-start_link(GameId, GameEventPid, BcInputSup) ->
-	gen_fsm:start_link(?MODULE, [GameId, GameEventPid, BcInputSup], []).
+-spec start_link(GameId :: integer(), 
+				 GameEventPid :: pid(), 
+				 BcInputSup :: pid(), 
+				 BcEntities :: bc_entities:entities()) -> gen:start_ret().
+start_link(GameId, GameEventPid, BcInputSup, BcEntities) ->
+	gen_fsm:start_link(?MODULE, [GameId, GameEventPid, BcInputSup, BcEntities], []).
 
-player_join(GameFsmPid, PlayerPid, Handle) ->
-	gen_fsm:sync_send_event(GameFsmPid, 
+-spec player_join(BcGameFsm :: pid(), 
+				  PlayerPid :: pid(), 
+				  Handle :: string()) -> {ok, 
+										  PlayerId :: integer(), 
+										  Team :: integer(), 
+										  BcPlayerServ :: pid()} | 
+											 {error, 
+											  Reason :: string()}.
+player_join(BcGameFsm, PlayerPid, Handle) ->
+	gen_fsm:sync_send_event(BcGameFsm, 
 							{player_join, #{player_pid => PlayerPid,
 											handle => Handle}}).
 
-player_quit(GameFsmPid, PlayerId) ->
-	gen_fsm:send_event(GameFsmPid, {player_quit, PlayerId}).
+-spec player_quit(BcGameFsm :: pid(), PlayerId :: integer()) -> ok.
+player_quit(BcGameFsm, PlayerId) ->
+	gen_fsm:send_event(BcGameFsm, {player_quit, PlayerId}).
 
-player_out(GameFsmPid, PlayerId) ->
-	gen_fsm:send_event(GameFsmPid, {player_out, PlayerId}).
+-spec player_out(BcGameFsm :: pid(), PlayerId :: integer()) -> ok.
+player_out(BcGameFsm, PlayerId) ->
+	gen_fsm:send_event(BcGameFsm, {player_out, PlayerId}).
 
 %%====================================================================
 %% Gen_fsm callbacks 
 %%====================================================================
 
-init([GameId, GameEventPid, BcInputSup]) ->
+init([GameId, GameEventPid, BcInputSup, BcEntities]) ->
 	BcGame = bc_game:create(GameId, GameEventPid, self()),
 	{ok, BcInputServ} = supervisor:start_child(BcInputSup, #{
 		id => bc_input_serv,
-		start => {bc_input_serv, start_link, [BcInputSup, BcGame]},
+		start => {bc_input_serv, start_link, [BcInputSup, BcGame, BcEntities]},
 		modules => [bc_input_serv]
 	}),
 	{ok, pending, #state{input_serv = BcInputServ,

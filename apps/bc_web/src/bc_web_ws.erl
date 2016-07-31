@@ -32,7 +32,7 @@ websocket_init(_Type, Req, _Opts) ->
 
 websocket_handle({text, Json} = Frame, Req, #state{game_id = GameId} = State) ->
  	CommandMap = jsx:decode(Json, [return_maps]),
-	lager:info("Websocket message received: ~p", [CommandMap]),
+	lager:info("Websocket message received: ~p~n", [CommandMap]),
 	case maps:get(<<"command_type">>, CommandMap, undefined) of
 		<<"join_command">> ->
 			Handle = maps:get(<<"handle">>, CommandMap),
@@ -45,6 +45,7 @@ websocket_handle({text, Json} = Frame, Req, #state{game_id = GameId} = State) ->
 					ReplyJson = jsx:encode(ReplyMap),
 					{reply, {text, ReplyJson}, Req, State#state{player_id = PlayerId}};
 				{error, Reason} = Error ->
+					io:format("Error occured while joining: ~p~n", [Error]),
 					ErrorMap = #{type => command_response,
 								 command_response => #{response_type => join_error, 
 													   error => Reason}},

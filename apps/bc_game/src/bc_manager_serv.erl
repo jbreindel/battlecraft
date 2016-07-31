@@ -62,9 +62,10 @@ handle_call({create_game, Privacy}, _From,
 				start => {gen_event, start_link, []},
 				modules => [gen_event]
 			}),
+			BcEntities = bc_entities:init(BcInputSup),
 			{ok, BcGameFsm} = supervisor:start_child(BcGameSup, #{
 			   id => bc_game_fsm,
-			   start => {bc_game_fsm, start_link, [GameId, GameEventPid, BcInputSup]},
+			   start => {bc_game_fsm, start_link, [GameId, GameEventPid, BcInputSup, BcEntities]},
 			   modules => [bc_game_fsm]
 			}),
  			{reply, 
