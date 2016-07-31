@@ -13,10 +13,10 @@
 
 %% Ids - used to track sequence ids
 -record('_ids_', {
-			  %% type of record
-			  type, 
-			  %% id integer
-			  id
+		 %% type of record
+		 type, 
+		 %% id integer
+		 id
 	}).
 
 %%====================================================================

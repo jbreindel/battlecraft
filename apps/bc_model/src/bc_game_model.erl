@@ -61,7 +61,7 @@ save(Privacy, State) ->
 				   							  {error, Reason :: string()}.
 update_state(GameId, GameState) ->
 	case mnesia:sync_transaction(fun() -> 
-										 [Game] = mnesia:wread(game, GameId), 
+										 [Game] = mnesia:wread({game, GameId}), 
 										 mnesia:write(Game#game{state = GameState, 
 																modified = erlang:system_time(seconds)}) 
 								 end) of
