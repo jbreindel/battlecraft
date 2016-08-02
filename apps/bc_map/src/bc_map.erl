@@ -165,19 +165,22 @@ reaching_neighbors(MapGraph, Vertices, MaxDist, NeighborAcc) ->
 	Neighbors = lists:flatten(NeighborLists),
 	reaching_neighbors(MapGraph, Neighbors, MaxDist -1, NeighborAcc ++ Neighbors).
 
-vertex_rows(#{id := Id, vertices := Vertices} = CollisionMap) when erlang:is_map(CollisionMap) ->
-	vertex_rows(Id, Vertices).
+vertex_rows(BcCollision) when erlang:is_map(BcCollision) ->
+	Uuid = bc_collision:uuid(BcCollision),
+	BcVertices = bc_collision:vertices(BcCollision),
+	vertex_rows(Uuid, BcVertices).
 
-vertex_rows(Id, Vertices) when erlang:is_list(Vertices) ->
+vertex_rows(Uuid, BcVertices) when erlang:is_list(BcVertices) ->
 	lists:map(fun(BcVertex) -> 
 				Row = bc_vertex:row(BcVertex), 
 				Col = bc_vertex:col(BcVertex), 
-				{{Row, Col}, Id} 
-			  end, Vertices).
+				{{Row, Col}, Uuid} 
+			  end, BcVertices).
 
-collision_ms(#{vertices := Vertices} = BcCollision) when is_map(BcCollision) ->
-	collision_ms(Vertices);
-collision_ms(Vertices) when is_list(Vertices) ->
+collision_ms(BcCollision) when is_map(BcCollision) ->
+	BcVertices = bc_collision:vertices(BcCollision),
+	collision_ms(BcVertices);
+collision_ms(BcVertices) when is_list(BcVertices) ->
 	[{{{'$1','$2'},'_'},
 	  [{'andalso',{'=:=','$1',Row},
-		{'=:=','$2',Col}}],['$_']} || #{row := Row, col := Col} <- Vertices].
+		{'=:=','$2',Col}}],['$_']} || #{row := Row, col := Col} <- BcVertices].
