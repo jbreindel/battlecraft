@@ -54,7 +54,7 @@ init(Heir, MapFile) ->
 	{ok, MapGraph} = bc_tmx:load_graph(TmxJsonMap),
 	{ok, BaseVertices} = bc_tmx:load_base_collision_verticies(TmxJsonMap),
 	#{graph => MapGraph, 
-	  bases_vertices => BaseVertices, 
+	  base_vertices => BaseVertices, 
 	  coll_tab => ets:new(collision, ?ETS_OPTIONS(Heir))}.
 
 -spec insert_collision(MapGraph :: map_graph(),

@@ -4,7 +4,8 @@
 
 %% api functions
 -export([start_link/3,
-		 create_player_serv/2]).
+		 create_player_serv/2,
+		 spawn_player_bases/2]).
 
 %% gen_server callbacks
 -export([init/1,
@@ -124,7 +125,7 @@ spawn_player_bases([], _, _) ->
 spawn_player_bases([BcPlayer|BcPlayers], 
 				  #state{map = BcMap, 
 						 entities = BcEntities} = State, [BaseBcCollision|BaseBcCollisions]) ->
-	case bc_map:insert_collision(BaseBcCollision) of
+	case bc_map:insert_collision(BcMap, BaseBcCollision) of
 		true ->
 			BaseUuid = bc_collision:uuid(BaseBcCollision),
 			BaseBcVertices = bc_collision:vertices(BaseBcCollision),
