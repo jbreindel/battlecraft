@@ -130,7 +130,7 @@ spawn_player_bases([BcPlayer|BcPlayers],
 			BaseUuid = bc_collision:uuid(BaseBcCollision),
 			BaseBcVertices = bc_collision:vertices(BaseBcCollision),
 			insert_base_entity(BcPlayer, BaseUuid, BaseBcVertices, BcEntities),
-			spawn_player_bases(BcPlayer, State, BaseBcCollisions);
+			spawn_player_bases(BcPlayers, State, BaseBcCollisions);
 		false ->
 			{error, "Could not spawn base for player " ++ bc_player:id(BcPlayer)}
 	end.
