@@ -9,6 +9,7 @@
 							{write_concurrency, true}]).
 
 -export([init/1, 
+		 entity_config/2,
 		 table/1,
 		 event/1,
 		 insert_new/2, 
@@ -32,13 +33,14 @@
 
 -spec init(Heir :: pid()) -> entities().
 init(Heir) ->
-	#{entities_config => load_entities_config(),
-	  entities_event => supervisor:start_child(Heir, #{
+	{ok, EntitiesEventPid} = supervisor:start_child(Heir, #{
 		id => bc_entities_event,
 		start => {gen_event, start_link, []},
 		modules => [gen_event]
-	  }),
-	  entities_pid => ets:new(entities, ?ETS_OPTIONS(Heir))}.
+	}),
+	#{entities_config => load_entities_config(),
+	  entities_event => EntitiesEventPid,
+	  entities_tab => ets:new(entities, ?ETS_OPTIONS(Heir))}.
 
 -spec entity_config(EntityType :: atom(), BcEntities :: entities()) -> dict:dict(atom(), bc_entity_config:entity_config()).
 entity_config(EntityType, #{entities_config := EntitiesConfig}) ->

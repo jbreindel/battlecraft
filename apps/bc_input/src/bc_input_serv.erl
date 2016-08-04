@@ -105,7 +105,7 @@ start_gold_fsm(BcPlayerSup, BcGame, BcPlayer) ->
 	BcGoldFsm.
 
 insert_base_entity(BcPlayer, BaseUuid, BaseBcVertices, BcEntities) ->
-	{ok, BaseBcEntityConfig} = bc_entities:entity_config(base),
+	{ok, BaseBcEntityConfig} = bc_entities:entity_config(base, BcEntities),
 	%% TODO spawn ai impl
 	PlayerId = bc_player:id(BcPlayer),
 	Team = bc_player:team(BcPlayer),
