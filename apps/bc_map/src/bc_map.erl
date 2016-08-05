@@ -85,8 +85,8 @@ query_collisions(#{coll_tab := Tab}, Vertices) ->
 	Ms = collision_ms(Vertices),
 	case ets:select(Tab, Ms) of
 		Results when is_list(Results) ->
-			lists:map(fun({{Row, Col}, Id}) -> #{id => Id, 
-												 vertex => bc_vertex:init(Row, Col)} end, Results);
+			lists:map(fun({{Row, Col}, Uuid}) -> #{uuid => Uuid, 
+												   vertex => bc_vertex:init(Row, Col)} end, Results);
 		_ ->
 			{error, "Unable to query collisions."}
 	end.
@@ -166,7 +166,8 @@ reaching_neighbors(MapGraph, Vertices, MaxDist, NeighborAcc) ->
 	reaching_neighbors(MapGraph, Neighbors, MaxDist -1, NeighborAcc ++ Neighbors).
 
 vertex_rows(BcCollision) when erlang:is_map(BcCollision) ->
-	Uuid = bc_collision:uuid(BcCollision),
+	UuidStr = bc_collision:uuid_str(BcCollision),
+	Uuid = uuid:string_to_uuid(UuidStr),
 	BcVertices = bc_collision:vertices(BcCollision),
 	vertex_rows(Uuid, BcVertices).
 
