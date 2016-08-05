@@ -64,7 +64,7 @@ init flags =
         ]
     in
         Effects.init {
-            state = GameState.Pending,
+            state = GameState.Joining,
             address = flags.address,
             keyboardModel = keyboardModel,
             joinModel = joinModel,
