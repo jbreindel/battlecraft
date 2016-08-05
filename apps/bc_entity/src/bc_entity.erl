@@ -4,7 +4,7 @@
 %% API exports
 -export([init/6, 
 		 init/7, 
-		 uuid/1, 
+		 uuid_str/1, 
 		 player_id/1,
 		 set_player_id/2, 
 		 team/1, 
@@ -22,7 +22,7 @@
 %%
 %% @doc base entity type for saving and transfering entities.
 %%
--type entity() :: #{uuid => uuid:uuid(), 
+-type entity() :: #{uuid_str => string(), 
 					player_id => integer(), 
 					team => integer(), 
 					entity_type => integer(), 
@@ -37,24 +37,24 @@
 %% API functions
 %%====================================================================
 
--spec init(Uuid :: uuid:uuid(), 
+-spec init(UuidStr :: string(), 
 		   PlayerId :: integer(), 
 		   Team :: integer(), 
 		   EntityType :: integer(), 
 		   Health :: integer(),
 		   Vertices :: [bc_vertex:vertex()]) -> entity().
-init(Uuid, PlayerId, Team, EntityType, Health, Vertices) ->
-	init(Uuid, PlayerId, Team, EntityType, Health, Vertices, undefined).
+init(UuidStr, PlayerId, Team, EntityType, Health, Vertices) ->
+	init(UuidStr, PlayerId, Team, EntityType, Health, Vertices, undefined).
 
--spec init(Uuid :: uuid:uuid(), 
+-spec init(UuidStr :: string(), 
 		   PlayerId :: integer(), 
 		   Team :: integer(), 
 		   EntityType :: integer(), 
 		   Health :: integer(),
 		   Vertices :: [bc_vertex:vertex()],
 		   AIFsm :: pid()) -> entity().
-init(Uuid, PlayerId, Team, EntityType, Health, Vertices, AIFsm) ->
-	#{uuid => Uuid,
+init(UuidStr, PlayerId, Team, EntityType, Health, Vertices, AIFsm) ->
+	#{uuid_str => UuidStr,
 	  player_id => PlayerId,
 	  team => Team,
 	  entity_type => EntityType,
@@ -62,9 +62,9 @@ init(Uuid, PlayerId, Team, EntityType, Health, Vertices, AIFsm) ->
 	  vertices => Vertices,
 	  ai_fsm => AIFsm}.
 
--spec uuid(BcEntity :: entity()) -> uuid:uuid().
-uuid(BcEntity) ->
-	maps:get(uuid, BcEntity).
+-spec uuid_str(BcEntity :: entity()) -> string().
+uuid_str(BcEntity) ->
+	maps:get(uuid_str, BcEntity).
 
 -spec player_id(BcEntity :: entity()) -> integer().
 player_id(BcEntity)->
@@ -114,7 +114,9 @@ to_collision(BcEntity) ->
 
 -spec to_tuple(BcEntity :: entity()) -> tuple().
 to_tuple(BcEntity) ->
-	{uuid(BcEntity), 
+	UuidStr = uuid_str(BcEntity),
+	Uuid = uuid:string_to_uuid(UuidStr),
+	{uuid(Uuid), 
 	 player_id(BcEntity), 
 	 team(BcEntity), 
 	 entity_type(BcEntity), 
@@ -129,4 +131,4 @@ from_tuple(
 	 EntityType, 
 	 Health, 
 	 AiFsm}) ->
-	init(Uuid, PlayerId, Team, EntityType, Health, AiFsm).
+	init(uuid:uuid_to_string(Uuid), PlayerId, Team, EntityType, Health, AiFsm).
