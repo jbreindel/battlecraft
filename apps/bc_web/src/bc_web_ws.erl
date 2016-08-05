@@ -60,8 +60,8 @@ websocket_handle(Frame, Req, State) ->
 	{ok, Req, State}.
 
 websocket_info(WsMessage, Req, State) when erlang:is_map(WsMessage) ->
+	lager:info("Serializing ws message: ~p", [WsMessage]),
 	Json = jsx:encode(WsMessage),
-	lager:info("Sending ws message: ~p", [Json]),
 	{reply, {text, Json}, Req, State};
 websocket_info(_Info, Req, State) ->
 	{ok, Req, State}.

@@ -14,12 +14,12 @@
 init({player, BcPlayer}) ->
 	{ok, #state{player = BcPlayer}}.
 
-handle_event({game_started, Players}, 
+handle_event({game_started, BcPlayers}, 
 			 #state{player = BcPlayer} = State) ->
 	PlayerPid = bc_player:pid(BcPlayer),
 	PlayerPid ! #{type => game_event,
 				  game_event => #{event_type => game_started,
-							 	  players => Players}},
+							 	  players => lists:map(fun bc_player:serialize/1, BcPlayers)}},
 	{ok, State};
 handle_event({game_error, Reason},
 			 #state{player = BcPlayer} = State) ->
@@ -33,5 +33,5 @@ handle_event({PlayerEventType, BcPlayer},
 	PlayerPid = bc_player:pid(BcPlayer),
 	PlayerPid ! #{type => game_event,
 				  game_event => #{event_type => PlayerEventType,
-							 	  player => BcPlayer}},
+							 	  player => bc_player:serialize(BcPlayer)}},
 	{ok, State}.

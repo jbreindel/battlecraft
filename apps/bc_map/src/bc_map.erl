@@ -166,8 +166,7 @@ reaching_neighbors(MapGraph, Vertices, MaxDist, NeighborAcc) ->
 	reaching_neighbors(MapGraph, Neighbors, MaxDist -1, NeighborAcc ++ Neighbors).
 
 vertex_rows(BcCollision) when erlang:is_map(BcCollision) ->
-	UuidStr = bc_collision:uuid_str(BcCollision),
-	Uuid = uuid:string_to_uuid(UuidStr),
+	Uuid = bc_collision:uuid(BcCollision),
 	BcVertices = bc_collision:vertices(BcCollision),
 	vertex_rows(Uuid, BcVertices).
 

@@ -8,7 +8,7 @@
 
 %% exported funcs
 -export([start_link/4, player_join/3, player_quit/2, player_out/2]).
--export([init/1, pending/2, pending/3, started/2]).
+-export([init/1, pending/2, pending/3, started/2, terminate/2]).
 
 %% state rec
 -record(state, {input_serv,
@@ -184,6 +184,9 @@ handle_info({'DOWN', Ref, process, Pid, _},
 		_ ->
 			ok
 	end.
+
+terminate(Reason, State) ->
+	io:format("BcGameFsm terminates with ~p~n", [Reason]).
 
 %%====================================================================
 %% Internal functions

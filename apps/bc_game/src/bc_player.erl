@@ -5,7 +5,8 @@
 		 id/1, 
 		 handle/1,
 		 team/1, 
-		 pid/1]).
+		 pid/1,
+		 serialize/1]).
 
 %%
 %% @doc player map for player indentification
@@ -37,3 +38,6 @@ team(BcPlayer) ->
 -spec pid(BcPlayer :: player()) -> pid().
 pid(BcPlayer) ->
 	maps:get(pid, BcPlayer).
+
+serialize(BcPlayer) ->
+	maps:remove(pid, BcPlayer).

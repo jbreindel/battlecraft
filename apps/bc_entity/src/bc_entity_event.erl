@@ -20,6 +20,6 @@ handle_event({EntityEventType, BcEntity},
 	PlayerPid = bc_player:pid(BcPlayer),
 	PlayerPid ! #{type => entity_event,
 				  entity_event => #{event_type => EntityEventType,
-									entity => BcEntity}},
+									entity => bc_entity:serialize(BcEntity)}},
 	{ok, State}.
 	

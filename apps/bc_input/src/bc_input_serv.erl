@@ -9,7 +9,8 @@
 
 %% gen_server callbacks
 -export([init/1,
-		 handle_call/3]).
+		 handle_call/3,
+		 terminate/2]).
 
 %% state rec
 -record(state, {input_sup,
@@ -79,11 +80,14 @@ handle_call({spawn_player_bases, BcPlayers}, _From,
 	SortedBcPlayers = lists:sort(fun(BcPlayer1, BcPlayer2) -> 
 									bc_player:team(BcPlayer1) < bc_player:team(BcPlayer2) 
 								 end, BcPlayers),
-	BaseBcCollisions = [bc_collision:init(uuid:get_v4(), bc_map:base1_vertices(BcMap)),
-			 	 		bc_collision:init(uuid:get_v4(), bc_map:base2_vertices(BcMap)),
-			 	 		bc_collision:init(uuid:get_v4(), bc_map:base3_vertices(BcMap)),
-			 	 		bc_collision:init(uuid:get_v4(), bc_map:base4_vertices(BcMap))],
+	BaseBcCollisions = [bc_collision:init(uuid:uuid_to_string(uuid:get_v4()), bc_map:base1_vertices(BcMap)),
+			 	 		bc_collision:init(uuid:uuid_to_string(uuid:get_v4()), bc_map:base2_vertices(BcMap)),
+			 	 		bc_collision:init(uuid:uuid_to_string(uuid:get_v4()), bc_map:base3_vertices(BcMap)),
+			 	 		bc_collision:init(uuid:uuid_to_string(uuid:get_v4()), bc_map:base4_vertices(BcMap))],
 	{reply, spawn_player_bases(SortedBcPlayers, State, BaseBcCollisions), State}.
+
+terminate(Reason, State) ->
+	io:format("BcGameFsm terminates with ~p~n", [Reason]).
 
 %%====================================================================
 %% Internal functions

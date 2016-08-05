@@ -136,3 +136,6 @@ from_tuple(
 	 Health, 
 	 AiFsm}) ->
 	init(uuid:uuid_to_string(Uuid), PlayerId, Team, EntityType, Health, AiFsm).
+
+serliaze(BcEntity) ->
+	maps:remove(ai_fsm, BcEntity).
