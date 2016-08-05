@@ -4,7 +4,8 @@
 %% API exports
 -export([init/6, 
 		 init/7, 
-		 uuid_str/1, 
+		 uuid_str/1,
+		 uuid/1,
 		 player_id/1,
 		 set_player_id/2, 
 		 team/1, 
@@ -65,6 +66,11 @@ init(UuidStr, PlayerId, Team, EntityType, Health, Vertices, AIFsm) ->
 -spec uuid_str(BcEntity :: entity()) -> string().
 uuid_str(BcEntity) ->
 	maps:get(uuid_str, BcEntity).
+	
+-spec uuid(BcEntity :: entity()) -> uuid:uuid().
+uuid(BcEntity) ->
+	UuidStr = uuid_str(BcEntity),
+	uuid:string_to_uuid(UuidStr).
 
 -spec player_id(BcEntity :: entity()) -> integer().
 player_id(BcEntity)->
