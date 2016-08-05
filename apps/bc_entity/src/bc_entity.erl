@@ -120,9 +120,7 @@ to_collision(BcEntity) ->
 
 -spec to_tuple(BcEntity :: entity()) -> tuple().
 to_tuple(BcEntity) ->
-	UuidStr = uuid_str(BcEntity),
-	Uuid = uuid:string_to_uuid(UuidStr),
-	{uuid(Uuid), 
+	{uuid(BcEntity), 
 	 player_id(BcEntity), 
 	 team(BcEntity), 
 	 entity_type(BcEntity), 
