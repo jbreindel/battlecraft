@@ -18,12 +18,16 @@ type Message =
 messageInfo : String -> Decoder Message
 messageInfo messageType =
     case messageType of
+
         "command_response" ->
             object1 JoinResp joinResponse
+
         "game_event" ->
             object1 GameEv gameEvent
+
         "entity_event" ->
             object1 EntityEv entityEvent
+
         _ ->
             fail <| "Unable to parse messageType: " ++ messageType
 
