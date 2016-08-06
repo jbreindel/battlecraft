@@ -7,7 +7,7 @@ import Json.Decode exposing (..)
 type alias Player = {
     id : Int,
     handle : String,
-    isOut : Bool
+    team : Int
 }
 
 player : Decoder Player
@@ -15,7 +15,7 @@ player =
     object3 Player
         ("id" := int)
         ("handle" := string)
-        ("is_out" := bool)
+        ("team" := int)
 
 -- GameEvent Types
 
