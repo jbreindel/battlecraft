@@ -156,4 +156,7 @@ from_tuple(
 		 EntityType, Health, MaxHealth, AiFsm).
 
 serialize(BcEntity) ->
-	maps:remove(ai_fsm, BcEntity).
+	UuidStr = uuid_str(BcEntity),
+	BinUuidStr = binary:list_to_bin(UuidStr),
+	UpdatedBcEntity = maps:update(uuid_str, BinUuidStr, BcEntity),
+	maps:remove(ai_fsm, UpdatedBcEntity).
