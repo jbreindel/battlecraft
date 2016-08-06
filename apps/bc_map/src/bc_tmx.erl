@@ -71,8 +71,8 @@ tile_inside_object(DimMap, ObjectMap, Row, Col) ->
 	lists:any(fun(Pos) ->
 					Y = maps:get(y, Pos),
 					X = maps:get(x, Pos),
-					Y >= MinY andalso Y =< MaxY andalso 
-					X >= MinX andalso X =< MaxX
+					Y > MinY andalso Y < MaxY andalso 
+					X > MinX andalso X < MaxX
 				end, PosList).
 
 -spec inside_object(DimMap :: bc_tmx:dims(), 
@@ -143,23 +143,25 @@ water_objects(TmxJsonMap) ->
 			   				end).
 
 base1_objects(TmxJsonMap) ->
-	objects(TmxJsonMap, fun(LayerName) ->
-							string:str(LayerName, "base1") >= 0 
-		   				end).
+	BaseObjs = objects(TmxJsonMap, fun(LayerName) ->
+							string:str(LayerName, "base1") > 0 
+		   				end),
+	io:format("Base1ObjectMaps: ~p~n", [BaseObjs]),
+	BaseObjs.
 
 base2_objects(TmxJsonMap) ->
 	objects(TmxJsonMap, fun(LayerName) -> 
-							string:str(LayerName, "base2") >= 0
+							string:str(LayerName, "base2") > 0
 		   				end).
 
 base3_objects(TmxJsonMap) ->
 	objects(TmxJsonMap, fun(LayerName) -> 
-							string:str(LayerName, "base3") >= 0
+							string:str(LayerName, "base3") > 0
 		   				end).
 
 base4_objects(TmxJsonMap) ->
 	objects(TmxJsonMap, fun(LayerName) -> 
-							string:str(LayerName, "base4") >= 0
+							string:str(LayerName, "base4") > 0
 		   				end).
 
 populate_edges(MapGraph, _, _, []) ->
@@ -258,12 +260,12 @@ process_base_collisions(TmxJsonMap) ->
 	MapGraph = process_map(TmxJsonMap),
 	Dims = process_dims(TmxJsonMap),
 	Base1Objects = base1_objects(TmxJsonMap),
-	Base1Objects = base2_objects(TmxJsonMap),
-	Base1Objects = base3_objects(TmxJsonMap),
-	Base1Objects = base4_objects(TmxJsonMap),
+	Base2Objects = base2_objects(TmxJsonMap),
+	Base3Objects = base3_objects(TmxJsonMap),
+	Base4Objects = base4_objects(TmxJsonMap),
 	#{
 		base1 => object_verticies(MapGraph, Dims, Base1Objects),
-		base2 => object_verticies(MapGraph, Dims, Base1Objects),
-		base3 => object_verticies(MapGraph, Dims, Base1Objects),
-		base4 => object_verticies(MapGraph, Dims, Base1Objects)
+		base2 => object_verticies(MapGraph, Dims, Base2Objects),
+		base3 => object_verticies(MapGraph, Dims, Base3Objects),
+		base4 => object_verticies(MapGraph, Dims, Base4Objects)
 	}.
