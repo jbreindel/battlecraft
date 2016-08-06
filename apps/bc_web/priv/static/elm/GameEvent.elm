@@ -62,10 +62,13 @@ type GameEvent =
 gameEventInfo : String -> Decoder GameEvent
 gameEventInfo eventType =
     case eventType of
+
         "game_started" ->
             object1 GameStartedEv gameStartedEvent
+
         "game_error" ->
             object1 GameErrorEv gameErrorEvent
+
         _ ->
             object1 PlayerEv playerEvent
 

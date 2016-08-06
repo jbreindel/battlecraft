@@ -15,6 +15,7 @@ import Window
 
 import Join
 import Map
+import Entity
 import GameState exposing (GameState)
 import Message exposing (..)
 
@@ -150,6 +151,14 @@ onWsReceiveMessage message model =
         GameEv gameEv ->
             -- TODO handle game event
             Effects.return model
+
+        EntityEv entityEv ->
+            let
+                entityMsg = Entity.EntityEv entityEv
+
+                mapMsg = Map.EntityMsg entityMsg
+            in
+                update (MapMsg mapMsg) model
 
 handleJoinEffect : Effects.Handler Join.Effect Model (Cmd Msg)
 handleJoinEffect effect model =

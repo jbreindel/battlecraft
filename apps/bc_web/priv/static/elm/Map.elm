@@ -1,5 +1,6 @@
 module Map exposing (Effect(..), Msg(..), Model, init, update, view)
 
+import Dict exposing (..)
 import Html exposing (..)
 import Element exposing (..)
 import Collage exposing (..)
@@ -11,6 +12,10 @@ import Keyboard.Extra as Keyboard
 import Window
 import Http
 
+-- Local imports
+
+import Entity
+
 -- Actions
 
 type Effect =
@@ -21,7 +26,8 @@ type Msg =
     MapGetSuccess TmxMap |
     MapGetFail Http.Error |
     KeyboardMsg Keyboard.Model |
-    WindowMsg Window.Size
+    WindowMsg Window.Size |
+    EntityMsg Entity.Msg
 
 -- Model
 
@@ -166,7 +172,8 @@ type alias Model = {
     y : Float,
     zoom : Float,
     windowHeight : Int,
-    windowWidth : Int
+    windowWidth : Int,
+    entityModels : Dict String Entity.Model
 }
 
 getMap : Task Http.Error TmxMap
@@ -182,7 +189,8 @@ init =
         y = 0.0,
         zoom = 0.6,
         windowHeight = 800,
-        windowWidth = 550
+        windowWidth = 550,
+        entityModels = Dict.empty
     } [PerformCmd <| Task.perform MapGetFail MapGetSuccess getMap]
 
 -- Update
@@ -209,6 +217,9 @@ update msg model =
             Effects.return {model |
                             windowHeight = windowSize.height,
                             windowWidth = windowSize.width}
+
+        EntityMsg entityMsg ->
+            Effects.return model
 
 updateX : Model -> Float -> Float
 updateX model delta =

@@ -6,12 +6,14 @@ import Json.Decode exposing (..)
 
 import Command exposing (..)
 import GameEvent exposing (..)
+import EntityEvent exposing (..)
 
 -- Aggregate Types
 
 type Message =
     JoinResp JoinResponse |
-    GameEv GameEvent
+    GameEv GameEvent |
+    EntityEv EntityEvent
 
 messageInfo : String -> Decoder Message
 messageInfo messageType =
@@ -20,6 +22,8 @@ messageInfo messageType =
             object1 JoinResp joinResponse
         "game_event" ->
             object1 GameEv gameEvent
+        "entity_event" ->
+            object1 EntityEv entityEvent
         _ ->
             fail <| "Unable to parse messageType: " ++ messageType
 
