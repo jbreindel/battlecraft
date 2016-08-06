@@ -2,8 +2,8 @@
 -module(bc_entity).
 
 %% API exports
--export([init/6, 
-		 init/7, 
+-export([init/7, 
+		 init/8, 
 		 uuid_str/1,
 		 uuid/1,
 		 player_id/1,
@@ -13,12 +13,15 @@
 		 entity_type/1, 
 		 health/1, 
 		 set_health/2,
+		 max_health/1,
+		 set_max_health/2,
 		 ai_fsm/1,
 		 vertices/1,
 		 set_vertices/2,
 		 to_collision/1,
 		 to_tuple/1,
-		 from_tuple/1]).
+		 from_tuple/1,
+		 serialize/1]).
 
 %%
 %% @doc base entity type for saving and transfering entities.
@@ -28,6 +31,7 @@
 					team => integer(), 
 					entity_type => integer(), 
 					health => integer(), 
+					max_health => integer(),
 					vertices => [bc_vertex:vertex()],
 					ai_fsm => pid() | undefined}.
 
@@ -43,23 +47,26 @@
 		   Team :: integer(), 
 		   EntityType :: integer(), 
 		   Health :: integer(),
+		   MaxHealth :: integer(),
 		   Vertices :: [bc_vertex:vertex()]) -> entity().
-init(UuidStr, PlayerId, Team, EntityType, Health, Vertices) ->
-	init(UuidStr, PlayerId, Team, EntityType, Health, Vertices, undefined).
+init(UuidStr, PlayerId, Team, EntityType, Health, MaxHealth, Vertices) ->
+	init(UuidStr, PlayerId, Team, EntityType, Health,MaxHealth, Vertices, undefined).
 
 -spec init(UuidStr :: string(), 
 		   PlayerId :: integer(), 
 		   Team :: integer(), 
 		   EntityType :: integer(), 
 		   Health :: integer(),
+		   MaxHealth :: integer(),
 		   Vertices :: [bc_vertex:vertex()],
 		   AIFsm :: pid()) -> entity().
-init(UuidStr, PlayerId, Team, EntityType, Health, Vertices, AIFsm) ->
+init(UuidStr, PlayerId, Team, EntityType, Health, MaxHealth, Vertices, AIFsm) ->
 	#{uuid_str => UuidStr,
 	  player_id => PlayerId,
 	  team => Team,
 	  entity_type => EntityType,
 	  health => Health,
+	  max_health => MaxHealth,
 	  vertices => Vertices,
 	  ai_fsm => AIFsm}.
 
@@ -100,6 +107,14 @@ health(BcEntity) ->
 set_health(BcEntity, Health) ->
 	maps:update(health, Health, BcEntity).
 
+-spec max_health(BcEntity :: entity()) -> integer().
+max_health(BcEntity) ->
+	maps:get(max_health, BcEntity).
+
+-spec set_max_health(BcEntity :: entity(), MaxHealth :: integer()) -> entity().
+set_max_health(BcEntity, MaxHealth) ->
+	maps:update(max_health, MaxHealth, BcEntity).
+
 -spec ai_fsm(BcEntity :: entity()) -> pid() | undefined.
 ai_fsm(BcEntity) ->
 	maps:get(ai_fsm, BcEntity).
@@ -125,6 +140,7 @@ to_tuple(BcEntity) ->
 	 team(BcEntity), 
 	 entity_type(BcEntity), 
 	 health(BcEntity), 
+	 max_health(BcEntity),
 	 ai_fsm(BcEntity)}.
 
 -spec from_tuple(tuple()) -> entity().
@@ -134,8 +150,10 @@ from_tuple(
 	 Team, 
 	 EntityType, 
 	 Health, 
+	 MaxHealth,
 	 AiFsm}) ->
-	init(uuid:uuid_to_string(Uuid), PlayerId, Team, EntityType, Health, AiFsm).
+	init(uuid:uuid_to_string(Uuid), PlayerId, Team, 
+		 EntityType, Health, MaxHealth, AiFsm).
 
-serliaze(BcEntity) ->
+serialize(BcEntity) ->
 	maps:remove(ai_fsm, BcEntity).

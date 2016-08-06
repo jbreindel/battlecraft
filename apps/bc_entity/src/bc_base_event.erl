@@ -30,4 +30,6 @@ handle_event({entitiy_died, BcEntity}, #state{base_uuid = BaseUuid,
 			remove_handler;
 		false ->
 			{ok, State}
-	end.
+	end;
+handle_event(_, State) ->
+	{ok, State}.

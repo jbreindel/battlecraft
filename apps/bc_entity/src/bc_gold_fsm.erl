@@ -48,7 +48,8 @@ accruing(gold_accrued, #state{player = BcPlayer} = State) ->
 	gen_fsm:send_event_after(State#state.accrue_time, gold_accrued),
 	PlayerPid = bc_player:pid(BcPlayer),
 	Gold = State#state.gold + State#state.accrue_gold,
-	PlayerPid ! #{event => #{type => gold_accrued, gold => Gold}},
+	PlayerPid ! #{type => gold_event, 
+				  gold_event => #{event_type => gold_accrued, gold => Gold}},
 	{next_state, accruing, State#state{gold = Gold}};
 accruing(_, State) ->
 	{next_state, accruing, State}.

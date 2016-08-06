@@ -77,13 +77,23 @@ handle_call({spawn_player_bases, BcPlayers}, _From,
 		   game = BcGame,
 		   map = BcMap,
 		   entities = BcEntities} = State) ->
+	EntitiesEventPid = bc_entities:event(BcEntities),
+	lists:foreach(fun(BcPlayer) -> 
+					gen_event:add_handler(EntitiesEventPid, bc_entity_event, [BcPlayer]) 
+				  end, BcPlayers),
 	SortedBcPlayers = lists:sort(fun(BcPlayer1, BcPlayer2) -> 
 									bc_player:team(BcPlayer1) < bc_player:team(BcPlayer2) 
 								 end, BcPlayers),
-	BaseBcCollisions = [bc_collision:init(uuid:uuid_to_string(uuid:get_v4()), bc_map:base1_vertices(BcMap)),
-			 	 		bc_collision:init(uuid:uuid_to_string(uuid:get_v4()), bc_map:base2_vertices(BcMap)),
-			 	 		bc_collision:init(uuid:uuid_to_string(uuid:get_v4()), bc_map:base3_vertices(BcMap)),
-			 	 		bc_collision:init(uuid:uuid_to_string(uuid:get_v4()), bc_map:base4_vertices(BcMap))],
+	BaseBcCollisions = [bc_collision:init(uuid:get_v4(), bc_map:base1_vertices(BcMap)),
+			 	 		bc_collision:init(uuid:get_v4(), bc_map:base2_vertices(BcMap)),
+			 	 		bc_collision:init(uuid:get_v4(), bc_map:base3_vertices(BcMap)),
+			 	 		bc_collision:init(uuid:get_v4(), bc_map:base4_vertices(BcMap))],
+	lists:foldl(fun(BcPlayer, Num) -> 
+					BaseBcCollision = lists:nth(Num, BaseBcCollisions),
+					BaseUuid = bc_collision:uuid(BaseBcCollision),
+					gen_event:add_handler(EntitiesEventPid, bc_base_event, [BaseUuid, BcGame, BcPlayer]), 
+					Num + 1 
+				end, 1, SortedBcPlayers),
 	{reply, spawn_player_bases(SortedBcPlayers, State, BaseBcCollisions), State}.
 
 terminate(Reason, State) ->
@@ -111,10 +121,11 @@ start_gold_fsm(BcPlayerSup, BcGame, BcPlayer) ->
 insert_base_entity(BcPlayer, BaseUuid, BaseBcVertices, BcEntities) ->
 	{ok, BaseBcEntityConfig} = bc_entities:entity_config(base, BcEntities),
 	%% TODO spawn ai impl
+	BaseUuidStr = uuid:uuid_to_string(BaseUuid),
 	PlayerId = bc_player:id(BcPlayer),
 	Team = bc_player:team(BcPlayer),
 	Health = bc_entity_config:health(BaseBcEntityConfig),
-	BaseBcEntity = bc_entity:init(BaseUuid, PlayerId, Team, base, Health, BaseBcVertices),
+	BaseBcEntity = bc_entity:init(BaseUuidStr, PlayerId, Team, base, Health, Health, BaseBcVertices),
 	case bc_entities:insert_new(BaseBcEntity, BcEntities) of
 		true ->
 			EntitiesEventPid = bc_entities:event(BcEntities),
