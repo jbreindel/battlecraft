@@ -10,6 +10,9 @@ import EntityEvent exposing (Vertex, Entity, EntityEvent)
 
 -- Actions
 
+type Effect =
+    Holder1 | Holder2
+
 type Msg =
     EntityEv EntityEvent |
     NoOp
@@ -28,10 +31,24 @@ type alias Model = {
 
 -- Init
 
--- init : Entity -> Model
--- init entity =
---     Effects.return {
---         entity = entity,
---         orientation = Down,
---         entityState = Standing
---     }
+init : Entity -> Effects Model Effect
+init entity =
+    Effects.return {
+        entity = entity,
+        orientation = Down,
+        entityState = Standing
+    }
+
+-- view : Map.Model Model -> Collage.Form
+-- view model TmxMap =
+--     let
+--         entityType = model.entity.entityType
+--
+--         health = model.entity.health
+--
+--         maxHealth = model.entity.maxHealth
+--     in
+--         case entityType of
+--
+--             "base" ->
+--
