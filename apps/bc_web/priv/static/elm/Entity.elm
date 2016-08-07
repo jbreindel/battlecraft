@@ -44,11 +44,12 @@ init entity =
 --     let
 --         entityType = model.entity.entityType
 --
---         health = model.entity.health
---
 --         maxHealth = model.entity.maxHealth
+--
+--         healthPct = model.entity.health / maxHealth
+--
+--         vertices = model.entity.vertices
 --     in
 --         case entityType of
 --
 --             "base" ->
---
