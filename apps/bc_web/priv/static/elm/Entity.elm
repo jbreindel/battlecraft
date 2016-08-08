@@ -45,9 +45,23 @@ init entity =
         orientation = Down,
         entityState = Standing
     }
+    
+-- Update
 
--- View
-
+{--
+update : Msg -> Model -> Effects Model Effect
+update msg model =
+    case msg of
+        
+        EntityEvent entityEvent ->
+            
+onEntityEvent : EntityEvent -> Model -> Effects Model Effect
+onEntityEvent entityEvent model =
+    case entityEvent of
+        
+        EntitySpawnedEvent entitySpawnedEvent ->
+--}            
+            
 entityRowCount : Dict -> Int
 entityRowCount vertexMatrix =
     let
@@ -106,19 +120,24 @@ entityPosition tmxMap vertexMatrix =
         offsetX = x + widthOffset
     in
         (toFloat offsetX, toFloat offsetY)
-                
 
--- view : Model -> TmxMap -> Collage.Form
--- view model tmxMap =
---     let
---         entityType = model.entity.entityType
---
---         maxHealth = model.entity.maxHealth
---
---         healthPct = model.entity.health / maxHealth
---
---         entityWidth = entityWidth tmxMap.tileWidth model.vertexMatrix
---     in
---         case entityType of
---
---             "base" ->
+-- View
+
+{--
+
+view : Model -> TmxMap -> Collage.Form
+view model tmxMap =
+    let
+        entityType = model.entity.entityType
+
+        maxHealth = model.entity.maxHealth
+
+        healthPct = model.entity.health / maxHealth
+
+        entityWidth = entityWidth tmxMap.tileWidth model.vertexMatrix
+    in
+       case entityType of
+
+           "base" ->
+
+--}
