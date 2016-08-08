@@ -32,7 +32,8 @@ type EntityState =
 
 type alias Model = {
     entity : Entity,
-    vertexMatrix : Dict Int List Int
+    vertexMatrix : Dict Int List Int,
+    position : (Float, Float),
     orientation : Orientation,
     entityState : EntityState
 }
