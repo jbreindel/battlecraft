@@ -19,9 +19,16 @@ type Msg =
 
 -- Model
 
-type Orientation = Up | Right | Down | Left
+type Orientation = 
+    Up | 
+    Right | 
+    Down | 
+    Left
 
-type EntityState = Standing | Moving | Attacking
+type EntityState = 
+    Standing | 
+    Moving | 
+    Attacking
 
 type alias Model = {
     entity : Entity,
@@ -29,8 +36,6 @@ type alias Model = {
     orientation : Orientation,
     entityState : EntityState
 }
-
--- Init
 
 init : Entity -> Effects Model Effect
 init entity =
@@ -61,14 +66,9 @@ entityColCount vertexMatrix =
     let
         row = Dict.keys vertexMatrix
                 |> List.take 1
-
-        mbCols = Dict.get row vertexMatrix
     in
-        case mbCols of
-            Just cols ->
-                List.length mbCols
-            Nothing ->
-                0
+        Dict.get row vertexMatrix
+            |> Maybe.withDefault 0
 
 entityWidth : TmxMap -> Dict -> Int
 entityWidth tmxMap vertexMatrix =
@@ -77,18 +77,35 @@ entityWidth tmxMap vertexMatrix =
     in
         entityCol * tmxMap.tileWidth
 
--- entityPosition : TmxMap -> Dict -> (Int, Int)
--- entityPosition tmxMap vertexMatrix =
---     let
---         height = entityHeight tmxMap vertexMatrix
---
---         heightOffset = height / 2
---
---         width = entityWidth tmxMap vertexMatrix
---
---         widthOffset = entityWidth / 2
---     in
---
+entityPosition : TmxMap -> Dict -> (Float, Float)
+entityPosition tmxMap vertexMatrix =
+    let
+        minRow = Dict.keys vertexMatrix
+                    |> List.minimum
+                    |> Maybe.withDefault -1
+                    
+        minCol = Dict.get minRow vertexMatrix
+                    |> Maybe.withDefault [-1]
+                    |> List.minimum
+    
+        height = entityHeight tmxMap vertexMatrix
+
+        heightOffset = height / 2
+
+        width = entityWidth tmxMap vertexMatrix
+
+        widthOffset = entityWidth / 2
+        
+        y = ((minRow * tmxMap.tileHeight) / 2)
+        
+        offsetY = y + heightOffset
+                    
+        x = ((minCol * tmxMap.tileWidth) / 2)
+        
+        offsetX = x + widthOffset
+    in
+        (toFloat offsetX, toFloat offsetY)
+                
 
 -- view : Model -> TmxMap -> Collage.Form
 -- view model tmxMap =
