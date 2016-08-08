@@ -1,5 +1,6 @@
-module Entity exposing (Msg(..), Model)
+module Entity exposing (Msg(..), Model, init, update)
 
+import Dict exposing (..)
 import Element exposing (..)
 import Collage exposing (..)
 import Effects exposing (Effects)
@@ -56,7 +57,7 @@ init tmxMap entity =
 vertexMatrix : List Vertex -> Dict Int List Int
 vertexMatrix vertices =
     List.foldl (
-            \vertex -> vertexMatrix ->
+            \vertex vertexMatrix ->
                 let
                     row = vertex.row
 
@@ -68,22 +69,28 @@ vertexMatrix vertices =
                     Dict.insert row updatedCols
         )  Dict.empty vertices
 
-{--
-
 update : Msg -> Model -> Effects Model Effect
 update msg model =
     case msg of
 
         EntityEvent entityEvent ->
+            onEntityEvent entityEvent model
+
+
 
 onEntityEvent : EntityEvent -> Model -> Effects Model Effect
 onEntityEvent entityEvent model =
     case entityEvent of
 
         EntitySpawnedEvent entitySpawnedEvent ->
-            Effects.return {model | }
+            Effects.return model
 
---}
+        EntityDamanagedEvent entityDamagedEvent ->
+            Effects.return {model |
+                                entity = entityDamagedEvent.entity}
+
+        _ ->
+            Effects.return model
 
 entityRowCount : Dict -> Int
 entityRowCount vertexMatrix =
