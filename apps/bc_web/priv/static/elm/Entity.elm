@@ -1,4 +1,4 @@
-module Entity exposing (Msg(..), Model, init, update)
+module Entity exposing (Effect(..), Msg(..), Model, init)
 
 import Dict exposing (..)
 import Element exposing (..)
@@ -7,6 +7,7 @@ import Effects exposing (Effects)
 
 -- Local imports
 
+import TmxMap exposing (TmxMap)
 import EntityEvent exposing (Vertex, Entity, EntityEvent)
 
 -- Actions
@@ -33,7 +34,7 @@ type EntityState =
 
 type alias Model = {
     entity : Entity,
-    vertexMatrix : Dict Int List Int,
+    vertexMatrix : Dict Int (List Int),
     position : (Float, Float),
     orientation : Orientation,
     entityState : EntityState
@@ -47,14 +48,14 @@ init tmxMap entity =
         Effects.return {
             entity = entity,
             vertexMatrix = matrix,
-            position = entityPosition tmxMap matrix,
+            position = (0.0, 0.0),
             orientation = Down,
-            ntityState = Standing
+            entityState = Standing
         }
 
 -- Update
 
-vertexMatrix : List Vertex -> Dict Int List Int
+vertexMatrix : List Vertex -> Dict Int (List Int)
 vertexMatrix vertices =
     List.foldl (
             \vertex vertexMatrix ->
@@ -69,44 +70,47 @@ vertexMatrix vertices =
                     Dict.insert row updatedCols
         )  Dict.empty vertices
 
+{--
+
 update : Msg -> Model -> Effects Model Effect
 update msg model =
     case msg of
 
-        EntityEvent entityEvent ->
+        EntityEv entityEvent ->
             onEntityEvent entityEvent model
 
-
+        NoOp ->
+            Effects.return model
 
 onEntityEvent : EntityEvent -> Model -> Effects Model Effect
 onEntityEvent entityEvent model =
     case entityEvent of
 
-        EntitySpawnedEvent entitySpawnedEvent ->
+        EntityEvent.EntitySpawnedEv entitySpawnedEvent ->
             Effects.return model
 
-        EntityDamanagedEvent entityDamagedEvent ->
+        EntityEvent.EntityDamagedEv entityDamagedEvent ->
             Effects.return {model |
                                 entity = entityDamagedEvent.entity}
 
         _ ->
             Effects.return model
 
-entityRowCount : Dict -> Int
+entityRowCount : Dict Int List Int -> Int
 entityRowCount vertexMatrix =
     let
         rows = Dict.keys vertexMatrix
     in
         List.length rows
 
-entityHeight : TmxMap -> Dict -> Int
+entityHeight : TmxMap -> Dict Int List Int -> Int
 entityHeight tmxMap vertexMatrix =
     let
         entityRows = entityRowCount vertexMatrix
     in
         entityRows * tmxMap.tileHeight
 
-entityColCount : Dict -> Int
+entityColCount : Dict Int List Int -> Int
 entityColCount vertexMatrix =
     let
         row = Dict.keys vertexMatrix
@@ -115,14 +119,14 @@ entityColCount vertexMatrix =
         Dict.get row vertexMatrix
             |> Maybe.withDefault 0
 
-entityWidth : TmxMap -> Dict -> Int
+entityWidth : TmxMap -> Dict Int List Int -> Int
 entityWidth tmxMap vertexMatrix =
     let
         entityCol = entityColCount vertexMatrix
     in
         entityCol * tmxMap.tileWidth
 
-entityPosition : TmxMap -> Dict -> (Float, Float)
+entityPosition : TmxMap -> Dict Int List Int -> (Float, Float)
 entityPosition tmxMap vertexMatrix =
     let
         minRow = Dict.keys vertexMatrix
@@ -150,6 +154,8 @@ entityPosition tmxMap vertexMatrix =
         offsetX = x + widthOffset
     in
         (toFloat offsetX, toFloat offsetY)
+
+--}
 
 -- View
 
