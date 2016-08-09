@@ -67,7 +67,7 @@ vertexMatrix vertices =
 
                     updatedCols = vertex.col :: cols
                 in
-                    Dict.insert row updatedCols
+                    Dict.insert row updatedCols vertexMatrix
         )  Dict.empty vertices
 
 {--
