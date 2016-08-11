@@ -34,7 +34,7 @@ type EntityState =
 
 type alias Model = {
     entity : Entity,
-    vertexMatrix : Dict Int (List Int),
+    matrix : Dict Int (List Int),
     position : (Float, Float),
     orientation : Orientation,
     entityState : EntityState
@@ -42,12 +42,9 @@ type alias Model = {
 
 init : TmxMap -> Entity -> Effects Model Effect
 init tmxMap entity =
-    let
-        matrix = vertexMatrix entity.vertices
-    in
         Effects.return {
             entity = entity,
-            vertexMatrix = matrix,
+            matrix = Dict.empty,
             position = (0.0, 0.0),
             orientation = Down,
             entityState = Standing
@@ -58,19 +55,17 @@ init tmxMap entity =
 vertexMatrix : List Vertex -> Dict Int (List Int)
 vertexMatrix vertices =
     List.foldl (
-            \vertex vertexMatrix ->
+            \vertex matrix ->
                 let
                     row = vertex.row
 
-                    cols = Dict.get row vertexMatrix
+                    cols = Dict.get row matrix
                             |> Maybe.withDefault []
 
                     updatedCols = vertex.col :: cols
                 in
-                    Dict.insert row updatedCols vertexMatrix
+                    Dict.insert row updatedCols matrix
         )  Dict.empty vertices
-
-{--
 
 update : Msg -> Model -> Effects Model Effect
 update msg model =
@@ -87,14 +82,17 @@ onEntityEvent entityEvent model =
     case entityEvent of
 
         EntityEvent.EntitySpawnedEv entitySpawnedEvent ->
-            Effects.return model
+            let
+                vertices = entitySpawnedEvent.entity.vertices
+            in
+                Effects.return {model |
+                                    matrix = vertexMatrix vertices}
 
         EntityEvent.EntityDamagedEv entityDamagedEvent ->
             Effects.return {model |
                                 entity = entityDamagedEvent.entity}
 
-        _ ->
-            Effects.return model
+{--
 
 entityRowCount : Dict Int List Int -> Int
 entityRowCount vertexMatrix =
