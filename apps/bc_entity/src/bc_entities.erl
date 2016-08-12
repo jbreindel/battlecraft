@@ -15,6 +15,7 @@
 		 insert_new/2, 
 		 insert/2, 
 		 query/2, 
+		 query_type/2,
 		 delete/2]).
 
 %%
@@ -74,6 +75,13 @@ query(Uuids, #{entities_tab := Tab}) when is_list(Uuids) ->
 	qlc:eval(qlc:q([bc_entity:from_tuple(BcEntityTuple) || 
 					  BcEntityTuple <- ets:table(Tab),
 					  lists:member(element(1, BcEntityTuple), Uuids)])).
+
+-spec query_type(EntityType :: atom(), 
+				 BcEntities :: entities()) -> [bc_entity:entity()].
+query_type(EntityType, #{entities_tab := Tab}) ->
+	qlc:eval(qlc:q([bc_entity:from_tuple(BcEntityTuple) ||
+					  BcEntityTuple <- ets:table(Tab),
+					  element(4, BcEntityTuple) =:= EntityType])).
 
 -spec delete(Uuid :: uuid:uuid(),
 			 BcEntities :: entities()) -> true.

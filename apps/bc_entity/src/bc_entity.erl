@@ -125,7 +125,7 @@ set_max_health(BcEntity, MaxHealth) ->
 orientation(BcEntity) ->
 	maps:get(orientation, BcEntity).
 	
--spec set_orientation(BcEntity, Orientation) -> atom().
+-spec set_orientation(BcEntity :: entity(), Orientation :: atom()) -> atom().
 set_orientation(BcEntity, Orientation) ->
 	maps:update(orientation, Orientation, BcEntity).
 	

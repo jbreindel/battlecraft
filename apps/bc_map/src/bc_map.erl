@@ -1,5 +1,6 @@
 
 -module(bc_map).
+-include_lib("stdlib/include/qlc.hrl").
 
 %% ets table options
 -define(ETS_OPTIONS(Heir), [set, 
@@ -16,6 +17,7 @@
 		 base3_vertices/1,
 		 base4_vertices/1,
 		 query_collisions/2,
+		 query_ids/2,
 		 compute_path/3,
 		 are_neighbors/3,
 		 reaching_neighbors/3,
@@ -80,16 +82,21 @@ base4_vertices(#{base_vertices := BaseVertices}) ->
 	maps:get(base4, BaseVertices).
 
 -spec query_collisions(MapGraph :: map_graph(),
-					   Vertices :: [bc_vertex:vertex()]) -> [query_res()].
-query_collisions(#{coll_tab := Tab}, Vertices) ->
-	Ms = collision_ms(Vertices),
-	case ets:select(Tab, Ms) of
-		Results when is_list(Results) ->
-			lists:map(fun({{Row, Col}, Uuid}) -> #{uuid => Uuid, 
-												   vertex => bc_vertex:init(Row, Col)} end, Results);
-		_ ->
-			{error, "Unable to query collisions."}
-	end.
+					   BcVertices :: [bc_vertex:vertex()]) -> [query_res()].
+query_collisions(#{coll_tab := Tab}, BcVertices) ->
+	BcVertexTuples = lists:map(fun(BcVertex) -> bc_vertex:to_tuple(BcVertex) end, BcVertices),
+	Results = qlc:eval(qlc:q([{BcVertexTuple, Uuid} || 
+							  {BcVertexTuple, Uuid} <- ets:table(Tab),  
+							  lists:member(BcVertexTuple, BcVertexTuples)])),
+	rows_to_query_results(Results).
+
+-spec query_ids(MapGraph :: map_graph(), 
+				Uuids :: [uuid:uuid()]) -> [query_res()].
+query_ids(#{coll_tab := Tab}, Uuids) ->
+	Results = qlc:eval(qlc:q([{BcVertexTuple, Uuid} || 
+							  {BcVertexTuple, Uuid} <- ets:table(Tab),
+							  lists:member(Uuid, Uuids)])),
+	rows_to_query_results(Results).
 
 -spec compute_path(MapGraph :: map_graph(), 
 				   Vertex1 :: bc_vertex:vertex(), 
@@ -149,6 +156,10 @@ delete_collision(#{coll_tab := Tab}, BcCollision) ->
 %%====================================================================
 %% Internal functions
 %%====================================================================
+
+rows_to_query_results(Rows) ->
+	lists:map(fun({{Row, Col}, Uuid}) -> #{uuid => Uuid, 
+										   vertex => bc_vertex:init(Row, Col)} end, Rows).
 
 reaching_neighbors(_, _, MaxDist, NeighborAcc) when MaxDist =:= 0 ->
 	NeighborSet = sets:from_list(NeighborAcc),

@@ -3,7 +3,8 @@
 
 -export([init/2, 
 		 row/1, 
-		 col/1]).
+		 col/1,
+		 to_tuple/1]).
 		 
 %%
 % @doc vertex structure
@@ -25,3 +26,7 @@ row(BcVertex) ->
 -spec col(BcVertex :: vertex()) -> integer().
 col(BcVertex) ->
 	maps:get(col, BcVertex).
+
+-spec to_tuple(BcVertex :: vertex()) -> tuple().
+to_tuple(#{row := Row, col := Col}) ->
+	{Row, Col}.
