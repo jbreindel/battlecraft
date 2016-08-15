@@ -165,6 +165,16 @@ entityPosition tmxMap matrix =
 
 -- View
 
+entityBackgroundImage : Model -> Element
+entityBackgroundImage model =
+    case model.entity.entityType of
+
+        "base" ->
+            Element.empty
+
+        _ ->
+            Element.empty
+
 {--
 
 view : Model -> TmxMap -> Collage.Form
