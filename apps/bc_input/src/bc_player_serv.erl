@@ -45,12 +45,32 @@ init([BcPlayerSup, BcGame, BcPlayer, BcGoldFsm, BcMap, BcEntities]) ->
 %% Internal functions
 %%====================================================================
 
-vertex_sort(BcVertex1, BcVertex2) ->
-
-base_num(BaseBcVertices) ->
-	SortedBaseBcVertices = lists:sort(fun bc_vertex:sort/2, BaseBcVertices),
-	%% TODO determine base number
-	1.
+base_num(BaseBcVertices, BcMap) ->
+	BaseBcVertex = lists:nth(1, BaseBcVertices),
+	case lists:any(fun(Base1BcVertex) -> 
+					  Base1BcVertex =:= BaseBcVertex 
+				   end, bc_map:base1_vertices(BcMap)) of
+		true -> 1;
+		false -> 
+			case lists:any(fun(Base2BcVertex) -> 
+					  Base2BcVertex =:= BaseBcVertex 
+				   end, bc_map:base2_vertices(BcMap)) of
+				true -> 2;
+				false ->
+					case lists:any(fun(Base3BcVertex) -> 
+									  Base3BcVertex =:= BaseBcVertex 
+								   end, bc_map:base3_vertices(BcMap)) of
+						true -> 3;
+						false ->
+							case lists:any(fun(Base4BcVertex) -> 
+											  Base4BcVertex =:= BaseBcVertex 
+										   end, bc_map:base4_vertices(BcMap)) of
+								true -> 4;
+								false -> undefined
+							end
+					end
+			end
+	end.
 
 player_num(#state{player = BcPlayer,
 				  player_num = PlayerNum,

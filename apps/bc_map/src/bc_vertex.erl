@@ -32,30 +32,35 @@ col(BcVertex) ->
 to_tuple(#{row := Row, col := Col}) ->
 	{Row, Col}.
 
-compare_rows(Int1, Int2) when Int1 < Int2 ->
+compare_rc(Int1, Int2) when Int1 < Int2 ->
 	lt;
-compare_rows(Int1, Int2) when Int1 > Int2 ->
+compare_rc(Int1, Int2) when Int1 > Int2 ->
 	gt;
-compare(Int1, Int2) when Int1 == Int2 ->
+compare_rc(Int1, Int2) when Int1 == Int2 ->
 	equal.
 
 -spec compare(BcVertex1 :: vertex(), 
 			  BcVertex2 :: vertex()) -> boolean().
 compare(BcVertex1, BcVertex2) ->
 	Row1 = row(BcVertex1),
-	case row(BcVertex2) of
-		Row2 when Row1 < Row2 ->
-			true;
-		Row2 when Row1 > Row2 ->
-			false;
-		Row2 when Row1 == Row2 ->
+	Row2 = row(BcVertex2),
+	case compare_rc(Row1, Row2) of
+		lt -> true;
+		gt -> false;
+		equal ->
 			Col1 = col(BcVertex1),
-			case col(BcVertex2) of
-				Col2 when Col1 < Col2 ->
-					true;
-				Col2 when Col1 > Col2 ->
-					false;
-				_ ->
-					true
+			Col2 = col(BcVertex2),
+			case compare_rc(Col1, Col2) of
+				lt -> true;
+				gt -> false;
+				equal -> true
 			end
 	end.
+
+-spec intersect(BcVertices1 :: [vertex()], 
+				BcVertices2 :: [vertex()]) ->  [vertex()].
+intersect(BcVertices1, BcVertices2) ->
+	Set1 = sets:from_list(BcVertices1),
+	Set2 = sets:from_list(BcVertices2),
+	Intersection = sets:intersection(Set1, Set2),
+	sets:to_list(Intersection).
