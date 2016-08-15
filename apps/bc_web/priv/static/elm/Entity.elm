@@ -92,68 +92,76 @@ onEntityEvent entityEvent model =
             Effects.return {model |
                                 entity = entityDamagedEvent.entity}
 
-{--
-
-entityRowCount : Dict Int List Int -> Int
-entityRowCount vertexMatrix =
+entityRowCount : Dict Int (List Int) -> Int
+entityRowCount matrix =
     let
-        rows = Dict.keys vertexMatrix
+        rows = Dict.keys matrix
     in
         List.length rows
 
-entityHeight : TmxMap -> Dict Int List Int -> Int
-entityHeight tmxMap vertexMatrix =
+entityHeight : TmxMap -> Dict Int (List Int) -> Int
+entityHeight tmxMap matrix =
     let
-        entityRows = entityRowCount vertexMatrix
+        entityRows = entityRowCount matrix
     in
         entityRows * tmxMap.tileHeight
 
-entityColCount : Dict Int List Int -> Int
-entityColCount vertexMatrix =
+entityColCount : Dict Int (List Int) -> Int
+entityColCount matrix =
     let
-        row = Dict.keys vertexMatrix
-                |> List.take 1
-    in
-        Dict.get row vertexMatrix
-            |> Maybe.withDefault 0
+        row = Dict.keys matrix
+                |> List.head
+                |> Maybe.withDefault -1
 
-entityWidth : TmxMap -> Dict Int List Int -> Int
-entityWidth tmxMap vertexMatrix =
-    let
-        entityCol = entityColCount vertexMatrix
+        cols = Dict.get row matrix
+                |> Maybe.withDefault []
     in
-        entityCol * tmxMap.tileWidth
+        List.length cols
 
-entityPosition : TmxMap -> Dict Int List Int -> (Float, Float)
-entityPosition tmxMap vertexMatrix =
+entityWidth : TmxMap -> Dict Int (List Int) -> Int
+entityWidth tmxMap matrix =
     let
-        minRow = Dict.keys vertexMatrix
+        colCount = entityColCount matrix
+    in
+        colCount * tmxMap.tileWidth
+
+entityPosition : TmxMap -> Dict Int (List Int) -> (Float, Float)
+entityPosition tmxMap matrix =
+    let
+        minRow = Dict.keys matrix
                     |> List.minimum
                     |> Maybe.withDefault -1
 
-        minCol = Dict.get minRow vertexMatrix
-                    |> Maybe.withDefault [-1]
+        minCol = Dict.get minRow matrix
+                    |> Maybe.withDefault []
                     |> List.minimum
+                    |> Maybe.withDefault -1
 
-        height = entityHeight tmxMap vertexMatrix
+        height = entityHeight tmxMap matrix
+                    |> toFloat
 
         heightOffset = height / 2
 
-        width = entityWidth tmxMap vertexMatrix
+        width = entityWidth tmxMap matrix
+                    |> toFloat
 
-        widthOffset = entityWidth / 2
+        widthOffset = width / 2
 
-        y = ((minRow * tmxMap.tileHeight) / 2)
+        tileHeight = tmxMap.tileHeight
+                        |> toFloat
+
+        y = ((toFloat minRow) * tileHeight) / 2
 
         offsetY = y + heightOffset
 
-        x = ((minCol * tmxMap.tileWidth) / 2)
+        tileWidth = tmxMap.tileWidth
+                        |> toFloat
+
+        x = ((toFloat minCol) * tileWidth) / 2
 
         offsetX = x + widthOffset
     in
-        (toFloat offsetX, toFloat offsetY)
-
---}
+        (offsetX, offsetY)
 
 -- View
 
@@ -168,7 +176,7 @@ view model tmxMap =
 
         healthPct = model.entity.health / maxHealth
 
-        entityWidth = entityWidth tmxMap.tileWidth model.vertexMatrix
+        position = entityPosition tmxMap model.matrix
     in
        case entityType of
 
