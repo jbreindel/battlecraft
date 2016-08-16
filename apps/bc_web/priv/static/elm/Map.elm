@@ -260,23 +260,27 @@ backgroundImageForm : Model -> Collage.Form
 backgroundImageForm model =
     Element.fittedImage 3200 3200 "/static/map.png"
         |> Collage.toForm
-        |> Collage.scale model.zoom
-        |> Collage.move (model.x, model.y)
-
-createMap : Model -> Element
-createMap model =
-    let
-        backgroundForm = backgroundImageForm model
-    in
-        Collage.collage model.windowWidth model.windowHeight [backgroundForm]
 
 view : Model -> Html Msg
 view model =
     case model.map of
-
-        Just map ->
-            createMap model |> Element.toHtml
-
+        
         Nothing ->
-            -- TODO maybe loading screen
-            div [] []
+            Element.empty
+            
+        Just map ->
+            let
+                backgroundForm = backgroundImageForm model
+        
+                entityModels = Dict.values model.entities
+        
+                entityForms = List.map (\entityModel -> Entity.view map entityModel) entityModels
+                
+                entityForm = Collage.group entityForms
+                
+                mapForm = Collage.group [backgroundForm, entityForm]
+                                |> Collage.scale model.zoom
+                                |> Collage.move (model.x, model.y)
+            in
+                Collage.collage model.windowWidth model.windowHeight [mapForm]
+                    |> Element.toHtml
