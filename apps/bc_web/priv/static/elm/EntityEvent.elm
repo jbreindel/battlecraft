@@ -1,4 +1,4 @@
-module EntityEvent exposing (..)
+module EntityEvent exposing (Vertex, Entity, EntitySpawnedEvent, EntityDamagedEvent, EntityEvent, entityEvent, entityEventEntity)
 
 import Json.Decode exposing (..)
 import Json.Decode.Extra exposing (..)
@@ -88,15 +88,12 @@ entityEvent =
 
 -- Helper Funs
     
-entityEventUuid : EntityEvent -> Uuid
-entityEventUuid entityEvent =
-    let
-        entity = case entityEvent of
-                    
-                    EntitySpawnedEv entitySpawnedEvent ->
-                        entitySpawnedEvent.entity
+entityEventEntity : EntityEvent -> Entity
+entityEventEntity entityEvent =
+    case entityEvent of
+
+        EntitySpawnedEv entitySpawnedEvent ->
+            entitySpawnedEvent.entity
                         
-                    EntityDamagedEv entityDamagedEvent ->
-                        entityDamagedEvent.entity
-    in
-        entity.uuid
+        EntityDamagedEv entityDamagedEvent ->
+            entityDamagedEvent.entity
