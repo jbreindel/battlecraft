@@ -1,4 +1,4 @@
-module Entity exposing (Effect(..), Msg(..), Model, init)
+module Entity exposing (Effect(..), Msg(..), Model, init, update)
 
 import Dict exposing (..)
 import Element exposing (..)
@@ -52,21 +52,6 @@ init tmxMap entity =
 
 -- Update
 
-vertexMatrix : List Vertex -> Dict Int (List Int)
-vertexMatrix vertices =
-    List.foldl (
-            \vertex matrix ->
-                let
-                    row = vertex.row
-
-                    cols = Dict.get row matrix
-                            |> Maybe.withDefault []
-
-                    updatedCols = vertex.col :: cols
-                in
-                    Dict.insert row updatedCols matrix
-        )  Dict.empty vertices
-
 update : Msg -> Model -> Effects Model Effect
 update msg model =
     case msg of
@@ -91,6 +76,21 @@ onEntityEvent entityEvent model =
         EntityEvent.EntityDamagedEv entityDamagedEvent ->
             Effects.return {model |
                                 entity = entityDamagedEvent.entity}
+
+vertexMatrix : List Vertex -> Dict Int (List Int)
+vertexMatrix vertices =
+    List.foldl (
+            \vertex matrix ->
+                let
+                    row = vertex.row
+
+                    cols = Dict.get row matrix
+                            |> Maybe.withDefault []
+
+                    updatedCols = vertex.col :: cols
+                in
+                    Dict.insert row updatedCols matrix
+        )  Dict.empty vertices
 
 entityRowCount : Dict Int (List Int) -> Int
 entityRowCount matrix =
