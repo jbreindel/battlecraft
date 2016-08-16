@@ -85,3 +85,18 @@ entityEventInfo eventType =
 entityEvent : Decoder EntityEvent
 entityEvent =
     at ["entity_event", "event_type"] string `andThen` entityEventInfo
+
+-- Helper Funs
+    
+entityEventUuid : EntityEvent -> Uuid
+entityEventUuid entityEvent =
+    let
+        entity = case entityEvent of
+                    
+                    EntitySpawnedEv entitySpawnedEvent ->
+                        entitySpawnedEvent.entity
+                        
+                    EntityDamagedEv entityDamagedEvent ->
+                        entityDamagedEvent.entity
+    in
+        entity.uuid
