@@ -1,4 +1,4 @@
-module EntityEvent exposing (..)
+module EntityEvent exposing (Vertex, Entity, EntitySpawnedEvent, EntityDamagedEvent, EntityEvent, entityEvent, entityEventEntity)
 
 import Json.Decode exposing (..)
 import Json.Decode.Extra exposing (..)
@@ -85,3 +85,15 @@ entityEventInfo eventType =
 entityEvent : Decoder EntityEvent
 entityEvent =
     at ["entity_event", "event_type"] string `andThen` entityEventInfo
+
+-- Helper Funs
+    
+entityEventEntity : EntityEvent -> Entity
+entityEventEntity entityEvent =
+    case entityEvent of
+
+        EntitySpawnedEv entitySpawnedEvent ->
+            entitySpawnedEvent.entity
+                        
+        EntityDamagedEv entityDamagedEvent ->
+            entityDamagedEvent.entity

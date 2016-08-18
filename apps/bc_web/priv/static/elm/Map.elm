@@ -13,6 +13,7 @@ import Http
 -- Local imports
 
 import TmxMap exposing (TmxMap, tmxMap)
+import EntityEvent exposing (EntityEvent, entityEventEntity)
 import Entity
 
 -- Actions
@@ -26,6 +27,7 @@ type Msg =
     MapGetFail Http.Error |
     KeyboardMsg Keyboard.Model |
     WindowMsg Window.Size |
+    EntityEventMsg EntityEvent |
     EntityMsg Entity.Msg
 
 -- Model
@@ -38,7 +40,7 @@ type alias Model = {
     zoom : Float,
     windowHeight : Int,
     windowWidth : Int,
-    entityModels : Dict String Entity.Model
+    entities : Dict String Entity.Model
 }
 
 getMap : Task Http.Error TmxMap
@@ -55,7 +57,7 @@ init =
         zoom = 0.6,
         windowHeight = 800,
         windowWidth = 550,
-        entityModels = Dict.empty
+        entities = Dict.empty
     } [PerformCmd <| Task.perform MapGetFail MapGetSuccess getMap]
 
 -- Update
@@ -83,8 +85,35 @@ update msg model =
                             windowHeight = windowSize.height,
                             windowWidth = windowSize.width}
 
+        EntityEvent entityEvent ->
+            onEntityEvent model entityEvent
+
         EntityMsg entityMsg ->
             Effects.return model
+            
+onEntityEvent : Model -> EntityEvent -> Effects Model Effect
+onEntityEvent model entityEvent =
+    case model.map of
+            
+        Nothing ->
+            Effects.return model
+            
+        Just map ->
+            let
+                entity = entityEventEntity entityEvent
+                        
+                uuid = entity.uuid
+                        
+                entityMsg = Entity.EntityEv entityEvent
+                        
+                entityModel = Entity.init map entity
+                        
+                updatedEntityModel = Entity.update entityMsg entityModel
+                        
+                updatedEntities = Dict.insert uuid updatedEntityModel model.entities
+            in
+                Effects.return {model |
+                                    entities = updatedEntities}
 
 updateX : Model -> Float -> Float
 updateX model delta =
@@ -231,23 +260,27 @@ backgroundImageForm : Model -> Collage.Form
 backgroundImageForm model =
     Element.fittedImage 3200 3200 "/static/map.png"
         |> Collage.toForm
-        |> Collage.scale model.zoom
-        |> Collage.move (model.x, model.y)
-
-createMap : Model -> Element
-createMap model =
-    let
-        backgroundForm = backgroundImageForm model
-    in
-        Collage.collage model.windowWidth model.windowHeight [backgroundForm]
 
 view : Model -> Html Msg
 view model =
     case model.map of
-
-        Just map ->
-            createMap model |> Element.toHtml
-
+        
         Nothing ->
-            -- TODO maybe loading screen
-            div [] []
+            Element.empty
+            
+        Just map ->
+            let
+                backgroundForm = backgroundImageForm model
+        
+                entityModels = Dict.values model.entities
+        
+                entityForms = List.map (\entityModel -> Entity.view map entityModel) entityModels
+                
+                entityForm = Collage.group entityForms
+                
+                mapForm = Collage.group [backgroundForm, entityForm]
+                                |> Collage.scale model.zoom
+                                |> Collage.move (model.x, model.y)
+            in
+                Collage.collage model.windowWidth model.windowHeight [mapForm]
+                    |> Element.toHtml
