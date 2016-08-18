@@ -1,4 +1,10 @@
-module Map exposing (Effect(..), Msg(..), Model, init, update, view)
+
+module Map exposing (Effect(..),
+                     Msg(..),
+                     Model,
+                     init,
+                     update,
+                     view)
 
 import Dict exposing (..)
 import Html exposing (..)
@@ -85,31 +91,31 @@ update msg model =
                             windowHeight = windowSize.height,
                             windowWidth = windowSize.width}
 
-        EntityEvent entityEvent ->
+        EntityEventMsg entityEvent ->
             onEntityEvent model entityEvent
 
         EntityMsg entityMsg ->
             Effects.return model
-            
+
 onEntityEvent : Model -> EntityEvent -> Effects Model Effect
 onEntityEvent model entityEvent =
     case model.map of
-            
+
         Nothing ->
             Effects.return model
-            
+
         Just map ->
             let
                 entity = entityEventEntity entityEvent
-                        
+
                 uuid = entity.uuid
-                        
+
                 entityMsg = Entity.EntityEv entityEvent
-                        
+
                 entityModel = Entity.init map entity
-                        
+
                 updatedEntityModel = Entity.update entityMsg entityModel
-                        
+
                 updatedEntities = Dict.insert uuid updatedEntityModel model.entities
             in
                 Effects.return {model |
@@ -264,20 +270,20 @@ backgroundImageForm model =
 view : Model -> Html Msg
 view model =
     case model.map of
-        
+
         Nothing ->
             Element.empty
-            
+
         Just map ->
             let
                 backgroundForm = backgroundImageForm model
-        
+
                 entityModels = Dict.values model.entities
-        
+
                 entityForms = List.map (\entityModel -> Entity.view map entityModel) entityModels
-                
+
                 entityForm = Collage.group entityForms
-                
+
                 mapForm = Collage.group [backgroundForm, entityForm]
                                 |> Collage.scale model.zoom
                                 |> Collage.move (model.x, model.y)

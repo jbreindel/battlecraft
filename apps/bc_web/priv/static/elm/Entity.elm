@@ -1,9 +1,10 @@
 
-module Entity exposing (Effect(..), 
+module Entity exposing (Effect(..),
                         Msg(..),
                         Model,
                         init,
-                        update)
+                        update,
+                        view)
 
 import Dict exposing (..)
 import Color exposing (green, orange, red)
@@ -203,21 +204,15 @@ entityHealthBar model tmxMap =
         Collage.rect offsetWidth 10.0
             |> filled green
 
-{--
-
 view : Model -> TmxMap -> Collage.Form
 view model tmxMap =
     let
-        entityType = model.entity.entityType
+        backgroundForm = entityBackgroundImage model
 
-        maxHealth = model.entity.maxHealth
+        healthBarForm = entityHealthBar model tmxMap
 
-        healthPct = model.entity.health / maxHealth
+        entityForm = Collage.group [backgroundForm, healthBarForm]
 
-        position = entityPosition tmxMap model.matrix
+        (x, y) = entityPosition tmxMap model.matrix
     in
-       case entityType of
-
-           "base" ->
-
---}
+       Collage.move (x, y) entityForm
