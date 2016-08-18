@@ -1,4 +1,11 @@
-module EntityEvent exposing (Vertex, Entity, EntitySpawnedEvent, EntityDamagedEvent, EntityEvent, entityEvent, entityEventEntity)
+
+module EntityEvent exposing (EntityEvent(..),
+                             Vertex,
+                             Entity,
+                             EntitySpawnedEvent,
+                             EntityDamagedEvent,
+                             entityEvent,
+                             entityEventEntity)
 
 import Json.Decode exposing (..)
 import Json.Decode.Extra exposing (..)
@@ -34,9 +41,9 @@ entity =
         |: ("entity_type" := string)
         |: ("health" := int)
         |: ("max_health" := int)
-        |: ("orientation" := string)
         |: ("player_id" := int)
         |: ("team" := int)
+        |: ("orientation" := string)
         |: ("vertices" := list vertex)
 
 -- Event Types
@@ -87,13 +94,13 @@ entityEvent =
     at ["entity_event", "event_type"] string `andThen` entityEventInfo
 
 -- Helper Funs
-    
+
 entityEventEntity : EntityEvent -> Entity
 entityEventEntity entityEvent =
     case entityEvent of
 
         EntitySpawnedEv entitySpawnedEvent ->
             entitySpawnedEvent.entity
-                        
+
         EntityDamagedEv entityDamagedEvent ->
             entityDamagedEvent.entity

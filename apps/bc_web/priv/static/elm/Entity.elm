@@ -1,7 +1,12 @@
-module Entity exposing (Effect(..), Msg(..), Model, init, update)
+
+module Entity exposing (Effect(..), 
+                        Msg(..),
+                        Model,
+                        init,
+                        update)
 
 import Dict exposing (..)
-import Color exposing (green, )
+import Color exposing (green, orange, red)
 import Element exposing (..)
 import Collage exposing (..)
 import Effects exposing (Effects)
@@ -179,17 +184,21 @@ entityBackgroundImage model =
     in
         image |> Collage.toForm
 
-entityHealthBar : Model -> Collage.Form
+entityHealthBar : Model -> TmxMap -> Collage.Form
 entityHealthBar model tmxMap =
     let
         width = entityWidth tmxMap model.matrix
                     |> toFloat
 
-        offsetWidth = width - (width * .25)
+        offsetWidth = width - (width * 0.25)
+
+        health = model.entity.health
+                    |> toFloat
 
         maxHealth = model.entity.maxHealth
+                        |> toFloat
 
-        healthPct = model.entity.health / maxHealth
+        healthPct = health / maxHealth
     in
         Collage.rect offsetWidth 10.0
             |> filled green
