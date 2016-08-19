@@ -14,7 +14,7 @@ import Effects exposing (Effects)
 
 -- Local imports
 
-import TmxMap exposing (TmxMap)
+import TmxMap exposing (TmxMap, tmxMapHeight, tmxMapWidth)
 import EntityEvent exposing (Vertex, Entity, EntityEvent)
 
 -- Actions
@@ -104,14 +104,14 @@ entityRowCount matrix =
     let
         rows = Dict.keys matrix
     in
-        List.length rows
+        Debug.log "entityRowCount: " (List.length rows)
 
 entityHeight : TmxMap -> Dict Int (List Int) -> Int
 entityHeight tmxMap matrix =
     let
         entityRows = entityRowCount matrix
     in
-        entityRows * tmxMap.tileHeight
+        Debug.log "entityHeight: " (entityRows * tmxMap.tileHeight)
 
 entityColCount : Dict Int (List Int) -> Int
 entityColCount matrix =
@@ -123,14 +123,14 @@ entityColCount matrix =
         cols = Dict.get row matrix
                 |> Maybe.withDefault []
     in
-        List.length cols
+        Debug.log "entityColCount: " (List.length cols)
 
 entityWidth : TmxMap -> Dict Int (List Int) -> Int
 entityWidth tmxMap matrix =
     let
         colCount = entityColCount matrix
     in
-        colCount * tmxMap.tileWidth
+        Debug.log "entityWidth: " (colCount * tmxMap.tileWidth)
 
 entityPosition : TmxMap -> Dict Int (List Int) -> (Float, Float)
 entityPosition tmxMap matrix =
@@ -154,21 +154,27 @@ entityPosition tmxMap matrix =
 
         widthOffset = width / 2
 
+        mapHeight = tmxMapHeight tmxMap
+                        |> toFloat
+
         tileHeight = tmxMap.tileHeight
                         |> toFloat
 
-        y = ((toFloat minRow) * tileHeight) / 2
+        y = (mapHeight - ((toFloat minRow) * tileHeight)) / 2
 
-        offsetY = y + heightOffset
+        offsetY = y - heightOffset
+
+        mapWidth = tmxMapWidth tmxMap
+                        |> toFloat
 
         tileWidth = tmxMap.tileWidth
                         |> toFloat
 
-        x = ((toFloat minCol) * tileWidth) / 2
+        x = (mapWidth - ((toFloat minCol) * tileWidth)) / 2
 
-        offsetX = x + widthOffset
+        offsetX = x - widthOffset
     in
-        (offsetX, offsetY)
+        Debug.log "position: " (offsetX, offsetY)
 
 -- View
 

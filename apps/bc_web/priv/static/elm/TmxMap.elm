@@ -1,4 +1,13 @@
-module TmxMap exposing (..)
+
+module TmxMap exposing (TmxTileLayer,
+                        TmxObject,
+                        TmxObjectLayer,
+                        TmxLayer(..),
+                        TmxTileSet,
+                        TmxMap,
+                        tmxMap,
+                        tmxMapHeight,
+                        tmxMapWidth)
 
 import Json.Decode exposing (..)
 import Json.Decode.Extra exposing (..)
@@ -138,3 +147,11 @@ tmxMap =
         |: ("tilewidth" := int)
         |: ("layers" := list tmxLayer)
         |: ("tilesets" := list tmxTileSet)
+
+tmxMapHeight : TmxMap -> Int
+tmxMapHeight tmxMap =
+    tmxMap.height * tmxMap.tileHeight
+
+tmxMapWidth : TmxMap -> Int
+tmxMapWidth tmxMap =
+    tmxMap.width * tmxMap.tileWidth

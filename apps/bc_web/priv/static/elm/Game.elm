@@ -154,9 +154,7 @@ onWsReceiveMessage message model =
 
         EntityEv entityEv ->
             let
-                entityMsg = Entity.EntityEv entityEv
-
-                mapMsg = Map.EntityMsg entityMsg
+                mapMsg = Map.EntityEventMsg entityEv
             in
                 update (MapMsg mapMsg) model
 
