@@ -37,6 +37,7 @@ init([BcPlayerSup, BcGame, BcPlayer, BcGoldFsm, BcMap, BcEntities]) ->
 	{ok, #state{player_sup = BcPlayerSup,
 				game = BcGame, 
 				player = BcPlayer,
+				player_num = undefined,
 				gold = BcGoldFsm,
 				map = BcMap,
 				entities = BcEntities}}.
@@ -87,6 +88,6 @@ player_num(#state{player = BcPlayer,
 			Uuid = bc_entity:uuid(PlayerBaseBcEntity),
 			QueryResults = bc_map:query_collisions(Uuid, BcEntities),
 			BcVertices = lists:map(fun(#{vertex := BcVertex}) -> BcVertex end, QueryResults),
-			base_num(BcVertices)
+			base_num(BcVertices, BcMap)
 	end.
 

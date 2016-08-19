@@ -125,7 +125,7 @@ insert_base_entity(BcPlayer, BaseUuid, BaseBcVertices, BcEntities) ->
 	PlayerId = bc_player:id(BcPlayer),
 	Team = bc_player:team(BcPlayer),
 	Health = bc_entity_config:health(BaseBcEntityConfig),
-	BaseBcEntity = bc_entity:init(BaseUuidStr, PlayerId, Team, base, Health, Health, BaseBcVertices),
+	BaseBcEntity = bc_entity:init(BaseUuidStr, PlayerId, Team, base, Health, Health, undefined, BaseBcVertices),
 	case bc_entities:insert_new(BaseBcEntity, BcEntities) of
 		true ->
 			EntitiesEventPid = bc_entities:event(BcEntities),
