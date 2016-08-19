@@ -46,7 +46,7 @@ type alias Model = {
     zoom : Float,
     windowHeight : Int,
     windowWidth : Int,
-    entities : Dict String Entity.Model
+    entities : Dict String (Entity.Model)
 }
 
 getMap : Task Http.Error TmxMap
@@ -104,7 +104,7 @@ onEntityEvent model entityEvent =
         Nothing ->
             Effects.return model
 
-        Just map ->
+        Just tmxMap ->
             let
                 entity = entityEventEntity entityEvent
 
@@ -112,9 +112,10 @@ onEntityEvent model entityEvent =
 
                 entityMsg = Entity.EntityEv entityEvent
 
-                entityModel = Entity.init map entity
+                (entityModel, initEntityEffects) = Entity.init tmxMap entity
 
-                updatedEntityModel = Entity.update entityMsg entityModel
+                (updatedEntityModel, updatedEntityEffects) =
+                    Entity.update entityMsg entityModel
 
                 updatedEntities = Dict.insert uuid updatedEntityModel model.entities
             in
@@ -262,8 +263,8 @@ updatePos model direction =
 
 -- View
 
-backgroundImageForm : Model -> Collage.Form
-backgroundImageForm model =
+backgroundImageForm : Collage.Form
+backgroundImageForm =
     Element.fittedImage 3200 3200 "/static/map.png"
         |> Collage.toForm
 
@@ -273,14 +274,18 @@ view model =
 
         Nothing ->
             Element.empty
+                |> Element.toHtml
 
-        Just map ->
+        Just tmxMap ->
             let
-                backgroundForm = backgroundImageForm model
+                backgroundForm = backgroundImageForm
 
                 entityModels = Dict.values model.entities
 
-                entityForms = List.map (\entityModel -> Entity.view map entityModel) entityModels
+                entityForms = List.map (
+                                \entityModel ->
+                                    Entity.view entityModel tmxMap
+                            ) entityModels
 
                 entityForm = Collage.group entityForms
 
