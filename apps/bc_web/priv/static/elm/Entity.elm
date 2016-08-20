@@ -104,14 +104,14 @@ entityRowCount matrix =
     let
         rows = Dict.keys matrix
     in
-        Debug.log "entityRowCount: " (List.length rows)
+        (List.length rows)
 
 entityHeight : TmxMap -> Dict Int (List Int) -> Int
 entityHeight tmxMap matrix =
     let
         entityRows = entityRowCount matrix
     in
-        Debug.log "entityHeight: " (entityRows * tmxMap.tileHeight)
+        (entityRows * tmxMap.tileHeight)
 
 entityColCount : Dict Int (List Int) -> Int
 entityColCount matrix =
@@ -123,36 +123,29 @@ entityColCount matrix =
         cols = Dict.get row matrix
                 |> Maybe.withDefault []
     in
-        Debug.log "entityColCount: " (List.length cols)
+        (List.length cols)
 
 entityWidth : TmxMap -> Dict Int (List Int) -> Int
 entityWidth tmxMap matrix =
     let
         colCount = entityColCount matrix
     in
-        Debug.log "entityWidth: " (colCount * tmxMap.tileWidth)
+        (colCount * tmxMap.tileWidth)
+
+pos : Float -> Float -> Float
+pos mapMax point =
+    let
+        mid = mapMax / 2
+    in
+        mid - point
 
 entityPosition : TmxMap -> Dict Int (List Int) -> (Float, Float)
 entityPosition tmxMap matrix =
     let
+        -- Y pos
         minRow = Dict.keys matrix
                     |> List.minimum
                     |> Maybe.withDefault -1
-
-        minCol = Dict.get minRow matrix
-                    |> Maybe.withDefault []
-                    |> List.minimum
-                    |> Maybe.withDefault -1
-
-        height = entityHeight tmxMap matrix
-                    |> toFloat
-
-        heightOffset = height / 2
-
-        width = entityWidth tmxMap matrix
-                    |> toFloat
-
-        widthOffset = width / 2
 
         mapHeight = tmxMapHeight tmxMap
                         |> toFloat
@@ -160,9 +153,22 @@ entityPosition tmxMap matrix =
         tileHeight = tmxMap.tileHeight
                         |> toFloat
 
-        y = (mapHeight - ((toFloat minRow) * tileHeight)) / 2
+        yPos = (toFloat minRow) * tileHeight
 
-        offsetY = y - heightOffset
+        y = pos mapHeight yPos
+
+        height = entityHeight tmxMap matrix
+                    |> toFloat
+
+        heightOffset = height / 2
+
+        offsetY = y + heightOffset
+
+        -- X pos
+        minCol = Dict.get minRow matrix
+                    |> Maybe.withDefault []
+                    |> List.minimum
+                    |> Maybe.withDefault -1
 
         mapWidth = tmxMapWidth tmxMap
                         |> toFloat
@@ -170,7 +176,14 @@ entityPosition tmxMap matrix =
         tileWidth = tmxMap.tileWidth
                         |> toFloat
 
-        x = (mapWidth - ((toFloat minCol) * tileWidth)) / 2
+        xPos = (toFloat minCol) * tileWidth
+
+        x = pos mapWidth xPos
+
+        width = entityWidth tmxMap matrix
+                    |> toFloat
+
+        widthOffset = width / 2
 
         offsetX = x - widthOffset
     in
