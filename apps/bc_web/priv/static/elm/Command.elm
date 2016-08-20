@@ -1,4 +1,11 @@
-module Command exposing (..)
+
+module Command exposing (JoinCommand,
+                         initJoinCommand,
+                         encodeJoinCommand,
+                         JoinErrorResponse,
+                         JoinSuccessResponse,
+                         JoinResponse(..),
+                         joinResponse)
 
 import Json.Decode exposing (..)
 import Json.Encode exposing (..)

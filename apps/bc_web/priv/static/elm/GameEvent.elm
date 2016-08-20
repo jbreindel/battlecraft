@@ -1,4 +1,11 @@
-module GameEvent exposing (..)
+
+module GameEvent exposing (Player,
+                           PlayerEvent,
+                           GameStartedEvent,
+                           GameErrorEvent,
+                           GameEvent(..),
+                           gameEvent,
+                           player)
 
 import Json.Decode exposing (..)
 

@@ -1,4 +1,5 @@
-module GameState exposing (..)
+
+module GameState exposing (GameState(..))
 
 type GameState =
     Joining |

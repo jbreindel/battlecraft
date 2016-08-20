@@ -1,4 +1,6 @@
-module Message exposing (..)
+
+module Message exposing (Message(..),
+                         message)
 
 import Json.Decode exposing (..)
 
