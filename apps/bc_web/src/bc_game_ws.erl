@@ -1,5 +1,5 @@
 
--module(bc_web_ws).
+-module(bc_game_ws).
 
 -export([init/3, 
 		 websocket_init/3, 

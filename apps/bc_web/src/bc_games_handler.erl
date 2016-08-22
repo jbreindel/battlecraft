@@ -1,5 +1,5 @@
 
--module(bc_web_games).
+-module(bc_games_handler).
 
 -export([init/3, handle/2, terminate/3]).
 

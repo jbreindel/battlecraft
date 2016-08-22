@@ -4,9 +4,9 @@
 
 % landing controller
 {'_', [
-	{"/", bc_web_landing, []},
-	{"/games", bc_web_games, []},
-	{"/game/:game_id", [{game_id, int}], bc_web_game, []},
-	{"/ws/game/:game_id", [{game_id, int}], bc_web_ws, []},
+	{"/", bc_landing_handler, []},
+	{"/games", bc_games_handler, []},
+	{"/game/:game_id", [{game_id, int}], bc_game_handler, []},
+	{"/ws/game/:game_id", [{game_id, int}], bc_game_ws, []},
 	{"/static/[...]", cowboy_static, {priv_dir, bc_web, "static"}}
 ]}.

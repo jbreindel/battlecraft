@@ -1,5 +1,5 @@
 
--module(bc_web_landing).
+-module(bc_landing_handler).
 
 -export([init/3, handle/2, terminate/3]).
 
