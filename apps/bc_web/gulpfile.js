@@ -62,7 +62,7 @@ gulp.task('elm', ['css', 'font', 'elm.init'], function() {
 	// bundle elm files
 	return gulp.src('*.elm')
         .pipe(soften(2))
-		.pipe(elm.bundle('join.js'))
+		.pipe(elm.bundle('game.js'))
 		.pipe(gulp.dest('../js/'));
 });
 
