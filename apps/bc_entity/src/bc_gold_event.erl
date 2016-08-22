@@ -17,5 +17,7 @@ init({gold_fsm, BcGoldFsm}) ->
 handle_event({game_started, _}, 
 			 #state{gold_fsm = BcGoldFsm} = State) ->
 	bc_gold_fsm:accrue(BcGoldFsm),
+	{ok, State};
+handle_event(_, State) ->
 	{ok, State}.
 

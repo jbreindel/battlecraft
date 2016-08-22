@@ -82,7 +82,7 @@ save(GameId, Handle, Team) ->
 				 IsOut :: boolean()) -> ok | {error, Reason :: string()}.
 update_out(PlayerId, IsOut) ->
 	case mnesia:sync_transaction(fun() -> 
-										 [Player] = mnesia:wread(player, PlayerId),
+										 [Player] = mnesia:wread({player, PlayerId}),
 										 mnesia:write(Player#player{is_out = IsOut, modified = erlang:system_time(seconds)})
 								 end) of
 		{atomic, Result} ->
@@ -94,13 +94,12 @@ update_out(PlayerId, IsOut) ->
 -spec delete(GameId :: integer(), 
 			 PlayerId :: integer()) -> ok | {error, Reason :: string()}.
 delete(GameId, PlayerId) ->
-	MatchSpec = ets:fun2ms(fun({_, _, GmId, PlId} = GP) 
+	MatchSpec = ets:fun2ms(fun({_, GpId, GmId, PlId}) 
 							  when GmId =:= GameId andalso 
-									   PlId =:= PlayerId -> GP end),
+									   PlId =:= PlayerId -> GpId end),
 	case mnesia:sync_transaction(fun() ->
 										case mnesia:select(gp_assoc, MatchSpec, 1, read) of
-											{[GPAssoc], 1} ->
-												Id = GPAssoc#gp_assoc.id,
+											{[Id], 1} ->
 												mnesia:delete(gp_assoc, Id, write);
 											'$end_of_table' ->
 												ok

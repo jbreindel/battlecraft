@@ -7,8 +7,17 @@
 -define(MAX_PLAYERS, 1).
 
 %% exported funcs
--export([start_link/4, player_join/3, player_quit/2, player_out/2]).
--export([init/1, pending/2, pending/3, started/2, terminate/2]).
+-export([start_link/4, 
+		 player_join/3, 
+		 player_quit/2, 
+		 player_out/2]).
+
+-export([init/1, 
+		 pending/2, 
+		 pending/3, 
+		 started/2, 
+		 terminate/3, 
+		 handle_info/3]).
 
 %% state rec
 -record(state, {input_serv,
@@ -144,7 +153,7 @@ started({_, OutPlayerId},
 				   players = Players} = State) ->
 	case bc_player_model:update_out(OutPlayerId, true) of
 		ok ->
-			GameEventPid = bc_game:pid(BcGame),
+			GameEventPid = bc_game:event(BcGame),
 			#{player := BcPlayer} = dict:fetch(OutPlayerId, Players),
 			gen_event:notify(GameEventPid,
 							 {player_out, BcPlayer}),
@@ -171,21 +180,20 @@ started({_, OutPlayerId},
 			{stop, Error, State}
 	end.
 
-handle_info({'DOWN', Ref, process, Pid, _}, 
+handle_info({'DOWN', Ref, process, Pid, _}, StateName,
 		#state{input_serv = BcInputServ,
 			   game = BcGame,
 			   players = Players} = State) ->
 	case lists:filter(fun({K, #{monitor := Monitor}}) -> 
 					  	Monitor =:= Ref
 				 	  end, dict:to_list(Players)) of
-		[BcPlayer] ->
-			PlayerId = bc_player:id(BcPlayer),
+		[{PlayerId, _}] ->
 			started({player_quit, PlayerId}, State);
 		_ ->
 			ok
 	end.
 
-terminate(Reason, State) ->
+terminate(Reason, StateName, State) ->
 	io:format("BcGameFsm terminates with ~p~n", [Reason]).
 
 %%====================================================================

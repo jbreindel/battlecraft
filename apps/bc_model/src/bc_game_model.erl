@@ -76,7 +76,7 @@ update_state(GameId, GameState) ->
 		  State :: integer()) -> {ok, won} | {error, Reason :: string()}.
 win(GameId, WinnerId, State) ->
 	case mnesia:sync_transaction(fun() -> 
-									[Game] = mnesia:wread(game, GameId),
+									[Game] = mnesia:wread({game, GameId}),
 									mnesia:write(Game#game{state = State, 
 														   winner_id = WinnerId, 
 														   modified = erlang:system_time(seconds)})
