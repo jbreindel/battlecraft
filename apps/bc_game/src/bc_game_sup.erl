@@ -17,7 +17,7 @@
 %%====================================================================
 
 start_link() ->
-	supervisor:start_link({local, bc_game_sup}, ?MODULE, []).
+	supervisor:start_link(?MODULE, []).
 
 %%====================================================================
 %% Supervisor callbacks
@@ -26,7 +26,3 @@ start_link() ->
 %% Child :: {Id,StartFunc,Restart,Shutdown,Type,Modules}
 init([]) ->
 	{ok, {{one_for_all, 0, 1}, []}}.
-
-%%====================================================================
-%% Internal functions
-%%====================================================================
