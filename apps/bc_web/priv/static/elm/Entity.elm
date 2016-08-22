@@ -41,6 +41,7 @@ type EntityState =
 
 type alias Model = {
     entity : Entity,
+    tmxMap : TmxMap,
     matrix : Dict Int (List Int),
     position : (Float, Float),
     orientation : Orientation,
@@ -51,6 +52,7 @@ init : TmxMap -> Entity -> Effects Model Effect
 init tmxMap entity =
         Effects.return {
             entity = entity,
+            tmxMap = tmxMap,
             matrix = Dict.empty,
             position = (0.0, 0.0),
             orientation = Down,
@@ -76,9 +78,14 @@ onEntityEvent entityEvent model =
         EntityEvent.EntitySpawnedEv entitySpawnedEvent ->
             let
                 vertices = entitySpawnedEvent.entity.vertices
+                
+                matrix = vertexMatrix vertices
+                
+                position = entityPosition model.tmxMap matrix
             in
                 Effects.return {model |
-                                    matrix = vertexMatrix vertices}
+                                    matrix = matrix,
+                                    position = position}
 
         EntityEvent.EntityDamagedEv entityDamagedEvent ->
             Effects.return {model |
@@ -193,10 +200,10 @@ entityBackgroundImage model =
     in
         image |> Collage.toForm
 
-entityHealthBar : Model -> TmxMap -> Collage.Form
-entityHealthBar model tmxMap =
+entityHealthBar : Model -> Collage.Form
+entityHealthBar model =
     let
-        width = entityWidth tmxMap model.matrix
+        width = entityWidth model.tmxMap model.matrix
                     |> toFloat
 
         offsetWidth = width - (width * 0.25)
@@ -212,15 +219,15 @@ entityHealthBar model tmxMap =
         Collage.rect offsetWidth 10.0
             |> filled green
 
-view : Model -> TmxMap -> Collage.Form
-view model tmxMap =
+view : Model -> Collage.Form
+view model =
     let
+        (x, y) = model.position
+        
         backgroundForm = entityBackgroundImage model
 
         healthBarForm = entityHealthBar model tmxMap
 
         entityForm = Collage.group [backgroundForm, healthBarForm]
-
-        (x, y) = entityPosition tmxMap model.matrix
     in
        Collage.move (x, y) entityForm
