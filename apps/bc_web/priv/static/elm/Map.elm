@@ -284,7 +284,7 @@ view model =
 
                 entityForms = List.map (
                                 \entityModel ->
-                                    Entity.view entityModel tmxMap
+                                    Entity.view entityModel
                             ) entityModels
 
                 entityForm = Collage.group entityForms
