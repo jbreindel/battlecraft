@@ -43,7 +43,8 @@ init(Heir) ->
 	  entities_event => EntitiesEventPid,
 	  entities_tab => ets:new(entities, ?ETS_OPTIONS(Heir))}.
 
--spec entity_config(EntityType :: atom(), BcEntities :: entities()) -> dict:dict(atom(), bc_entity_config:entity_config()).
+-spec entity_config(EntityType :: atom(), 
+					BcEntities :: entities()) -> dict:dict(atom(), bc_entity_config:entity_config()).
 entity_config(EntityType, #{entities_config := EntitiesConfig}) ->
 	dict:find(EntityType, EntitiesConfig).
 
