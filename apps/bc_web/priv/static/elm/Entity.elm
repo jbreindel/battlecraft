@@ -78,9 +78,9 @@ onEntityEvent entityEvent model =
         EntityEvent.EntitySpawnedEv entitySpawnedEvent ->
             let
                 vertices = entitySpawnedEvent.entity.vertices
-                
+
                 matrix = vertexMatrix vertices
-                
+
                 position = entityPosition model.tmxMap matrix
             in
                 Effects.return {model |
@@ -223,10 +223,10 @@ view : Model -> Collage.Form
 view model =
     let
         (x, y) = model.position
-        
+
         backgroundForm = entityBackgroundImage model
 
-        healthBarForm = entityHealthBar model tmxMap
+        healthBarForm = entityHealthBar model
 
         entityForm = Collage.group [backgroundForm, healthBarForm]
     in
