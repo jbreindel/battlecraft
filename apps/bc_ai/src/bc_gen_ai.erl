@@ -37,19 +37,26 @@ start_link(BcEntity, BcEntities, BcMap) ->
 init([BcEntity, BcEntities, BcMap]) ->
 	EntityType = bc_entity:entity_type(BcEntity),
 	{ok, BcEntityConfig} = bc_entities:entity_config(EntityType, BcEntities),
-	TimerRef = gen_fsm:send_event_after(50, action),
-	{ok, sensing, #state{entity = BcEntity,
-						 entity_config = BcEntityConfig 
-					   	 entities = BcEntities, 
-					   	 map = BcMap,
-						 timer = TimerRef}}.
+	StateName = case bc_entity:entity_class(BcEntity) of 
+					structure -> no_action; 
+					_ -> standing 
+				end,
+	TimerRef = gen_fsm:send_event_after(5, action_complete),
+	{ok, StateName, #state{entity = BcEntity,
+						   entity_config = BcEntityConfig 
+					   	   entities = BcEntities, 
+					   	   map = BcMap,
+						   timer = TimerRef}}.
 
-sensing(action, State) ->
+no_action(action_complete, State) ->
+	{next_state, no_action, State}.
+
+standing(action_complete, State) ->
 	move(down, State).
 
-moving({timeout, Ref, action_complete}, State) ->
+moving(action_complete, State) ->
 	%% TODO move and publish event
-	{next_state, sensing, State}
+	{next_state, standing, State}
 
 handle_event(Event, StateName, StateData) ->
     {next_state, StateName, StateData}.
