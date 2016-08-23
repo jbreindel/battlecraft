@@ -37,7 +37,7 @@ start_link(BcEntity, BcEntities, BcMap) ->
 init([BcEntity, BcEntities, BcMap]) ->
 	EntityType = bc_entity:entity_type(BcEntity),
 	{ok, BcEntityConfig} = bc_entities:entity_config(EntityType, BcEntities),
-	TimerRef = gen_fsm:send_event_after(100, action),
+	TimerRef = gen_fsm:send_event_after(50, action),
 	{ok, sensing, #state{entity = BcEntity,
 						 entity_config = BcEntityConfig 
 					   	 entities = BcEntities, 
@@ -45,15 +45,11 @@ init([BcEntity, BcEntities, BcMap]) ->
 						 timer = TimerRef}}.
 
 sensing(action, State) ->
-	TimerRef = gen_fsm:send_event_after(10, {move, down}),
-    {next_state, moving, State#state{timer = TimerRef}}.
+	move(down, State).
 
-moving({move, Direction}, #state{entity_config = BcEntityConfig} = State) ->
+moving({timeout, Ref, action_complete}, State) ->
 	%% TODO move and publish event
-	MoveSpeed = bc_entity_config:move_speed(BcEntityConfig),
-	MoveDelay = 1000 * MoveSpeed,
-	TimerRef = gen_fsm:send_event_after(MoveDelay, action),
-	{next_state, sensing, State#state{timer = TimeRef}}
+	{next_state, sensing, State}
 
 handle_event(Event, StateName, StateData) ->
     {next_state, StateName, StateData}.
@@ -75,5 +71,9 @@ code_change(OldVsn, StateName, StateData, Extra) ->
 %% Internal functions
 %% ====================================================================
 
-
-
+move(Direction, State) ->
+	%% TODO perform move
+	MoveSpeed = bc_entity_config:move_speed(BcEntityConfig),
+	MoveDelay = 1000 * MoveSpeed,
+	TimerRef = gen_fsm:send_event_after(MoveDelay, action),
+	{next_state, moving, State#state{timer = TimerRef}}.
