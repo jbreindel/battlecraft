@@ -1,5 +1,5 @@
 
--module(bc_gen_ai).
+-module(bc_ai_fsm).
 -behaviour(gen_fsm).
 
 -export([init/1, 
@@ -43,7 +43,7 @@ init([BcEntity, BcEntities, BcMap]) ->
 				end,
 	TimerRef = gen_fsm:send_event_after(5, action_complete),
 	{ok, StateName, #state{entity = BcEntity,
-						   entity_config = BcEntityConfig 
+						   entity_config = BcEntityConfig, 
 					   	   entities = BcEntities, 
 					   	   map = BcMap,
 						   timer = TimerRef}}.
@@ -56,7 +56,7 @@ standing(action_complete, State) ->
 
 moving(action_complete, State) ->
 	%% TODO move and publish event
-	{next_state, standing, State}
+	{next_state, standing, State}.
 
 handle_event(Event, StateName, StateData) ->
     {next_state, StateName, StateData}.
