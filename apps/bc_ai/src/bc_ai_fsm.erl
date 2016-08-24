@@ -3,8 +3,12 @@
 -behaviour(gen_fsm).
 
 -export([init/1, 
-		 state_name/2, 
-		 state_name/3, 
+		 no_action/2,
+		 standing/2,
+		 moving/2, 
+		 
+		 %% TODO implement actions/3
+		  
 		 handle_event/3, 
 		 handle_sync_event/4, 
 		 handle_info/3, 
@@ -51,12 +55,28 @@ init([BcEntity, BcEntities, BcMap]) ->
 no_action(action_complete, State) ->
 	{next_state, no_action, State}.
 
-standing(action_complete, State) ->
-	move(down, State).
+standing(action_complete, #state{entity_config = BcEntityConfig, 
+								 entities = BcEntities} = State) ->
+	case move(down, State) of
+		{ok, UpdatedBcEntity} ->
+			EntitiesEventPid = bc_entities:event(BcEntities),
+			gen_event:notify(EntitiesEventPid, {entity_moved, UpdatedBcEntity}),
+			MoveSpeed = bc_entity_config:move_speed(BcEntityConfig),
+			MoveDelay = 1000 - (1000 * MoveSpeed),
+			TimerRef = gen_fsm:send_event_after(MoveDelay, action_complete),
+			{next_state, moving, State#state{entity = UpdatedBcEntity,
+											 timer = TimerRef}};
+		{error, _} ->
+			sense(State)
+	end.
 
 moving(action_complete, State) ->
 	%% TODO move and publish event
 	{next_state, standing, State}.
+
+%% ====================================================================
+%% All State functions
+%% ====================================================================
 
 handle_event(Event, StateName, StateData) ->
     {next_state, StateName, StateData}.
@@ -64,6 +84,10 @@ handle_event(Event, StateName, StateData) ->
 handle_sync_event(Event, From, StateName, StateData) ->
     Reply = ok,
     {reply, Reply, StateName, StateData}.
+
+%% ====================================================================
+%% Gen_* functions
+%% ====================================================================
 
 handle_info(Info, StateName, StateData) ->
     {next_state, StateName, StateData}.
@@ -78,9 +102,18 @@ code_change(OldVsn, StateName, StateData, Extra) ->
 %% Internal functions
 %% ====================================================================
 
-move(Direction, State) ->
-	%% TODO perform move
-	MoveSpeed = bc_entity_config:move_speed(BcEntityConfig),
-	MoveDelay = 1000 * MoveSpeed,
-	TimerRef = gen_fsm:send_event_after(MoveDelay, action),
-	{next_state, moving, State#state{timer = TimerRef}}.
+sense(State) ->
+	%% TODO implement sense phase
+	{next_state, standing, State}.
+
+move(Direction, #state{entity = BcEntity, map = BcMap} = State) ->
+	OriginalBcCollision = bc_entity:to_collision(BcEntity),
+	UpdatedBcCollision = bc_collision:move(Direction, BcCollision),
+	case bc_map:update_collision(BcMap, OriginalBcCollision, UpdatedBcCollision) of
+		ok ->
+			UpdatedBcVertices = bc_collision:vertices(UpdatedBcCollision),
+			UpdatedBcEntity = bc_entity:set_vertices(UpdatedBcVertices, BcEntity),
+			{ok, UpdatedBcEntity};
+		{error, _} = Error ->
+			Error
+	end.
