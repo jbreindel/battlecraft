@@ -3,7 +3,9 @@
 
 -export([init/2, 
 		 row/1, 
+		 set_row/2,
 		 col/1,
+		 set_col/2,
 		 to_tuple/1,
 		 compare/2]).
 		 
@@ -23,14 +25,39 @@ init(Row, Col) ->
 -spec row(BcVertex :: vertex()) -> integer().
 row(BcVertex) ->
 	maps:get(row, BcVertex).
+
+-spec set_row(Row :: integer(), 
+			  BcVertex :: vertex()) -> vertex().
+set_row(Row, BcVertex) ->
+	maps:update(row, Row, BcVertex).
 	
 -spec col(BcVertex :: vertex()) -> integer().
 col(BcVertex) ->
 	maps:get(col, BcVertex).
 
+-spec set_col(Col :: integer(), 
+			  BcVertex :: vertex()) -> vertex().
+set_col(Col, BcVertex) ->
+	maps:update(col, Col, BcVertex).
+
 -spec to_tuple(BcVertex :: vertex()) -> tuple().
 to_tuple(#{row := Row, col := Col}) ->
 	{Row, Col}.
+
+-spec move(Direction :: atom(), 
+		   BcVertex :: vertex()) -> vertex().
+move(up, BcVertex) ->
+	Row = row(BcVertex),
+	set_row(Row - 1, BcVertex);
+move(right, BcVertex) ->
+	Col = col(BcVertex),
+	set_col(Col + 1, BcVertex);
+move(down, BcVertex) ->
+	Row = row(BcVertex),
+	set_row(Row + 1, BcVertex);
+move(left, BcVertex) ->
+	Col = col(BcVertex),
+	set_col(Col - 1, BcVertex).
 
 compare_rc(Int1, Int2) when Int1 < Int2 ->
 	lt;

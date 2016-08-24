@@ -5,6 +5,7 @@
 -export([init/2, 
 		 uuid/1, 
 		 vertices/1,
+		 set_vertices/2,
 		 difference_vertices/2]).
 
 %%
@@ -21,9 +22,9 @@
 %%====================================================================
 
 -spec init(Uuid :: uuid:uuid(),
-		   Vertices :: [bc_vertex:vertex()]) -> collision().
-init(Uuid, Vertices) ->
-	#{uuid => Uuid, vertices => Vertices}.
+		   BcVertices :: [bc_vertex:vertex()]) -> collision().
+init(Uuid, BcVertices) ->
+	#{uuid => Uuid, vertices => BcVertices}.
 
 -spec uuid(BcCollision :: collision()) -> uuid:uuid().
 uuid(BcCollision) ->
@@ -32,6 +33,19 @@ uuid(BcCollision) ->
 -spec vertices(BcCollision :: collision()) -> [bc_vertex:vertex()].
 vertices(BcCollision) ->
 	maps:get(vertices, BcCollision).
+
+-spec set_vertices(BcVertices :: [bc_vertex:vertex()], 
+				   BcCollision :: collision()) -> collision().
+set_vertices(BcVertices, BcCollision) ->
+	maps:update(vertices, BcVertices, BcCollision).
+
+-spec move(Direction :: atom(), 
+		   BcCollision :: collision()) -> collision().
+move(Direction, BcCollision) ->
+	UpdatedVertices = lists:map(fun(BcVertex) -> 
+									bc_vertex:move(Direction, BcVertex) 
+								end, vertices(BcCollision)),
+	set_vertices(UpdatedVertices, BcCollision).
 
 -spec difference_vertices(BcCollision1 :: collision(), 
 						  BcCollision :: collision()) -> [bc_vertex:vertex()].
