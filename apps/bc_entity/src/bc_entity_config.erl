@@ -31,7 +31,7 @@ init({EntityType, EntityClass, Health, DamageTuple, AtkSpeed, Range, MoveSpeed})
 	  entity_class => EntityClass,
 	  health => Health,
 	  damage => DamageTuple,
-	  atk_speed => AtkSpeed
+	  atk_speed => AtkSpeed,
 	  range => Range,
 	  move_speed => MoveSpeed}.
 

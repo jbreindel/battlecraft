@@ -71,7 +71,7 @@ standing(action_complete, #state{entity_config = BcEntityConfig,
 	end.
 
 moving(action_complete, State) ->
-	%% TODO move and publish event
+	%% TODO sense
 	{next_state, standing, State}.
 
 %% ====================================================================
@@ -108,7 +108,7 @@ sense(State) ->
 
 move(Direction, #state{entity = BcEntity, map = BcMap} = State) ->
 	OriginalBcCollision = bc_entity:to_collision(BcEntity),
-	UpdatedBcCollision = bc_collision:move(Direction, BcCollision),
+	UpdatedBcCollision = bc_collision:move(Direction, OriginalBcCollision),
 	case bc_map:update_collision(BcMap, OriginalBcCollision, UpdatedBcCollision) of
 		ok ->
 			UpdatedBcVertices = bc_collision:vertices(UpdatedBcCollision),
