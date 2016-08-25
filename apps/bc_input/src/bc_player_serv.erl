@@ -9,7 +9,7 @@
 -export([init/1]).
 
 %% state rec
--record(state, {player_sup,
+-record(state, {entity_sup,
 				game,
 				player,
 				player_num,
@@ -21,8 +21,8 @@
 %% API functions
 %%====================================================================
 
-start_link(BcPlayerSup, BcGame, BcPlayer, BcGoldFsm, BcMap, BcEntities) ->
-	gen_server:start_link(?MODULE, [BcPlayerSup, 
+start_link(BcEntitySup, BcPlayer, BcGoldFsm, BcMap, BcEntities) ->
+	gen_server:start_link(?MODULE, [BcEntitySup, 
 									BcGame, 
 									BcPlayer, 
 									BcGoldFsm, 
@@ -33,8 +33,8 @@ start_link(BcPlayerSup, BcGame, BcPlayer, BcGoldFsm, BcMap, BcEntities) ->
 %% Gen_server functions
 %%====================================================================
 
-init([BcPlayerSup, BcGame, BcPlayer, BcGoldFsm, BcMap, BcEntities]) ->
-	{ok, #state{player_sup = BcPlayerSup,
+init([BcEntitySup, BcGame, BcPlayer, BcGoldFsm, BcMap, BcEntities]) ->
+	{ok, #state{entity_sup = BcEntitySup,
 				game = BcGame, 
 				player = BcPlayer,
 				player_num = undefined,

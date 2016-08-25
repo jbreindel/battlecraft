@@ -14,6 +14,7 @@
 
 %% state rec
 -record(state, {input_sup,
+				entity_sups,
 				game,
 				map,
 				entities}).
@@ -47,12 +48,14 @@ spawn_player_bases(BcInputServ, BcPlayers) ->
 init([BcInputSup, BcGame, BcEntities]) ->
 	BcMap = bc_map:init(BcInputSup),
 	{ok, #state{input_sup = BcInputSup,
+				entity_sups = dict:new(),
 		   		game = BcGame,
 				map = BcMap,
 				entities = BcEntities}}.
 
 handle_call({create_player_serv, BcPlayer}, _From, 
 	#state{input_sup = BcInputSup,
+		   entity_sups = BcEntitySupDict,
 		   game = BcGame,
 		   map = BcMap,
 		   entities = BcEntities} = State) ->
@@ -64,17 +67,29 @@ handle_call({create_player_serv, BcPlayer}, _From,
 		type => supervisor,
 		modules => [bc_player_sup]
 	}),
+	{ok, BcEntitySup} = supervisor:start_child(BcPlayerSup, #{
+		id => entity_sup,
+		start => {bc_entity_sup, start_link, []},
+		restart => permanent,
+		type => supervisor,
+		modules => [bc_entity_sup]																  
+	}),
+	%% TODO monitor entity sups
 	BcGoldFsm = start_gold_fsm(BcPlayerSup, BcGame, BcPlayer),
 	{ok, BcPlayerServ} = supervisor:start_child(BcPlayerSup, #{
 		id => player_serv,
-		start => {bc_player_serv, start_link, [BcPlayerSup, BcGame, BcPlayer, 
+		start => {bc_player_serv, start_link, [BcEntitySup, BcGame, BcPlayer, 
 											   BcGoldFsm, BcMap, BcEntities]},
 		modules => [bc_player_serv]
 	}),
-	{reply, {ok, BcPlayerServ}, State};
+	{reply, {ok, BcPlayerServ}, State#state{entity_sups = 
+												dict:store(PlayerId, 
+														   BcEntitySup, 
+														   BcEntitySupDict)}};
 
 handle_call({spawn_player_bases, BcPlayers}, _From,
 	#state{input_sup = BcInputSup,
+		   entity_sups = BcEntitySupDict,
 		   game = BcGame,
 		   map = BcMap,
 		   entities = BcEntities} = State) ->
@@ -92,7 +107,9 @@ handle_call({spawn_player_bases, BcPlayers}, _From,
 	lists:foldl(fun(BcPlayer, Num) -> 
 					BaseBcCollision = lists:nth(Num, BaseBcCollisions),
 					BaseUuid = bc_collision:uuid(BaseBcCollision),
-					gen_event:add_handler(EntitiesEventPid, bc_base_event, [BaseUuid, BcGame, BcPlayer]), 
+					gen_event:add_handler(EntitiesEventPid, 
+										  bc_base_event, 
+										  [BaseUuid, BcGame, BcPlayer]), 
 					Num + 1 
 				end, 1, SortedBcPlayers),
 	{reply, spawn_player_bases(SortedBcPlayers, BaseBcCollisions, State), State}.
@@ -130,25 +147,24 @@ create_base_entity(BaseBcCollision, BcPlayer, BcEntities) ->
 	bc_entity:init(BaseUuidStr, PlayerId, Team, base, 
 				   Health, Health, undefined, BaseBcVertices).
 
-spawn_base_ai(BaseBcEntity, #state{input_sup = BcInputSup,
+spawn_base_ai(BaseBcEntity, #state{entity_sups = BcEntitySupDict,
 								   map = BcMap,
 								   entities = BcEntities} = State) ->
 	PlayerId = bc_entity:player_id(BaseBcEntity),
-	case lists:filter(fun({Id, _, _, _}) -> 
-						Id =:= PlayerId 
-					  end, supervisor:which_children(BcInputSup)) of
-		[{_, BcPlayerSup, _, _}] ->
-			{ok, BaseBcAiFsm} = supervisor:start_child(BcPlayerSup, #{
-				id => PlayerId,
+	case dict:find(PlayerId, BcEntitySupDict) of
+		{ok, BcEntitySup} ->
+			BaseUuid = bc_entity:uuid(BaseBcEntity),
+			{ok, BaseBcAiFsm} = supervisor:start_child(BcEntitySup, #{
+				id => BaseUuid,
 				start => {bc_ai_fsm, start_link, [BaseBcEntity, BcEntities, BcMap]},
-				restart => permanent,
+				restart => transient,
 				type => worker,
 				modules => [bc_ai_fsm]
 			}),
 			UpdatedBaseBcEntity = bc_entity:set_ai_fsm(BaseBcAiFsm, BaseBcEntity),
 			{ok, UpdatedBaseBcEntity};
-		[] ->
-			{error, "Can't find player supervisor."}
+		error ->
+			{error, "Can't find entity supervisor."}
 	end.
 
 insert_base_entity(BaseBcEntity, BcEntities) ->
