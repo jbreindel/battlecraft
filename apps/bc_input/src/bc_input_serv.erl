@@ -133,10 +133,10 @@ create_base_entity(BaseBcCollision, BcPlayer, BcEntities) ->
 spawn_base_ai(BaseBcEntity, #state{input_sup = BcInputSup,
 								   map = BcMap,
 								   entities = BcEntities} = State) ->
-	PlayerId = bc_entitiy:player_id(BaseBcEntity),
+	PlayerId = bc_entity:player_id(BaseBcEntity),
 	case lists:filter(fun({Id, _, _, _}) -> 
 						Id =:= PlayerId 
-					  end, supervisor:which_children(BcInputSup))) of
+					  end, supervisor:which_children(BcInputSup)) of
 		[{_, BcPlayerSup, _, _}] ->
 			{ok, BaseBcAiFsm} = supervisor:start_child(BcPlayerSup, #{
 				id => PlayerId,
@@ -151,7 +151,7 @@ spawn_base_ai(BaseBcEntity, #state{input_sup = BcInputSup,
 			{error, "Can't find player supervisor."}
 	end.
 
-insert_base_entity(BaseBcEntity, BcEntities) ->,
+insert_base_entity(BaseBcEntity, BcEntities) ->
 	case bc_entities:insert_new(BaseBcEntity, BcEntities) of
 		true ->
 			EntitiesEventPid = bc_entities:event(BcEntities),

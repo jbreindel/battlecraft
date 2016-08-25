@@ -42,7 +42,7 @@ init([BcEntity, BcEntities, BcMap]) ->
 	UpdatedBcEntity = bc_entity:set_ai_fsm(self(), BcEntity),
 	EntityType = bc_entity:entity_type(UpdatedBcEntity),
 	{ok, BcEntityConfig} = bc_entities:entity_config(EntityType, BcEntities),
-	StateName = case bc_entity:entity_class(UpdatedBcEntity) of 
+	StateName = case bc_entity_config:entity_class(BcEntityConfig) of 
 					structure -> no_action; 
 					_ -> standing 
 				end,
