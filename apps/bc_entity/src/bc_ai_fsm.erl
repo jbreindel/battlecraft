@@ -39,14 +39,15 @@ start_link(BcEntity, BcEntities, BcMap) ->
 %% ====================================================================
 
 init([BcEntity, BcEntities, BcMap]) ->
-	EntityType = bc_entity:entity_type(BcEntity),
+	UpdatedBcEntity = bc_entity:set_ai_fsm(self(), BcEntity),
+	EntityType = bc_entity:entity_type(UpdatedBcEntity),
 	{ok, BcEntityConfig} = bc_entities:entity_config(EntityType, BcEntities),
-	StateName = case bc_entity:entity_class(BcEntity) of 
+	StateName = case bc_entity:entity_class(UpdatedBcEntity) of 
 					structure -> no_action; 
 					_ -> standing 
 				end,
 	TimerRef = gen_fsm:send_event_after(5, action_complete),
-	{ok, StateName, #state{entity = BcEntity,
+	{ok, StateName, #state{entity = UpdatedBcEntity,
 						   entity_config = BcEntityConfig, 
 					   	   entities = BcEntities, 
 					   	   map = BcMap,

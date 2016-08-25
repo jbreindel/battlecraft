@@ -67,7 +67,8 @@ handle_call({create_player_serv, BcPlayer}, _From,
 	BcGoldFsm = start_gold_fsm(BcPlayerSup, BcGame, BcPlayer),
 	{ok, BcPlayerServ} = supervisor:start_child(BcPlayerSup, #{
 		id => player_serv,
-		start => {bc_player_serv, start_link, [BcPlayerSup, BcGame, BcPlayer, BcGoldFsm, BcMap, BcEntities]},
+		start => {bc_player_serv, start_link, [BcPlayerSup, BcGame, BcPlayer, 
+											   BcGoldFsm, BcMap, BcEntities]},
 		modules => [bc_player_serv]
 	}),
 	{reply, {ok, BcPlayerServ}, State};
@@ -94,7 +95,7 @@ handle_call({spawn_player_bases, BcPlayers}, _From,
 					gen_event:add_handler(EntitiesEventPid, bc_base_event, [BaseUuid, BcGame, BcPlayer]), 
 					Num + 1 
 				end, 1, SortedBcPlayers),
-	{reply, spawn_player_bases(SortedBcPlayers, State, BaseBcCollisions), State}.
+	{reply, spawn_player_bases(SortedBcPlayers, BaseBcCollisions, State), State}.
 
 terminate(Reason, State) ->
 	io:format("BcGameFsm terminates with ~p~n", [Reason]).
@@ -118,14 +119,39 @@ start_gold_fsm(BcPlayerSup, BcGame, BcPlayer) ->
 	gen_event:add_handler(EventPid, bc_gold_event, {gold_fsm, BcGoldFsm}),
 	BcGoldFsm.
 
-insert_base_entity(BcPlayer, BaseUuid, BaseBcVertices, BcEntities) ->
+create_base_entity(BaseBcCollision, BcPlayer, BcEntities) ->
+	BaseUuid = bc_collision:uuid(BaseBcCollision),
+	BaseBcVertices = bc_collision:vertices(BaseBcCollision),
 	{ok, BaseBcEntityConfig} = bc_entities:entity_config(base, BcEntities),
-	%% TODO spawn ai impl
 	BaseUuidStr = uuid:uuid_to_string(BaseUuid),
 	PlayerId = bc_player:id(BcPlayer),
 	Team = bc_player:team(BcPlayer),
 	Health = bc_entity_config:health(BaseBcEntityConfig),
-	BaseBcEntity = bc_entity:init(BaseUuidStr, PlayerId, Team, base, Health, Health, undefined, BaseBcVertices),
+	bc_entity:init(BaseUuidStr, PlayerId, Team, base, 
+				   Health, Health, undefined, BaseBcVertices).
+
+spawn_base_ai(BaseBcEntity, #state{input_sup = BcInputSup,
+								   map = BcMap,
+								   entities = BcEntities} = State) ->
+	PlayerId = bc_entitiy:player_id(BaseBcEntity),
+	case lists:filter(fun({Id, _, _, _}) -> 
+						Id =:= PlayerId 
+					  end, supervisor:which_children(BcInputSup))) of
+		[{_, BcPlayerSup, _, _}] ->
+			{ok, BaseBcAiFsm} = supervisor:start_child(BcPlayerSup, #{
+				id => PlayerId,
+				start => {bc_ai_fsm, start_link, [BaseBcEntity, BcEntities, BcMap]},
+				restart => permanent,
+				type => worker,
+				modules => [bc_ai_fsm]
+			}),
+			UpdatedBaseBcEntity = bc_entity:set_ai_fsm(BaseBcAiFsm, BaseBcEntity),
+			{ok, UpdatedBaseBcEntity};
+		[] ->
+			{error, "Can't find player supervisor."}
+	end.
+
+insert_base_entity(BaseBcEntity, BcEntities) ->,
 	case bc_entities:insert_new(BaseBcEntity, BcEntities) of
 		true ->
 			EntitiesEventPid = bc_entities:event(BcEntities),
@@ -137,15 +163,20 @@ insert_base_entity(BcPlayer, BaseUuid, BaseBcVertices, BcEntities) ->
 
 spawn_player_bases([], _, _) ->
 	ok;
-spawn_player_bases([BcPlayer|BcPlayers], 
-				  #state{map = BcMap, 
-						 entities = BcEntities} = State, [BaseBcCollision|BaseBcCollisions]) ->
+spawn_player_bases([BcPlayer|BcPlayers], [BaseBcCollision|BaseBcCollisions], 
+				   #state{input_sup = BcInputSup,
+						  map = BcMap, 
+						  entities = BcEntities} = State) ->
 	case bc_map:insert_collision(BcMap, BaseBcCollision) of
 		true ->
-			BaseUuid = bc_collision:uuid(BaseBcCollision),
-			BaseBcVertices = bc_collision:vertices(BaseBcCollision),
-			insert_base_entity(BcPlayer, BaseUuid, BaseBcVertices, BcEntities),
-			spawn_player_bases(BcPlayers, State, BaseBcCollisions);
+			BaseBcEntity = create_base_entity(BaseBcCollision, BcPlayer, BcEntities),
+			case spawn_base_ai(BaseBcEntity, State) of
+				{ok, UpdatedBaseBcEntity} ->
+					insert_base_entity(UpdatedBaseBcEntity, BcEntities),
+					spawn_player_bases(BcPlayers, BaseBcCollisions, State);
+				{error, Reason} = Error ->
+					Error
+			end;
 		false ->
 			{error, "Could not spawn base for player " ++ bc_player:id(BcPlayer)}
 	end.

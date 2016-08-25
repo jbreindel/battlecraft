@@ -16,6 +16,7 @@
 		 max_health/1,
 		 set_max_health/2,
 		 ai_fsm/1,
+		 set_ai_fsm/2,
 		 orientation/1,
 		 set_orientation/2,
 		 vertices/1,
@@ -140,6 +141,10 @@ set_vertices(BcVertices, BcEntity) ->
 -spec ai_fsm(BcEntity :: entity()) -> pid() | undefined.
 ai_fsm(BcEntity) ->
 	maps:get(ai_fsm, BcEntity).
+
+-spec set_ai_fsm(BcAiFsm :: pid(), BcEntity :: entity()) -> entity().
+set_ai_fsm(BcAiFsm, BcEntity) ->
+	maps:update(ai_fsm, BcAiFsm, BcEntity).
 
 -spec to_collision(BcEntity :: entity()) -> bc_collision:collision().
 to_collision(BcEntity) ->
