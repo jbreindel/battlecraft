@@ -2,10 +2,11 @@
 -module(bc_tmx).
 
 %% API exports
--export([load_graph/1,
-		 load_dims/1,
+-export([load_dims/1,
+		 load_graph/2,
 		 load_object_list/1,
-		 load_base_collision_verticies/1
+		 load_base_collision_verticies/3,
+		 load_base_spawn_vertices/3
 		]).
 
 %% type exports
@@ -27,22 +28,30 @@
 %% API functions
 %%====================================================================
 
--spec load_graph(map()) -> {ok, digraph:graph()} | {error, string()}.
-load_graph(TmxJsonMap) ->
-	{ok, process_map(TmxJsonMap)}.
-
--spec load_dims(map()) -> {ok, dims()} | {error, string()}.
+-spec load_dims(TmxJsonMap :: map()) -> {ok, dims()}.
 load_dims(TmxJsonMap) ->
 	{ok, process_dims(TmxJsonMap)}.
 
--spec load_object_list(map()) -> {ok, [object()]} | {error, string()}.
+-spec load_graph(TmxJsonMap :: map(), Dims :: dims()) -> {ok, digraph:graph()}.
+load_graph(TmxJsonMap, Dims) ->
+	{ok, process_map(TmxJsonMap, Dims)}.
+
+-spec load_object_list(TmxJsonMap :: map()) -> {ok, [object()]}.
 load_object_list(TmxJsonMap) ->
 	ObjectMaps = process_objects(TmxJsonMap),
 	{ok, lists:flatten(ObjectMaps)}.
 
--spec load_base_collision_verticies(map()) -> {ok, map()} | {error, string()}.
-load_base_collision_verticies(TmxJsonMap) ->
-	{ok, process_base_collisions(TmxJsonMap)}.
+-spec load_base_collision_verticies(TmxJsonMap :: map(), 
+							   		MapGraph :: digraph:graph(), 
+									Dims :: dims()) -> {ok, map()}.
+load_base_collision_verticies(TmxJsonMap, MapGraph, Dims) ->
+	{ok, process_base_collisions(TmxJsonMap, MapGraph, Dims)}.
+
+-spec load_base_spawn_vertices(TmxJsonMap :: map(), 
+							   MapGraph :: digraph:graph(), 
+							   Dims :: dims()) -> {ok, map()}.
+load_base_spawn_vertices(TmxJsonMap, MapGraph, Dims) ->
+	{ok, process_base_spawns(TmxJsonMap, MapGraph, Dims)}.
 
 %%====================================================================
 %% Internal functions
@@ -144,24 +153,44 @@ water_objects(TmxJsonMap) ->
 
 base1_objects(TmxJsonMap) ->
 	BaseObjs = objects(TmxJsonMap, fun(LayerName) ->
-							string:str(LayerName, "base1") > 0 
+							string:str(LayerName, "base1_collision") > 0 
 		   				end),
-	io:format("Base1ObjectMaps: ~p~n", [BaseObjs]),
 	BaseObjs.
 
 base2_objects(TmxJsonMap) ->
 	objects(TmxJsonMap, fun(LayerName) -> 
-							string:str(LayerName, "base2") > 0
+							string:str(LayerName, "base2_collision") > 0
 		   				end).
 
 base3_objects(TmxJsonMap) ->
 	objects(TmxJsonMap, fun(LayerName) -> 
-							string:str(LayerName, "base3") > 0
+							string:str(LayerName, "base3_collision") > 0
 		   				end).
 
 base4_objects(TmxJsonMap) ->
 	objects(TmxJsonMap, fun(LayerName) -> 
-							string:str(LayerName, "base4") > 0
+							string:str(LayerName, "base4_collision") > 0
+		   				end).
+
+base1_spawn_objects(TmxJsonMap) ->
+	BaseObjs = objects(TmxJsonMap, fun(LayerName) ->
+							string:str(LayerName, "base1_spawn") > 0 
+		   				end),
+	BaseObjs.
+
+base2_spawn_objects(TmxJsonMap) ->
+	objects(TmxJsonMap, fun(LayerName) -> 
+							string:str(LayerName, "base2_spawn") > 0
+		   				end).
+
+base3_spawn_objects(TmxJsonMap) ->
+	objects(TmxJsonMap, fun(LayerName) -> 
+							string:str(LayerName, "base3_spawn") > 0
+		   				end).
+
+base4_spawn_objects(TmxJsonMap) ->
+	objects(TmxJsonMap, fun(LayerName) -> 
+							string:str(LayerName, "base4_spawn") > 0
 		   				end).
 
 populate_edges(MapGraph, _, _, []) ->
@@ -233,20 +262,6 @@ do_build_map(MapGraph, Dims, ObjectMapList, Row) ->
 do_build_map(MapGraph, Dims, ObjectMapList) ->
 	do_build_map(MapGraph, Dims, ObjectMapList, 0).
 
-process_dims(TmxJsonMap) ->
-	#{
-		height => maps:get(<<"height">>, TmxJsonMap, 0),
-		width => maps:get(<<"width">>, TmxJsonMap, 0),
-		tileheight => maps:get(<<"tileheight">>, TmxJsonMap, 0),
-		tilewidth => maps:get(<<"tilewidth">>, TmxJsonMap, 0)
-	}.
-  
-process_map(TmxJsonMap) ->
-	MapGraph = digraph:new([cyclic]),
-	Dims = process_dims(TmxJsonMap), 
-	ObjectMapList = water_objects(TmxJsonMap),
-	do_build_map(MapGraph, Dims, ObjectMapList).
-
 process_objects(TmxJsonMap) ->
 	case maps:get(<<"layers">>, TmxJsonMap) of
 		LayerList when erlang:is_list(LayerList) ->
@@ -256,9 +271,20 @@ process_objects(TmxJsonMap) ->
 			{error, "Unable to parse objects."}
 	end.
 
-process_base_collisions(TmxJsonMap) ->
-	MapGraph = process_map(TmxJsonMap),
-	Dims = process_dims(TmxJsonMap),
+process_dims(TmxJsonMap) ->
+	#{
+		height => maps:get(<<"height">>, TmxJsonMap, 0),
+		width => maps:get(<<"width">>, TmxJsonMap, 0),
+		tileheight => maps:get(<<"tileheight">>, TmxJsonMap, 0),
+		tilewidth => maps:get(<<"tilewidth">>, TmxJsonMap, 0)
+	}.
+  
+process_map(TmxJsonMap, Dims) ->
+	MapGraph = digraph:new([cyclic]),
+	ObjectMapList = water_objects(TmxJsonMap),
+	do_build_map(MapGraph, Dims, ObjectMapList).
+
+process_base_collisions(TmxJsonMap, MapGraph, Dims) ->
 	Base1Objects = base1_objects(TmxJsonMap),
 	Base2Objects = base2_objects(TmxJsonMap),
 	Base3Objects = base3_objects(TmxJsonMap),
@@ -269,3 +295,15 @@ process_base_collisions(TmxJsonMap) ->
 		base3 => object_verticies(MapGraph, Dims, Base3Objects),
 		base4 => object_verticies(MapGraph, Dims, Base4Objects)
 	}.
+
+process_base_spawns(TmxJsonMap, MapGraph, Dims) ->
+	Base1SpawnObjects = base1_spawn_objects(TmxJsonMap),
+	Base2SpawnObjects = base2_spawn_objects(TmxJsonMap),
+	Base3SpawnObjects = base3_spawn_objects(TmxJsonMap),
+	Base4SpawnObjects = base4_spawn_objects(TmxJsonMap),
+	#{
+	 	base1 => object_verticies(MapGraph, Dims, Base1SpawnObjects),
+	 	base2 => object_verticies(MapGraph, Dims, Base2SpawnObjects),
+	 	base3 => object_verticies(MapGraph, Dims, Base3SpawnObjects),
+	 	base4 => object_verticies(MapGraph, Dims, Base4SpawnObjects)
+	 }.

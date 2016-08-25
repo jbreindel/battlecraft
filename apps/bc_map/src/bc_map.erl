@@ -13,9 +13,13 @@
 		 init/2,
 		 insert_collision/2,
 		 base1_vertices/1,
+		 base1_spawn_vertices/1,
 		 base2_vertices/1,
+		 base2_spawn_vertices/1,
 		 base3_vertices/1,
+		 base3_spawn_vertices/1,
 		 base4_vertices/1,
+		 base4_spawn_vertices/1,
 		 query_collisions/2,
 		 query_ids/2,
 		 compute_path/3,
@@ -53,10 +57,13 @@ init(Heir) ->
 init(Heir, MapFile) ->
 	{ok, Json} = file:read_file(MapFile),
 	TmxJsonMap = jsx:decode(Json, [return_maps]),
-	{ok, MapGraph} = bc_tmx:load_graph(TmxJsonMap),
-	{ok, BaseVertices} = bc_tmx:load_base_collision_verticies(TmxJsonMap),
+	{ok, Dims} = bc_tmx:load_dims(TmxJsonMap),
+	{ok, MapGraph} = bc_tmx:load_graph(TmxJsonMap, Dims),
+	{ok, BaseVertices} = bc_tmx:load_base_collision_verticies(TmxJsonMap, MapGraph, Dims),
+	{ok, SpawnVertices} = bc_tmx:load_base_spawn_vertices(TmxJsonMap, MapGraph, Dims),
 	#{graph => MapGraph, 
 	  base_vertices => BaseVertices, 
+	  spawn_vertices => SpawnVertices, 
 	  coll_tab => ets:new(collision, ?ETS_OPTIONS(Heir))}.
 
 -spec insert_collision(MapGraph :: map_graph(),
@@ -69,17 +76,33 @@ insert_collision(#{coll_tab := Tab}, BcCollision) ->
 base1_vertices(#{base_vertices := BaseVertices}) ->
 	maps:get(base1, BaseVertices).
 
+-spec base1_spawn_vertices(MapGraph :: map_graph()) -> [bc_vertex:vertex()].
+base1_spawn_vertices(#{spawn_vertices := SpawnVertices}) ->
+	maps:get(base1, SpawnVertices).
+
 -spec base2_vertices(MapGraph :: map_graph()) -> [bc_vertex:vertex()].
 base2_vertices(#{base_vertices := BaseVertices}) ->
 	maps:get(base2, BaseVertices).
+
+-spec base2_spawn_vertices(MapGraph :: map_graph()) -> [bc_vertex:vertex()].
+base2_spawn_vertices(#{spawn_vertices := SpawnVertices}) ->
+	maps:get(base2, SpawnVertices).
 
 -spec base3_vertices(MapGraph :: map_graph()) -> [bc_vertex:vertex()].
 base3_vertices(#{base_vertices := BaseVertices}) ->
 	maps:get(base3, BaseVertices).
 
+-spec base3_spawn_vertices(MapGraph :: map_graph()) -> [bc_vertex:vertex()].
+base3_spawn_vertices(#{spawn_vertices := SpawnVertices}) ->
+	maps:get(base3, SpawnVertices).
+
 -spec base4_vertices(MapGraph :: map_graph()) -> [bc_vertex:vertex()].
 base4_vertices(#{base_vertices := BaseVertices}) ->
 	maps:get(base4, BaseVertices).
+
+-spec base4_spawn_vertices(MapGraph :: map_graph()) -> [bc_vertex:vertex()].
+base4_spawn_vertices(#{spawn_vertices := SpawnVertices}) ->
+	maps:get(base4, SpawnVertices).
 
 -spec query_collisions(MapGraph :: map_graph(),
 					   BcVertices :: [bc_vertex:vertex()]) -> [query_res()].
