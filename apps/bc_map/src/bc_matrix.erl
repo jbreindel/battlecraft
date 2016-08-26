@@ -13,8 +13,8 @@
 %% API functions
 %% ====================================================================
 
--spec init(BcVertices :: [bc_vertex:vertex()]) -> dict(Row :: integer(), 
-													   ColSet :: sets:set(Col :: integer())).
+-spec init(BcVertices :: [bc_vertex:vertex()]) -> dict:dict(Row :: integer(), 
+													   		ColSet :: sets:set(Col :: integer())).
 init(BcVertices) ->
 	lists:foldl(fun(BcVertex, BcMatrix) -> 
 					Row = bc_vertex:row(BcVertex),
@@ -29,17 +29,17 @@ init(BcVertices) ->
 					end
 				end, dict:new(), BcVertices).
 
--spec max_row(BcMatrix :: dict()) -> integer().
+-spec max_row(BcMatrix :: dict:dict()) -> integer().
 max_row(BcMatrix) ->
 	Keys = dict:fetch_keys(BcMatrix),
 	lists:max(Keys).
 
--spec min_row(BcMatrix :: dict()) -> integer().
+-spec min_row(BcMatrix :: dict:dict()) -> integer().
 min_row(BcMatrix) ->
 	Keys = dict:fetch_keys(BcMatrix),
 	lists:min(Keys).
 
--spec row(Row :: integer(), BcMatrix :: dict()) -> {ok, [bc_vertex:vertex()]} | error.
+-spec row(Row :: integer(), BcMatrix :: dict:dict()) -> {ok, [bc_vertex:vertex()]} | error.
 row(Row, BcMatrix) ->
 	case dict:find(Row, BcMatrix) of
 		{ok, ColSet} ->
@@ -50,17 +50,17 @@ row(Row, BcMatrix) ->
 			error
 	end.
 
--spec max_col(BcMatrix :: dict()) -> integer().
+-spec max_col(BcMatrix :: dict:dict()) -> integer().
 max_col(BcMatrix) ->
 	ColValues = col_values(BcMatrix),
 	lists:max(ColValues).
 
--spec min_col(BcMatrix :: dict()) -> integer().
+-spec min_col(BcMatrix :: dict:dict()) -> integer().
 min_col(BcMatrix) ->
 	ColValues = col_values(BcMatrix),
 	lists:min(ColValues).
 
--spec col(Col :: integer(), BcMatrix :: dict()) -> {ok, [bc_vertex:vertex()]} | error.
+-spec col(Col :: integer(), BcMatrix :: dict:dict()) -> {ok, [bc_vertex:vertex()]} | error.
 col(Col, BcMatrix) ->
 	case dict:fold(fun(Row, ColSet, BcVertices) -> 
 			      		case sets:is_element(Col, ColSet) of

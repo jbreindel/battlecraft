@@ -22,7 +22,7 @@
 %% API functions
 %%====================================================================
 
-start_link(BcEntitySup, BcPlayer, BcGoldFsm, BcMap, BcEntities) ->
+start_link(BcEntitySup, BcGame, BcPlayer, BcGoldFsm, BcMap, BcEntities) ->
 	gen_server:start_link(?MODULE, [BcEntitySup, 
 									BcGame, 
 									BcPlayer, 
@@ -55,14 +55,14 @@ handle_cast({spawn_entities, EntityType}, _From, State) ->
 			spawn_entities(EntityType, State2),
 			{ok, State2};
 		error ->
-			{ok, State2}
+			{ok, State}
 	end.
 
 %%====================================================================
 %% Internal functions
 %%====================================================================
 
-spawn_entities(BcEntityConfig, #state{entities = BcEntities,
+do_spawn_entities(BcEntityConfig, #state{entities = BcEntities,
 								  map = BcMap,
 								  spawn_vertices = BcVertices} = State) ->
 	EntitySize = bc_entity_config:size(BcEntityConfig),
