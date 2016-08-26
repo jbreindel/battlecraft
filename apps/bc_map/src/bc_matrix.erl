@@ -62,14 +62,19 @@ min_col(BcMatrix) ->
 
 -spec col(Col :: integer(), BcMatrix :: dict()) -> {ok, [bc_vertex:vertex()]} | error.
 col(Col, BcMatrix) ->
-	dict:fold(fun(Row, ColSet, BcVertices) -> 
-			      case sets:is_element(Col, ColSet) of
-					  true ->
-						  BcVertices ++ [bc_vertex:init(Row, Col)];
-					  false ->
-						  BcVertices
-				  end
-			  end, [], BcMatrix).
+	case dict:fold(fun(Row, ColSet, BcVertices) -> 
+			      		case sets:is_element(Col, ColSet) of
+					  		true ->
+						  		BcVertices ++ [bc_vertex:init(Row, Col)];
+					  		false ->
+						  		BcVertices
+				  		end
+			  		end, [], BcMatrix) of
+		Cols when length(Cols) > 0 ->
+			{ok, Cols};
+		Cols when length(Cols) == 0 ->
+			error
+	end.
 
 %% ====================================================================
 %% Internal functions
