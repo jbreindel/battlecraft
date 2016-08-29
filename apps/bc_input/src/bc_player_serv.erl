@@ -13,7 +13,7 @@
 				game,
 				player,
 				base_num,
-				spawn_vertices,
+				spawn_matrix,
 				gold,
 				map,
 				entities}).
@@ -51,7 +51,7 @@ handle_cast({spawn_entities, EntityType}, _From, State) ->
 	case bc_entities:entity_config(EntityType) of
 		{ok, BcEntityConfig} ->
 			{ok, BaseNum, State1} = player_num(State),
-			{ok, SpawnBcVertices, State2} = spawn_vertices(State1),
+			{ok, SpawnBcVertices, State2} = spawn_matrix(State1),
 			spawn_entities(EntityType, State2),
 			{ok, State2};
 		error ->
@@ -61,14 +61,6 @@ handle_cast({spawn_entities, EntityType}, _From, State) ->
 %%====================================================================
 %% Internal functions
 %%====================================================================
-
-spawn_entities(BcEntityConfig, #state{entities = BcEntities,
-								  map = BcMap,
-								  spawn_vertices = BcVertices} = State) ->
-	EntitySize = bc_entity_config:size(BcEntityConfig),
-	QueryRes = bc_map:query_collisions(BcMap, BcVertices),
-	%% TODO spawn entities
-	ok.
 
 base_num(BaseBcVertices, BcMap) ->
 	BaseBcVertex = lists:nth(1, BaseBcVertices),
@@ -127,10 +119,45 @@ player_num(#state{player = BcPlayer,
 			{ok, Num, State}
 	end.
 
-spawn_vertices(#state{base_num = BaseNum,
-					  spawn_vertices = SpawnBcVertices,
-					  map = BcMap} = State) ->
-	case SpawnBcVertices of
+%% do_spawn_entities(BcEntityConfig, SpawnBcVertices, BatchCount, 
+%% 				  #state{entities = BcEntities,
+%% 						 map = BcMap,
+%% 						 base_num = BaseNum,
+%% 						 spawn_matrix = BcMatrix} = State) ->
+%% 	SpawnBcVertices = spawn_vertices(Offset, State),
+%% 	EntitySize = bc_entity_config:size(BcEntityConfig),
+%% 	BatchSize = length(SpawnBcVertices) / EntitySize,
+%% 	
+%% 
+%% spawn_entities(BcEntityConfig, #state{entities = BcEntities,
+%% 								  	  map = BcMap,
+%% 									  base_num = BaseNum,
+%% 								  	  spawn_matrix = BcMatrix} = State) ->
+%% 	
+%% 	%% TODO spawn entities
+%% 	ok.
+
+spawn_vertices(Offset, #state{base_num = BaseNum,
+					  		  spawn_matrix = SpawnBcMatrix} = State) ->
+	case BaseNum of
+		1 -> 
+			MinRow = bc_matrix:min_row(SpawnBcMatrix),
+			bc_matrix:row(MinRow + Offset, SpawnBcMatrix);
+		2 ->
+			MaxCol = bc_matrix:max_col(SpawnBcMatrix),
+			bc_matrix:col(MaxCol - Offset, SpawnBcMatrix);
+		3 ->
+			MaxRow = bc_matrix:max_row(SpawnBcMatrix),
+			bc_matrix:row(MaxRow - Offset, SpawnBcMatrix);
+		4 ->
+			MinCol = bc_matrix:min_col(SpawnBcMatrix),
+			bc_matrix:col(MinCol + Offset, SpawnBcMatrix)
+	end.
+
+spawn_matrix(#state{base_num = BaseNum,
+					spawn_matrix = SpawnBcMatrix,
+					map = BcMap} = State) ->
+	case SpawnBcMatrix of
 		undefined ->
 			BcVertices = case BaseNum of
 							 1 -> bc_map:base1_spawn_vertices(BcMap);
@@ -138,8 +165,8 @@ spawn_vertices(#state{base_num = BaseNum,
 							 3 -> bc_map:base3_spawn_vertices(BcMap);
 							 4 -> bc_map:base4_spawn_vertices(BcMap)
 						 end,
-			{ok, BcVertices, State#state{spawn_vertices = BcVertices}};
-		BcVertices when is_list(BcVertices) 
-		  			andalso length(BcVertices) > 0 ->
-			{ok, SpawnBcVertices, State}
+			BcMatrix = bc_matrix:init(BcVertices),
+			{ok, BcMatrix, State#state{spawn_matrix = BcMatrix}};
+		BcMatrix ->
+			{ok, BcMatrix, State}
 	end.
