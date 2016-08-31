@@ -3,6 +3,15 @@
 
 -export([spawn_entity/7]).
 
+-spec spawn_entity(BcCollision :: bc_collision:collision(), 
+				   BcPlayer :: bc_player:player(), 
+				   BcEntitySup :: pid(),
+				   BcEntityConfig :: bc_entity_config:entity_config(), 
+				   Orientation :: atom(), 
+				   BcMap :: bc_map:map_graph(),
+				   BcEntities :: bc_entites:entity()) -> {ok, BcEntity :: bc_entity:entity()} |
+															 {error_entity, Reason :: string()} |
+															 {error_collision, Reason :: string()}.
 spawn_entity(BcCollision, BcPlayer, BcEntitySup, 
 			 BcEntityConfig, Orientation, BcMap, BcEntities) ->
 	case bc_map:insert_collision(BcMap, BcCollision) of
