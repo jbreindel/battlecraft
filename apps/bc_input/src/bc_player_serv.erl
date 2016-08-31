@@ -52,7 +52,7 @@ handle_cast({spawn_entities, EntityType}, _From, State) ->
 		{ok, BcEntityConfig} ->
 			{ok, BaseNum, State1} = player_num(State),
 			{ok, SpawnBcVertices, State2} = spawn_matrix(State1),
-			spawn_entities(EntityType, State2),
+			spawn_entities(BcEntityConfig, State2),
 			{ok, State2};
 		error ->
 			{ok, State2}
@@ -119,23 +119,26 @@ player_num(#state{player = BcPlayer,
 			{ok, Num, State}
 	end.
 
-%% do_spawn_entities(BcEntityConfig, SpawnBcVertices, BatchCount, 
-%% 				  #state{entities = BcEntities,
-%% 						 map = BcMap,
-%% 						 base_num = BaseNum,
-%% 						 spawn_matrix = BcMatrix} = State) ->
-%% 	SpawnBcVertices = spawn_vertices(Offset, State),
-%% 	EntitySize = bc_entity_config:size(BcEntityConfig),
-%% 	BatchSize = length(SpawnBcVertices) / EntitySize,
+%% spawn_entities(BatchCount, SpawnBcVertices, BcEntityConfig, 
+%% 			   #state{entities = BcEntities,
+%% 					  map = BcMap,
+%% 					  base_num = BaseNum,
+%% 					  spawn_matrix = BcMatrix} = State) ->
 %% 	
 %% 
-%% spawn_entities(BcEntityConfig, #state{entities = BcEntities,
-%% 								  	  map = BcMap,
-%% 									  base_num = BaseNum,
-%% 								  	  spawn_matrix = BcMatrix} = State) ->
+%% spawn_entities(Offset, BcEntityConfig, 
+%% 			   #state{entities = BcEntities,
+%% 					  map = BcMap,
+%% 					  base_num = BaseNum,
+%% 					  spawn_matrix = BcMatrix} = State) ->
+%% 	SpawnBcVertices = spawn_vertices(Offset, State),
+%% 	BatchCount = length(SpawnBcVertices) / EntitySize,
 %% 	
 %% 	%% TODO spawn entities
 %% 	ok.
+
+spawn_entities(BcEntityConfig, State) ->
+	spawn_entities(0, BcEntityConfig, State).
 
 spawn_vertices(Offset, #state{base_num = BaseNum,
 					  		  spawn_matrix = SpawnBcMatrix} = State) ->
