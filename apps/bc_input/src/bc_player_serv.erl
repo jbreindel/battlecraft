@@ -22,7 +22,7 @@
 %% API functions
 %%====================================================================
 
-start_link(BcEntitySup, BcPlayer, BcGoldFsm, BcMap, BcEntities) ->
+start_link(BcEntitySup, BcGame, BcPlayer, BcGoldFsm, BcMap, BcEntities) ->
 	gen_server:start_link(?MODULE, [BcEntitySup, 
 									BcGame, 
 									BcPlayer, 
@@ -42,7 +42,7 @@ init([BcEntitySup, BcGame, BcPlayer, BcGoldFsm, BcMap, BcEntities]) ->
 				game = BcGame, 
 				player = BcPlayer,
 				base_num = undefined,
-				spawn_vertices = undefined,
+				spawn_matrix = undefined,
 				gold = BcGoldFsm,
 				map = BcMap,
 				entities = BcEntities}}.
@@ -55,7 +55,7 @@ handle_cast({spawn_entities, EntityType}, _From, State) ->
 			spawn_entities(BcEntityConfig, State2),
 			{ok, State2};
 		error ->
-			{ok, State2}
+			{ok, State}
 	end.
 
 %%====================================================================
