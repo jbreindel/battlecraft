@@ -118,27 +118,47 @@ player_num(#state{player = BcPlayer,
 		Num when is_integer(Num) ->
 			{ok, Num, State}
 	end.
+
+entity_orientation(1) ->
+	down;
+entity_orientation(2) ->
+	left;
+entity_orientation(3) ->
+	up;
+entity_orientation(4) ->
+	right.
 	
-%%spawn_entities(0, Acc, _, _, _) ->
-%%	Acc;
-%%spawn_entities(_, Acc, [], _, _) ->
-%%	Acc;
-%%spawn_entities(BatchCount, Acc, [SpawnBcVertex|SpawnBcVertices], 
-%%			   BcEntityConfig,  #state{entities = BcEntities,
-%%					  				   map = BcMap,
-%%					  				   base_num = BaseNum} = State) ->
+spawn_entities(0, Acc, _, _, _) ->
+	Acc;
+spawn_entities(_, Acc, [], _, _) ->
+	Acc;
+spawn_entities(BatchCount, Acc, [SpawnBcVertex|SpawnBcVertices], 
+			   BcEntityConfig,  #state{entity_sup = BcEntitySup,
+									   entities = BcEntities,
+					  				   map = BcMap,
+					  				   base_num = BaseNum} = State) ->
+	Uuid = uuid:get_v4(),
+	BcCollision = bc_collision:init(Uuid, SpawnBcVertex),
+	Orientation = entity_orientation(BaseNum),
+	case bc_entity_util:spawn_entity(BcCollision, BcPlayer, BcEntitySup, BcEntityConfig, 
+									 Orientation, BcMap, BcEntities) of
+		{ok, BcEntity} ->
+			spawn_entities(BatchCount - 1, Acc + 1, SpawnBcVertices, 
+						   BcEntityConfig, State);
+		_ ->
+			spawn_entities(BatchCount, Acc, SpawnBcVertices, 
+						   BcEntityConfig, State)
+	end.	
 	
-	
-spawn_entities(Offset, BcEntityConfig, 
-			   #state{entities = BcEntities,
-					  map = BcMap,
-					  base_num = BaseNum,
-					  spawn_matrix = BcMatrix} = State) ->
-	SpawnBcVertices = spawn_vertices(Offset, State),
-	BatchCount = length(SpawnBcVertices) / EntitySize,
-	
-	%% TODO spawn entities
-	ok.
+%% spawn_entities(Offset, BcEntityConfig, 
+%% 			   #state{entities = BcEntities,
+%% 					  map = BcMap,
+%% 					  base_num = BaseNum,
+%% 					  spawn_matrix = BcMatrix} = State) ->
+%% 	SpawnBcVertices = spawn_vertices(Offset, State),
+%% 	BatchCount = length(SpawnBcVertices) / EntitySize,
+%% 	%% TODO spawn entities
+%% 	ok.
 
 spawn_entities(BcEntityConfig, State) ->
 	spawn_entities(0, BcEntityConfig, State).

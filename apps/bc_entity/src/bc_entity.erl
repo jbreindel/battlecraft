@@ -55,7 +55,7 @@
 		   Orientation :: atom(),
 		   Vertices :: [bc_vertex:vertex()]) -> entity().
 init(UuidStr, PlayerId, Team, EntityType, Health, MaxHealth, Orientation, Vertices) ->
-	init(UuidStr, PlayerId, Team, EntityType, Health,MaxHealth, Orientation, Vertices, undefined).
+	init(UuidStr, PlayerId, Team, EntityType, Health, MaxHealth, Orientation, Vertices, undefined).
 
 -spec init(UuidStr :: string(), 
 		   PlayerId :: integer(), 
