@@ -118,24 +118,27 @@ player_num(#state{player = BcPlayer,
 		Num when is_integer(Num) ->
 			{ok, Num, State}
 	end.
-
-%% spawn_entities(BatchCount, SpawnBcVertices, BcEntityConfig, 
-%% 			   #state{entities = BcEntities,
-%% 					  map = BcMap,
-%% 					  base_num = BaseNum,
-%% 					  spawn_matrix = BcMatrix} = State) ->
-%% 	
-%% 
-%% spawn_entities(Offset, BcEntityConfig, 
-%% 			   #state{entities = BcEntities,
-%% 					  map = BcMap,
-%% 					  base_num = BaseNum,
-%% 					  spawn_matrix = BcMatrix} = State) ->
-%% 	SpawnBcVertices = spawn_vertices(Offset, State),
-%% 	BatchCount = length(SpawnBcVertices) / EntitySize,
-%% 	
-%% 	%% TODO spawn entities
-%% 	ok.
+	
+%%spawn_entities(0, Acc, _, _, _) ->
+%%	Acc;
+%%spawn_entities(_, Acc, [], _, _) ->
+%%	Acc;
+%%spawn_entities(BatchCount, Acc, [SpawnBcVertex|SpawnBcVertices], 
+%%			   BcEntityConfig,  #state{entities = BcEntities,
+%%					  				   map = BcMap,
+%%					  				   base_num = BaseNum} = State) ->
+	
+	
+spawn_entities(Offset, BcEntityConfig, 
+			   #state{entities = BcEntities,
+					  map = BcMap,
+					  base_num = BaseNum,
+					  spawn_matrix = BcMatrix} = State) ->
+	SpawnBcVertices = spawn_vertices(Offset, State),
+	BatchCount = length(SpawnBcVertices) / EntitySize,
+	
+	%% TODO spawn entities
+	ok.
 
 spawn_entities(BcEntityConfig, State) ->
 	spawn_entities(0, BcEntityConfig, State).
