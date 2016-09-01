@@ -119,14 +119,14 @@ player_num(#state{player = BcPlayer,
 			{ok, Num, State}
 	end.
 
-entity_orientation(1) ->
-	down;
-entity_orientation(2) ->
-	left;
-entity_orientation(3) ->
-	up;
-entity_orientation(4) ->
-	right.
+entity_orientation(BaseNum) ->
+	case BaseNum of
+		1 -> down;
+		2 -> left;
+		3 -> up;
+		4 -> right;
+		_ -> up
+	end.
 	
 spawn_entities(0, Acc, _, _, _) ->
 	Acc;
