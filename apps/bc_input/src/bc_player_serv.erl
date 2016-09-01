@@ -119,20 +119,38 @@ player_num(#state{player = BcPlayer,
 			{ok, Num, State}
 	end.
 
-entity_orientation(BaseNum) ->
-	case BaseNum of
-		1 -> down;
-		2 -> left;
-		3 -> up;
-		4 -> right;
-		_ -> up
+spawn_entities(BcEntityConfig, #state{spawn_matrix = SpawnBcMatrix} = State) ->
+	SpawnBcVertices = spawn_vertices(0, State),
+	SpawnCount = length(SpawnBcVertices) / EntitySize,
+	case bc_matrix:dimensions(SpawnBcMatrix) of
+		{RowCount, ColCount} when RowCount >= ColCount ->
+			spawn_entities({0, RowCount}, SpawnCount, BcEntityConfig, State);
+		{RowCount, ColCount} when RowCount < ColCount ->
+			spawn_entities({0, ColCount}, SpawnCount, BcEntityConfig, State);
+		_ ->
+			{error, "Cannot spawn entities."}
 	end.
 	
-spawn_entities(0, Acc, _, _, _) ->
+spawn_entities({Offset, MaxOffset}, _, _, _) when Offset >= MaxOffset ->
+	ok;
+spawn_entities(_, SpawnCount, _, _) when SpawnCount <= 0 ->
+	ok;
+spawn_entities({Offset, MaxOffset}, SpawnCount, BcEntityConfig, 
+			   #state{entities = BcEntities,
+					  map = BcMap,
+					  base_num = BaseNum,
+					  spawn_matrix = BcMatrix} = State) ->
+	SpawnBcVertices = spawn_vertices(Offset, State),
+	SpawnedCount = do_spawn_entities(SpawnCount, 0, SpawnBcVertices, 
+									 BcEntityConfig, State),
+	spawn_entities({Offset + 1, MaxOffset}, SpawnCount - SpawnedCount, 
+				   BcEntityConfig, State).
+	
+do_spawn_entities(0, Acc, _, _, _) ->
 	Acc;
-spawn_entities(_, Acc, [], _, _) ->
+do_spawn_entities(_, Acc, [], _, _) ->
 	Acc;
-spawn_entities(BatchCount, Acc, [SpawnBcVertex|SpawnBcVertices], 
+do_spawn_entities(BatchCount, Acc, [SpawnBcVertex|SpawnBcVertices], 
 			   BcEntityConfig,  #state{entity_sup = BcEntitySup,
 									   entities = BcEntities,
 					  				   map = BcMap,
@@ -148,20 +166,7 @@ spawn_entities(BatchCount, Acc, [SpawnBcVertex|SpawnBcVertices],
 		_ ->
 			spawn_entities(BatchCount, Acc, SpawnBcVertices, 
 						   BcEntityConfig, State)
-	end.	
-	
-%% spawn_entities(Offset, BcEntityConfig, 
-%% 			   #state{entities = BcEntities,
-%% 					  map = BcMap,
-%% 					  base_num = BaseNum,
-%% 					  spawn_matrix = BcMatrix} = State) ->
-%% 	SpawnBcVertices = spawn_vertices(Offset, State),
-%% 	BatchCount = length(SpawnBcVertices) / EntitySize,
-%% 	%% TODO spawn entities
-%% 	ok.
-
-spawn_entities(BcEntityConfig, State) ->
-	spawn_entities(0, BcEntityConfig, State).
+	end.
 
 spawn_vertices(Offset, #state{base_num = BaseNum,
 					  		  spawn_matrix = SpawnBcMatrix} = State) ->
@@ -178,6 +183,15 @@ spawn_vertices(Offset, #state{base_num = BaseNum,
 		4 ->
 			MinCol = bc_matrix:min_col(SpawnBcMatrix),
 			bc_matrix:col(MinCol + Offset, SpawnBcMatrix)
+	end.
+
+entity_orientation(BaseNum) ->
+	case BaseNum of
+		1 -> down;
+		2 -> left;
+		3 -> up;
+		4 -> right;
+		_ -> up
 	end.
 
 spawn_matrix(#state{base_num = BaseNum,
