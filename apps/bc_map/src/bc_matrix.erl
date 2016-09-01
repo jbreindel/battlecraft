@@ -7,7 +7,8 @@
 		 row/2,
 		 max_col/1,
 		 min_col/1,
-		 col/2]).
+		 col/2,
+		 dimensions/1]).
 
 %% ====================================================================
 %% API functions
@@ -75,6 +76,22 @@ col(Col, BcMatrix) ->
 		Cols when length(Cols) == 0 ->
 			error
 	end.
+
+-spec dimensions(BcMatrix :: dict:dict()) -> {integer(), integer()} | 
+												 error.
+dimensions(BcMatrix) ->
+	case dict:fetch_keys(BcMatrix) of
+		[] ->
+			{0, 0};
+		[Row|_] = Rows ->
+			case dict:find(Row, BcMatrix) of
+				{ok, Cols} ->
+					{length(Rows), length(Cols)};
+				error ->
+					error
+			end
+	end.
+				
 
 %% ====================================================================
 %% Internal functions
