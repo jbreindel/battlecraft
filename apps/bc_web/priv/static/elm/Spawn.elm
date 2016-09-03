@@ -38,22 +38,26 @@ update msg model =
     case msg of
 
         KeyboardMsg keyboardModel ->
-            let
-                entity = entityType keyboardModel
+            case entityType keyboardModel of
+                Just entity ->
+                    let
+                        spawnCmdJson = initSpawnCommand entity
+                                        |> encodeSpawnCommand
+                                        |> encode 0
+                    in
+                        Effects.init {model | entityType = entity} [
+                            WsSendMessage spawnCmdJson
+                        ]
+                Nothing ->
+                    Effects.return model
 
-                spawnCmdJson = initSpawnCommand entity
-                                |> encodeSpawnCommand
-                                |> encode 0
-            in
-                Effects.init {model | entityType = entity} [
-                    WsSendMessage spawnCmdJson
-                ]
-
-entityType : Keyboard.Model -> String
+entityType : Keyboard.Model -> Maybe String
 entityType keyboardModel =
     if Keyboard.isPressed Keyboard.CharA keyboardModel then
-        "champion"
+        Just "champion"
+
     else if Keyboard.isPressed Keyboard.CharS keyboardModel then
-        "demon"
+        Just "demon"
+
     else
-        "chaosbeast"
+        Nothing
