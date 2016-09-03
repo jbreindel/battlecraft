@@ -1,7 +1,8 @@
 
 -module(bc_entity_util).
 
--export([spawn_entity/7]).
+-export([spawn_entity/7,
+		 iolist_to_entity_type/1]).
 
 -spec spawn_entity(BcCollision :: bc_collision:collision(), 
 				   BcPlayer :: bc_player:player(), 
@@ -49,3 +50,11 @@ create_entity(BcCollision, BcPlayer, BcEntitySup,
 		modules => [bc_ai_fsm]
 	}),
 	bc_entity:set_ai_fsm(BcAiFsm, BcEntity).
+
+iolist_to_entity_type(EntityTypeStr) ->
+	case EntityTypeStr of
+		<<"champion">> -> champion;
+		<<"demon">> -> demon;
+		<<"chaosbeast">> -> chaosbeast;
+		_ -> undefined
+	end.
