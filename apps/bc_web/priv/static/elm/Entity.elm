@@ -50,14 +50,14 @@ type alias Model = {
 
 init : TmxMap -> Entity -> Effects Model Effect
 init tmxMap entity =
-        Effects.return {
-            entity = entity,
-            tmxMap = tmxMap,
-            matrix = Dict.empty,
-            position = (0.0, 0.0),
-            orientation = Down,
-            entityState = Standing
-        }
+    Effects.return {
+        entity = entity,
+        tmxMap = tmxMap,
+        matrix = Dict.empty,
+        position = (0.0, 0.0),
+        orientation = Down,
+        entityState = Standing
+    }
 
 -- Update
 
@@ -77,15 +77,26 @@ onEntityEvent entityEvent model =
 
         EntityEvent.EntitySpawnedEv entitySpawnedEvent ->
             let
-                vertices = entitySpawnedEvent.entity.vertices
-
-                matrix = vertexMatrix vertices
+                matrix = entitySpawnedEvent.entity.vertices
+                            |> vertexMatrix
 
                 position = entityPosition model.tmxMap matrix
             in
                 Effects.return {model |
                                     matrix = matrix,
                                     position = position}
+
+        EntityEvent.EntityMovedEv entityMovedEvent ->
+            let
+                matrix = entityMovedEvent.entity.vertices
+                            |> vertexMatrix
+
+                position = entityPosition model.tmxMap matrix
+            in
+                Effects.return {model |
+                                    matrix = matrix,
+                                    position = position,
+                                    entityState = Moving}
 
         EntityEvent.EntityDamagedEv entityDamagedEvent ->
             Effects.return {model |

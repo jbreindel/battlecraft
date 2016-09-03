@@ -3,6 +3,7 @@ module EntityEvent exposing (EntityEvent(..),
                              Vertex,
                              Entity,
                              EntitySpawnedEvent,
+                             EntityMovedEvent,
                              EntityDamagedEvent,
                              entityEvent,
                              entityEventEntity)
@@ -59,6 +60,17 @@ entitySpawnedEvent =
         |: ("event_type" := string)
         |: ("entity" := entity)
 
+type alias EntityMovedEvent = {
+    eventType : String,
+    entity : Entity
+}
+
+entityMovedEvent : Decoder EntityMovedEvent
+entityMovedEvent =
+    at ["entity_event"] <| succeed EntityMovedEvent
+        |: ("event_type" := string)
+        |: ("entity" := entity)
+
 type alias EntityDamagedEvent = {
     eventType : String,
     entity : Entity
@@ -74,6 +86,7 @@ entityDamagedEvent =
 
 type EntityEvent =
     EntitySpawnedEv EntitySpawnedEvent |
+    EntityMovedEv EntityMovedEvent |
     EntityDamagedEv EntityDamagedEvent
 
 entityEventInfo : String -> Decoder EntityEvent
@@ -82,6 +95,9 @@ entityEventInfo eventType =
 
         "entity_spawned" ->
             object1 EntitySpawnedEv entitySpawnedEvent
+
+        "entity_moved" ->
+            object1 EntityMovedEv entityMovedEvent
 
         "entity_damaged" ->
             object1 EntityDamagedEv entityDamagedEvent
@@ -101,6 +117,9 @@ entityEventEntity entityEvent =
 
         EntitySpawnedEv entitySpawnedEvent ->
             entitySpawnedEvent.entity
+
+        EntityMovedEv entityMovedEvent ->
+            entityMovedEvent.entity
 
         EntityDamagedEv entityDamagedEvent ->
             entityDamagedEvent.entity
