@@ -89,13 +89,11 @@ handle_cast({spawn_entities, EntityTypeStr}, #state{entities = BcEntities} = Sta
 	case bc_entities:entity_config(EntityType, BcEntities) of
 		{ok, BcEntityConfig} ->
 			{ok, BaseNum, State1} = player_num(State),
-			io:format("Got PlayerNum: ~p~n", [BaseNum]),
 			{ok, BcMatrix, State2} = spawn_matrix(State1),
-			io:format("Got SpawnBcMatrix: ~p~n", [BcMatrix]),
 			spawn_entity_batch(BcEntityConfig, State2),
-			{ok, State2};
+			{noreply, State2};
 		error ->
-			{ok, State}
+			{noreply, State}
 	end.
 
 -spec handle_info(Info :: timeout | term(), State :: term()) -> Result when
@@ -238,11 +236,9 @@ do_spawn_entities(BatchCount, Acc, [SpawnBcVertex|SpawnBcVertices],
 	case bc_entity_util:spawn_entity(BcCollision, BcPlayer, BcEntitySup, BcEntityConfig, 
 									 Orientation, BcMap, BcEntities) of
 		{ok, BcEntity} ->
-			io:format("SpawnedEntity: ~p~n", [BcEntity]),
 			do_spawn_entities(BatchCount - 1, Acc + 1, SpawnBcVertices, 
 							  BcEntityConfig, State);
-		Msg ->
-			io:format("Failed Spawning entity: ~p~n", [Msg]),
+		_ ->
 			do_spawn_entities(BatchCount, Acc, SpawnBcVertices, 
 							  BcEntityConfig, State)
 	end.

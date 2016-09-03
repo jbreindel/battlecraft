@@ -157,12 +157,15 @@ reaching_neighbors(#{graph := MapGraph}, Vertex, MaxDist) ->
 					   OriginalBcCollision :: bc_collision:collision(),
 					   UpdatedBcCollision :: bc_collision:collision()) -> ok | {error, Reason :: string()}.
 update_collision(#{coll_tab := Tab}, OriginalBcCollision, UpdatedBcCollision) ->
-	case bc_collision:difference_vertices(OriginalBcCollision, UpdatedBcCollision) of
-		InsertRows when length(InsertRows) > 0 ->
+	case bc_collision:difference_vertices(UpdatedBcCollision, OriginalBcCollision) of
+		InsertBcVertices when length(InsertBcVertices) > 0 ->
+			Uuid = bc_collision:uuid(UpdatedBcCollision),
+			InsertRows = vertex_rows(Uuid, InsertBcVertices),
 			case ets:insert_new(Tab, InsertRows) of
 				true ->
-					DifferenceRows = bc_collision:difference_vertices(OriginalBcCollision, UpdatedBcCollision),
-					Ms = collision_ms(DifferenceRows),
+					DeleteBcVertices = bc_collision:difference_vertices(
+									   OriginalBcCollision, UpdatedBcCollision),
+					Ms = collision_ms(DeleteBcVertices),
 					ets:match_delete(Tab, Ms),
 					ok;
 				false ->

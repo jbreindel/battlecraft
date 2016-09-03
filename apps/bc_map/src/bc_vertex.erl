@@ -7,6 +7,7 @@
 		 col/1,
 		 set_col/2,
 		 to_tuple/1,
+		 move/2,
 		 compare/2]).
 		 
 %%

@@ -6,6 +6,7 @@
 		 uuid/1, 
 		 vertices/1,
 		 set_vertices/2,
+		 move/2,
 		 difference_vertices/2]).
 
 %%
@@ -55,5 +56,5 @@ difference_vertices(#{vertices := Vertices1} = BcCollision1,
 				    #{vertices := Vertices2} = BcCollision2) ->
 	Set1 = sets:from_list(Vertices1),
 	Set2 = sets:from_list(Vertices2),
-	DiffSet = sofs:difference(Set1, Set2),
+	DiffSet = sets:subtract(Set1, Set2),
 	sets:to_list(DiffSet).
