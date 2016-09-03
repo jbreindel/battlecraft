@@ -63,8 +63,9 @@ standing(action_complete, #state{entity_config = BcEntityConfig,
 			EntitiesEventPid = bc_entities:event(BcEntities),
 			gen_event:notify(EntitiesEventPid, {entity_moved, UpdatedBcEntity}),
 			MoveSpeed = bc_entity_config:move_speed(BcEntityConfig),
-			MoveDelay = 1000 - (1000 * MoveSpeed),
-			TimerRef = gen_fsm:send_event_after(MoveDelay, action_complete),
+			MoveDelayFloat = 1000 - (1000 * MoveSpeed),
+			MoveDelayInt = erlang:trunc(MoveDelayFloat),
+			TimerRef = gen_fsm:send_event_after(MoveDelayInt, action_complete),
 			{next_state, moving, State#state{entity = UpdatedBcEntity,
 											 timer = TimerRef}};
 		{error, _} ->
