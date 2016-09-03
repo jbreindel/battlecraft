@@ -187,18 +187,59 @@ entityPosition tmxMap matrix =
 
 -- View
 
-entityBackgroundImage : Model -> Collage.Form
-entityBackgroundImage model =
+entityAngle : Orientation -> Float
+entityAngle orientation =
+    case orientation of
+
+        Up ->
+            degrees 0
+
+        Right ->
+            degrees 270
+
+        Down ->
+            degrees 180
+
+        Left ->
+            degrees 90
+
+championImage : Model -> Element.Element
+championImage model =
+    case model.entityState of
+
+        Standing ->
+            Element.image 64 64
+                "/static/assets/units/b_champion/champion_stand_1.PNG"
+
+        Moving ->
+            Element.image 64 64
+                "/static/assets/gifs/champion2.gif"
+
+        Attacking ->
+            Element.image 64 64
+                "/static/assets/gifs/champion.gif"
+
+entityTypeImage : Model -> Element.Element
+entityTypeImage model =
+    case model.entity.entityType of
+
+        "base" ->
+            Element.empty
+
+        "champion" ->
+            championImage model
+
+        _ ->
+            Element.empty
+
+entityImage : Model -> Collage.Form
+entityImage model =
     let
-        image = case model.entity.entityType of
-
-                    "base" ->
-                        Element.empty
-
-                    _ ->
-                        Element.empty
+        imageAngle = entityAngle model.orientation
     in
-        image |> Collage.toForm
+        entityTypeImage model
+            |> Collage.toForm
+            |> Collage.rotate imageAngle
 
 entityHealthBar : Model -> Collage.Form
 entityHealthBar model =
@@ -216,7 +257,7 @@ entityHealthBar model =
 
         healthPct = health / maxHealth
     in
-        Collage.rect offsetWidth 10.0
+        Collage.rect offsetWidth 2.0
             |> Collage.filled green
 
 view : Model -> Collage.Form
@@ -224,7 +265,7 @@ view model =
     let
         (x, y) = model.position
 
-        backgroundForm = entityBackgroundImage model
+        backgroundForm = entityImage model
 
         healthBarForm = entityHealthBar model
 
