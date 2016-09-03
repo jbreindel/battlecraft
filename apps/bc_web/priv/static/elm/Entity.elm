@@ -6,11 +6,11 @@ module Entity exposing (Effect(..),
                         update,
                         view)
 
-import Dict exposing (..)
 import Color exposing (green, orange, red)
-import Element exposing (..)
-import Collage exposing (..)
+import Dict exposing (..)
 import Effects exposing (Effects)
+import Element
+import Collage
 
 -- Local imports
 
@@ -217,7 +217,7 @@ entityHealthBar model =
         healthPct = health / maxHealth
     in
         Collage.rect offsetWidth 10.0
-            |> filled green
+            |> Collage.filled green
 
 view : Model -> Collage.Form
 view model =
