@@ -30,20 +30,22 @@ websocket_init(_Type, Req, _Opts) ->
 			end
 	end.
 
-websocket_handle({text, Json} = Frame, Req, #state{game_id = GameId} = State) ->
+websocket_handle({text, Json} = Frame, Req, #state{game_id = GameId,
+												   player_serv = BcPlayerServ} = State) ->
  	CommandMap = jsx:decode(Json, [return_maps]),
 	lager:info("Websocket message received: ~p~n", [CommandMap]),
 	case maps:get(<<"command_type">>, CommandMap, undefined) of
 		<<"join_command">> ->
 			Handle = maps:get(<<"handle">>, CommandMap),
 			case join_game(GameId, Handle) of
-				{ok, PlayerId, Team, BcPlayerServ} ->
+				{ok, PlayerId, Team, JoinedBcPlayerServ} ->
 					ReplyMap = #{type => command_response,
 								 command_response => #{response_type => join_response,
 													   player_id => PlayerId,
 													   team => Team}},
 					ReplyJson = jsx:encode(ReplyMap),
-					{reply, {text, ReplyJson}, Req, State#state{player_id = PlayerId}};
+					{reply, {text, ReplyJson}, Req, State#state{player_id = PlayerId,
+																player_serv = JoinedBcPlayerServ}};
 				{error, Reason} = Error ->
 					io:format("Error occured while joining: ~p~n", [Error]),
 					ErrorMap = #{type => command_response,
@@ -52,6 +54,10 @@ websocket_handle({text, Json} = Frame, Req, #state{game_id = GameId} = State) ->
 					ReplyJson = jsx:encode(ErrorMap),
 					{reply, {text, ReplyJson}, Req, State}
 			end;
+		<<"spawn_command">> ->
+			EntityType = maps:get(<<"entity_type">>, CommandMap),
+			bc_player_serv:spawn_entities(BcPlayerServ, EntityType),
+			{ok, Req, State};
 		undefined ->
 			{reply, Frame, Req, State}
 	end;

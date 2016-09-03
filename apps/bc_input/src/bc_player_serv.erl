@@ -3,7 +3,8 @@
 -behavior(gen_server).
 
 %% api functions
--export([start_link/6]).
+-export([start_link/6,
+		 spawn_entities/2]).
 
 %% gen_server callbacks
 -export([init/1]).
@@ -47,7 +48,8 @@ init([BcEntitySup, BcGame, BcPlayer, BcGoldFsm, BcMap, BcEntities]) ->
 				map = BcMap,
 				entities = BcEntities}}.
 
-handle_cast({spawn_entities, EntityType}, _From, State) ->
+handle_cast({spawn_entities, EntityTypeStr}, _From, State) ->
+	EntityType = bc_entity_util:iolist_to_entity_type(EntityTypeStr),
 	case bc_entities:entity_config(EntityType) of
 		{ok, BcEntityConfig} ->
 			{ok, BaseNum, State1} = player_num(State),
