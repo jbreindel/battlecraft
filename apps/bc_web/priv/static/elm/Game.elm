@@ -15,7 +15,7 @@ import Window
 
 import Join
 import Map
-import Entity
+import Spawn
 import GameState exposing (GameState)
 import Message exposing (..)
 
@@ -43,7 +43,8 @@ type alias Model = {
     address: String,
     keyboardModel : Keyboard.Model,
     joinModel : Join.Model,
-    mapModel : Map.Model
+    mapModel : Map.Model,
+    spawnModel : Spawn.Model
 }
 
 init : Flags -> Effects Model (Cmd Msg)
@@ -52,6 +53,8 @@ init flags =
         (joinModel, joinEffects) = Join.init
 
         (mapModel, mapEffects) = Map.init
+
+        (spawnModel, spawnEffects) = Spawn.init
 
         (keyboardModel, keyboardCmd) = Keyboard.init
 
@@ -69,11 +72,13 @@ init flags =
             address = flags.address,
             keyboardModel = keyboardModel,
             joinModel = joinModel,
-            mapModel = mapModel
+            mapModel = mapModel,
+            spawnModel = spawnModel
         }
         [cmdBatch]
         `Effects.andThen` Effects.handle handleJoinEffect joinEffects
-            `Effects.andThen` Effects.handle handleMapEffect mapEffects
+        `Effects.andThen` Effects.handle handleMapEffect mapEffects
+        `Effects.andThen` Effects.handle handleSpawnEffect spawnEffects
 
 -- Update
 
@@ -180,6 +185,13 @@ handleMapEffect effect model =
 
         Map.NoOp ->
             Effects.return model
+
+handleSpawnEffect : Effects.Handler Spawn.Effect Model (Cmd Msg)
+handleSpawnEffect effect model =
+    case effect of
+
+        Spawn.WsSendMessage str ->
+            update (WsSendMessage str) model
 
 -- Subscriptions
 
