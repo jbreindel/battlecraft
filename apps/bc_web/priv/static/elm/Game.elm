@@ -96,12 +96,17 @@ update msg model =
 
                 (updatedMapModel, mapEffects) =
                     Map.update (Map.KeyboardMsg updatedKeyboardModel) model.mapModel
+
+                (updatedSpawnModel, spawnEffects) =
+                    Spawn.update (Spawn.KeyboardMsg updatedKeyboardModel) model.spawnModel
             in
                 Effects.init {model |
                     keyboardModel = updatedKeyboardModel,
-                    mapModel = updatedMapModel
+                    mapModel = updatedMapModel,
+                    spawnModel = updatedSpawnModel
                 } [Cmd.map KeyboardMsg keyboardCmd]
                     `Effects.andThen` Effects.handle handleMapEffect mapEffects
+                    `Effects.andThen` Effects.handle handleSpawnEffect spawnEffects
 
         WindowSize windowSize ->
             let
