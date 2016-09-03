@@ -2,6 +2,9 @@
 module Command exposing (JoinCommand,
                          initJoinCommand,
                          encodeJoinCommand,
+                         SpawnCommand,
+                         initSpawnCommand,
+                         encodeSpawnCommand,
                          JoinErrorResponse,
                          JoinSuccessResponse,
                          JoinResponse(..),
@@ -26,6 +29,22 @@ encodeJoinCommand joinCmd =
     object [
         ("command_type", Json.Encode.string joinCmd.commandType),
         ("handle", Json.Encode.string joinCmd.handle)
+    ]
+
+type alias SpawnCommand = {
+    commandType : String,
+    entityType : String
+}
+
+initSpawnCommand : String -> SpawnCommand
+initSpawnCommand entityType =
+    (SpawnCommand "spawn_command" entityType)
+
+encodeSpawnCommand : SpawnCommand -> Json.Encode.Value
+encodeSpawnCommand spawnCmd =
+    object [
+        ("command_type", Json.Encode.string spawnCmd.commandType),
+        ("entityType", Json.Encode.string spawnCmd.entityType)
     ]
 
 -- Response types
