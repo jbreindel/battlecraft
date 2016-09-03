@@ -11,8 +11,8 @@ import Html.App as App
 import Html.Attributes exposing (..)
 import Html.Events exposing (onInput, onClick)
 import Json.Encode exposing (..)
-import WebSocket
 import Effects exposing (Effects)
+import WebSocket
 
 -- Local imports
 
