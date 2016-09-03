@@ -85,8 +85,8 @@ dimensions(BcMatrix) ->
 			{0, 0};
 		[Row|_] = Rows ->
 			case dict:find(Row, BcMatrix) of
-				{ok, Cols} ->
-					{length(Rows), length(Cols)};
+				{ok, ColSet} ->
+					{length(Rows), sets:size(ColSet)};
 				error ->
 					error
 			end

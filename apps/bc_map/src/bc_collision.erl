@@ -22,9 +22,11 @@
 %%====================================================================
 
 -spec init(Uuid :: uuid:uuid(),
-		   BcVertices :: [bc_vertex:vertex()]) -> collision().
-init(Uuid, BcVertices) ->
-	#{uuid => Uuid, vertices => BcVertices}.
+		   BcVertices :: bc_vertex:vertex() | [bc_vertex:vertex()]) -> collision().
+init(Uuid, BcVertices) when is_list(BcVertices) ->
+	#{uuid => Uuid, vertices => BcVertices};
+init(Uuid, BcVertex) ->
+	init(Uuid, [BcVertex]).
 
 -spec uuid(BcCollision :: collision()) -> uuid:uuid().
 uuid(BcCollision) ->

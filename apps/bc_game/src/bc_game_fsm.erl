@@ -194,7 +194,8 @@ handle_info({'DOWN', Ref, process, Pid, _}, StateName,
 	end.
 
 terminate(Reason, StateName, State) ->
-	io:format("BcGameFsm terminates with ~p~n", [Reason]).
+	io:format("BcGameFsm terminates with ~p~n", [Reason]),
+	ok.
 
 %%====================================================================
 %% Internal functions

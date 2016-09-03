@@ -114,12 +114,14 @@ query_collisions(#{coll_tab := Tab}, BcVertices) ->
 	rows_to_query_results(Results).
 
 -spec query_ids(MapGraph :: map_graph(), 
-				Uuids :: [uuid:uuid()]) -> [query_res()].
-query_ids(#{coll_tab := Tab}, Uuids) ->
+				Uuids :: uuid:uuid() | [uuid:uuid()]) -> [query_res()].
+query_ids(#{coll_tab := Tab}, Uuids) when is_list(Uuids) ->
 	Results = qlc:eval(qlc:q([{BcVertexTuple, Uuid} || 
 							  {BcVertexTuple, Uuid} <- ets:table(Tab),
 							  lists:member(Uuid, Uuids)])),
-	rows_to_query_results(Results).
+	rows_to_query_results(Results);
+query_ids(MapGraph, Uuid) ->
+	query_ids(MapGraph, [Uuid]).
 
 -spec compute_path(MapGraph :: map_graph(), 
 				   Vertex1 :: bc_vertex:vertex(), 

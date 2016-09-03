@@ -7,7 +7,12 @@
 		 spawn_entities/2]).
 
 %% gen_server callbacks
--export([init/1]).
+-export([init/1,
+		 handle_call/3,
+		 handle_cast/2, 
+		 handle_info/2, 
+		 terminate/2, 
+		 code_change/3]).
 
 %% state rec
 -record(state, {entity_sup,
@@ -38,6 +43,14 @@ spawn_entities(BcPlayerServ, EntityType) ->
 %% Gen_server functions
 %%====================================================================
 
+-spec init(Args :: term()) -> Result when
+	Result :: {ok, State}
+			| {ok, State, Timeout}
+			| {ok, State, hibernate}
+			| {stop, Reason :: term()}
+			| ignore,
+	State :: term(),
+	Timeout :: non_neg_integer() | infinity.
 init([BcEntitySup, BcGame, BcPlayer, BcGoldFsm, BcMap, BcEntities]) ->
 	{ok, #state{entity_sup = BcEntitySup,
 				game = BcGame, 
@@ -48,17 +61,68 @@ init([BcEntitySup, BcGame, BcPlayer, BcGoldFsm, BcMap, BcEntities]) ->
 				map = BcMap,
 				entities = BcEntities}}.
 
-handle_cast({spawn_entities, EntityTypeStr}, _From, State) ->
+-spec handle_call(Request :: term(), From :: {pid(), Tag :: term()}, State :: term()) -> Result when
+	Result :: {reply, Reply, NewState}
+			| {reply, Reply, NewState, Timeout}
+			| {reply, Reply, NewState, hibernate}
+			| {noreply, NewState}
+			| {noreply, NewState, Timeout}
+			| {noreply, NewState, hibernate}
+			| {stop, Reason, Reply, NewState}
+			| {stop, Reason, NewState},
+	Reply :: term(),
+	NewState :: term(),
+	Timeout :: non_neg_integer() | infinity,
+	Reason :: term().
+handle_call(Request, From, State) ->
+    {reply, ok, State}.
+
+-spec handle_cast(Request :: term(), State :: term()) -> Result when
+	Result :: {noreply, NewState}
+			| {noreply, NewState, Timeout}
+			| {noreply, NewState, hibernate}
+			| {stop, Reason :: term(), NewState},
+	NewState :: term(),
+	Timeout :: non_neg_integer() | infinity.
+handle_cast({spawn_entities, EntityTypeStr}, #state{entities = BcEntities} = State) ->
 	EntityType = bc_entity_util:iolist_to_entity_type(EntityTypeStr),
-	case bc_entities:entity_config(EntityType) of
+	case bc_entities:entity_config(EntityType, BcEntities) of
 		{ok, BcEntityConfig} ->
 			{ok, BaseNum, State1} = player_num(State),
-			{ok, SpawnBcVertices, State2} = spawn_matrix(State1),
+			io:format("Got PlayerNum: ~p~n", [BaseNum]),
+			{ok, BcMatrix, State2} = spawn_matrix(State1),
+			io:format("Got SpawnBcMatrix: ~p~n", [BcMatrix]),
 			spawn_entity_batch(BcEntityConfig, State2),
 			{ok, State2};
 		error ->
 			{ok, State}
 	end.
+
+-spec handle_info(Info :: timeout | term(), State :: term()) -> Result when
+	Result :: {noreply, NewState}
+			| {noreply, NewState, Timeout}
+			| {noreply, NewState, hibernate}
+			| {stop, Reason :: term(), NewState},
+	NewState :: term(),
+	Timeout :: non_neg_integer() | infinity.
+handle_info(Info, State) ->
+    {noreply, State}.
+
+-spec terminate(Reason, State :: term()) -> Any :: term() when
+	Reason :: normal
+			| shutdown
+			| {shutdown, term()}
+			| term().
+terminate(Reason, State) ->
+	io:format("BcPlayerServer terminates with ~p~n", [Reason]),
+    ok.
+
+-spec code_change(OldVsn, State :: term(), Extra :: term()) -> Result when
+	Result :: {ok, NewState :: term()} | {error, Reason :: term()},
+	OldVsn :: Vsn | {down, Vsn},
+	Vsn :: term().
+code_change(OldVsn, State, Extra) ->
+    {ok, State}.
 
 %%====================================================================
 %% Internal functions
@@ -102,7 +166,7 @@ player_num(#state{player = BcPlayer,
 	case BaseNum of
 		undefined ->
 			PlayerId = bc_player:id(BcPlayer),
-			BaseBcEntities = bc_entity:query_type(base, BcEntities),
+			BaseBcEntities = bc_entities:query_type(base, BcEntities),
 			case lists:filter(fun(BaseBcEntity) -> 
 								  PlayerId =:= bc_entity:player_id(BaseBcEntity) 
 							  end, BaseBcEntities) of
@@ -110,7 +174,7 @@ player_num(#state{player = BcPlayer,
 					{ok, undefined, State};
 				[PlayerBaseBcEntity] ->
 					Uuid = bc_entity:uuid(PlayerBaseBcEntity),
-					QueryResults = bc_map:query_collisions(Uuid, BcEntities),
+					QueryResults = bc_map:query_ids(BcMap, Uuid),
 					BcVertices = lists:map(fun(#{vertex := BcVertex}) -> 
 											  BcVertex 
 										   end, QueryResults),
@@ -122,15 +186,20 @@ player_num(#state{player = BcPlayer,
 	end.
 
 spawn_entity_batch(BcEntityConfig, #state{spawn_matrix = SpawnBcMatrix} = State) ->
-	SpawnBcVertices = spawn_vertices(0, State),
-	EntitySize = bc_entity_config:size(BcEntityConfig),
-	SpawnCount = length(SpawnBcVertices) / EntitySize,
-	case bc_matrix:dimensions(SpawnBcMatrix) of
-		{RowCount, ColCount} when RowCount >= ColCount ->
-			spawn_entities({0, RowCount}, SpawnCount, BcEntityConfig, State);
-		{RowCount, ColCount} when RowCount < ColCount ->
-			spawn_entities({0, ColCount}, SpawnCount, BcEntityConfig, State);
-		_ ->
+	case spawn_vertices(0, State) of
+		{ok, SpawnBcVertices} ->
+			EntitySize = bc_entity_config:size(BcEntityConfig),
+			SpawnCountFloat = length(SpawnBcVertices) / EntitySize,
+			SpawnCount = erlang:trunc(SpawnCountFloat),
+			case bc_matrix:dimensions(SpawnBcMatrix) of
+				{RowCount, ColCount} when RowCount >= ColCount ->
+					spawn_entities({0, RowCount}, SpawnCount, BcEntityConfig, State);
+				{RowCount, ColCount} when RowCount < ColCount ->
+					spawn_entities({0, ColCount}, SpawnCount, BcEntityConfig, State);
+				_ ->
+					{error, "Cannot spawn entities."}
+			end;
+		error ->
 			{error, "Cannot spawn entities."}
 	end.
 	
@@ -143,11 +212,15 @@ spawn_entities({Offset, MaxOffset}, SpawnCount, BcEntityConfig,
 					  map = BcMap,
 					  base_num = BaseNum,
 					  spawn_matrix = BcMatrix} = State) ->
-	SpawnBcVertices = spawn_vertices(Offset, State),
-	SpawnedCount = do_spawn_entities(SpawnCount, 0, SpawnBcVertices, 
-									 BcEntityConfig, State),
-	spawn_entities({Offset + 1, MaxOffset}, SpawnCount - SpawnedCount, 
-				   BcEntityConfig, State).
+	case spawn_vertices(Offset, State) of
+		{ok, SpawnBcVertices} ->
+			SpawnedCount = do_spawn_entities(SpawnCount, 0, SpawnBcVertices, 
+											 BcEntityConfig, State),
+			spawn_entities({Offset + 1, MaxOffset}, SpawnCount - SpawnedCount, 
+						   BcEntityConfig, State);
+		error ->
+			{error, "Cannot spawn entities"}
+	end.
 	
 do_spawn_entities(0, Acc, _, _, _) ->
 	Acc;
@@ -165,9 +238,11 @@ do_spawn_entities(BatchCount, Acc, [SpawnBcVertex|SpawnBcVertices],
 	case bc_entity_util:spawn_entity(BcCollision, BcPlayer, BcEntitySup, BcEntityConfig, 
 									 Orientation, BcMap, BcEntities) of
 		{ok, BcEntity} ->
+			io:format("SpawnedEntity: ~p~n", [BcEntity]),
 			do_spawn_entities(BatchCount - 1, Acc + 1, SpawnBcVertices, 
 							  BcEntityConfig, State);
-		_ ->
+		Msg ->
+			io:format("Failed Spawning entity: ~p~n", [Msg]),
 			do_spawn_entities(BatchCount, Acc, SpawnBcVertices, 
 							  BcEntityConfig, State)
 	end.
