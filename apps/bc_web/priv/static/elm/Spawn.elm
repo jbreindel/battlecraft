@@ -9,6 +9,8 @@ import Effects exposing (Effects)
 import Keyboard.Extra as Keyboard
 import Json.Encode exposing (encode)
 
+-- Local imports
+
 import Command exposing (SpawnCommand, initSpawnCommand, encodeSpawnCommand)
 
 -- Actions

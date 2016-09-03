@@ -44,7 +44,7 @@ encodeSpawnCommand : SpawnCommand -> Json.Encode.Value
 encodeSpawnCommand spawnCmd =
     object [
         ("command_type", Json.Encode.string spawnCmd.commandType),
-        ("entityType", Json.Encode.string spawnCmd.entityType)
+        ("entity_type", Json.Encode.string spawnCmd.entityType)
     ]
 
 -- Response types
