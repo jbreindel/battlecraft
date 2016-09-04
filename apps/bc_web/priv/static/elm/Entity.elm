@@ -10,13 +10,16 @@ import Color exposing (green, orange, red)
 import Dict exposing (Dict)
 import Deque exposing (Deque)
 import Effects exposing (Effects)
+import Task exposing (Task)
+import Process
 import Element
 import Collage
 
 -- Local imports
 
 import TmxMap exposing (TmxMap, tmxMapHeight, tmxMapWidth)
-import EntityEvent exposing (Vertex, Entity, EntityEvent)
+import EntityEvent exposing (Vertex, Entity, EntityEvent,
+                             EntitySpawnedEvent, EntityMovedEvent)
 
 -- Actions
 
@@ -24,8 +27,12 @@ type Effect =
     PerformCmd (Cmd Msg)
 
 type Msg =
-    EntityEv EntityEvent |
-    EventTick
+    ReceiveEntityEv EntityEvent |
+    ConsumeEntityEv EntityEvent |
+    MoveTick String Float |
+    MoveSuccess |
+    MoveFail |
+    NoOp
 
 -- Model
 
@@ -45,7 +52,7 @@ type alias Model = {
     tmxMap : TmxMap,
     matrix : Dict Int (List Int),
     position : (Float, Float),
-    movementPosition : (Float, Float),
+    movePosition : (Float, Float),
     orientation : Orientation,
     entityState : EntityState,
     eventBuffer : Deque EntityEvent
@@ -58,7 +65,7 @@ init tmxMap entity =
         tmxMap = tmxMap,
         matrix = Dict.empty,
         position = (0.0, 0.0),
-        movementPosition = (0.0, 0.0),
+        movePosition = (0.0, 0.0),
         orientation = Down,
         entityState = Standing,
         eventBuffer = Deque.empty
@@ -70,10 +77,65 @@ update : Msg -> Model -> Effects Model Effect
 update msg model =
     case msg of
 
-        EntityEv entityEvent ->
-            onEntityEvent entityEvent model
+        ReceiveEntityEv entityEvent ->
+            onReceiveEntityEvent entityEvent model
+
+        MoveTick _ delta ->
+            onMoveTick delta model
+
+        MoveSuccess ->
+            onMoveComplete model
+
+        MoveFail ->
+            onMoveComplete model
 
         NoOp ->
+            Effects.return model
+
+onMoveComplete : Model -> Effects Model Effect
+onMoveComplete model =
+    let
+        (_, eventBuffer) =
+            Deque.popFront model.eventBuffer
+
+        (mbEntityEvent, updatedEventBuffer) =
+            Deque.popFront eventBuffer
+    in
+        case mbEntityEvent of
+
+            Just entityEvent ->
+                let
+                    cmd = Task.succeed entityEvent
+                            |> Task.perform ConsumeEntityEv NoOp
+                in
+                    Effects.init {model |
+                        eventBuffer = updatedEventBuffer
+                    } [PerformCmd cmd]
+
+            Nothing ->
+                Effects.return {model |
+                                    eventBuffer = updatedEventBuffer}
+
+onMoveTick : Float -> Model -> Effects Model Effect
+onMoveTick delta model =
+    let
+        (x, y) = model.position
+
+        (moveX, moveY) = model.movePosition
+    in
+        if x == moveX && moveY > y then
+            Effects.return {model | position = (x, y + delta)}
+
+        else if x == moveX && moveY < y then
+            Effects.return {model | position = (x, y - delta)}
+
+        else if y == moveY && moveX > x then
+            Effects.return {model | position = (x + delta, y)}
+
+        else if y == moveY && moveX < x then
+            Effects.return {model | position = (x - delta, y)}
+
+        else
             Effects.return model
 
 onEntitySpawnedEvent : EntitySpawnedEvent -> Model -> Effects Model Effect
@@ -91,45 +153,92 @@ deltaPos : (Float, Float) -> (Float, Float) -> Float
 deltaPos (x1, y1) (x2, y2) =
     let
         deltaX = x1 - x2
+                |> abs
 
         deltaY = y1 - y2
+                |> abs
     in
         if deltaX > 0.0 then
             deltaX
+
         else
             deltaY
+
+moveTime : String -> Float
+moveTime entityType =
+    case entityType of
+
+        "champion" ->
+            0.6
+
+        "demon" ->
+            0.5
+
+        _ ->
+            0.5
 
 onEntityMovedEvent : EntityMovedEvent -> Model -> Effects Model Effect
 onEntityMovedEvent entityMovedEvent model =
     let
-        updatedEventBuffer = Deque.pushBack entityMovedEvent model.eventBuffer
+        entityEvent = EntityEvent.EntityMovedEv entityMovedEvent
+
+        updatedEventBuffer =
+            Deque.pushBack entityEvent model.eventBuffer
+
+        movePosition = entityMovedEvent.entity.vertices
+                        |> vertexMatrix
+                        |> entityPosition model.tmxMap
+
+        posDelta = deltaPos model.position movePosition
+
+        moveDelta = 2
+
+        tick = posDelta / moveDelta
+
+        moveSpeed = moveTime model.entity.entityType
+
+        time = 1000.0 - (1000.0 * moveSpeed)
+
+        tickTime = time / tick
+
+        cmd = List.repeat tick moveDelta
+                |> List.map (
+                    \delta ->
+                        Task.succeed (MoveTick model.entity.uuid delta)
+                            `Task.andThen` (
+                                \msg -> Process.sleep tickTime
+                            )
+                )
+                |> List.foldl Task.andThen (Task.succeed NoOp)
+                |> Task.perform MoveSuccess MoveFail
     in
-        if Deque.isEmpty model.eventBuffer then
-            let
-                movementPosition = entityMovedEvent.entity.vertices
-                                    |> vertexMatrix
-                                    |> entityPosition model.tmxMap
-            in
-                Effects.init {model |
-                                eventBuffer = updatedEventBuffer,
-                                movementPosition = movementPosition} [
+        Effects.init {model |
+            movePosition = movePosition,
+            eventBuffer = updatedEventBuffer
+        } [PerformCmd cmd]
 
-                ]
+onReceiveEntityEvent : EntityEvent -> Model -> Effects Model Effect
+onReceiveEntityEvent entityEvent model =
+    if Deque.isEmpty model.eventBuffer then
+        onConsumeEntityEvent entityEvent model
 
-onEntityEvent : EntityEvent -> Model -> Effects Model Effect
-onEntityEvent entityEvent model =
+    else
+        let
+            updatedEventBuffer =
+                Deque.pushBack entityEvent model.eventBuffer
+        in
+            Effects.return {model |
+                                eventBuffer = updatedEventBuffer}
+
+onConsumeEntityEvent : EntityEvent -> Model -> Effects Model Effect
+onConsumeEntityEvent entityEvent model =
     case entityEvent of
 
         EntityEvent.EntitySpawnedEv entitySpawnedEvent ->
             onEntitySpawnedEvent entitySpawnedEvent model
 
         EntityEvent.EntityMovedEv entityMovedEvent ->
-            let
-
-                updatedEffectBuffer =
-            in
-                Effects.return {model |
-                                    movementPosition = movementPosition}
+            onEntityMovedEvent entityMovedEvent model
 
         EntityEvent.EntityDamagedEv entityDamagedEvent ->
             Effects.return {model |

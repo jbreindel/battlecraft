@@ -110,7 +110,7 @@ onEntityEvent model entityEvent =
 
                 uuid = entity.uuid
 
-                entityMsg = Entity.EntityEv entityEvent
+                entityMsg = Entity.ReceiveEntityEv entityEvent
 
                 (entityModel, initEntityEffects) = Entity.init tmxMap entity
 
