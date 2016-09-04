@@ -7,7 +7,8 @@ module Entity exposing (Effect(..),
                         view)
 
 import Color exposing (green, orange, red)
-import Dict exposing (..)
+import Dict exposing (Dict)
+import Deque exposing (Deque)
 import Effects exposing (Effects)
 import Element
 import Collage
@@ -20,11 +21,11 @@ import EntityEvent exposing (Vertex, Entity, EntityEvent)
 -- Actions
 
 type Effect =
-    Holder1 | Holder2
+    PerformCmd (Cmd Msg)
 
 type Msg =
     EntityEv EntityEvent |
-    NoOp
+    EventTick
 
 -- Model
 
@@ -44,8 +45,10 @@ type alias Model = {
     tmxMap : TmxMap,
     matrix : Dict Int (List Int),
     position : (Float, Float),
+    movementPosition : (Float, Float),
     orientation : Orientation,
-    entityState : EntityState
+    entityState : EntityState,
+    eventBuffer : Deque EntityEvent
 }
 
 init : TmxMap -> Entity -> Effects Model Effect
@@ -55,8 +58,10 @@ init tmxMap entity =
         tmxMap = tmxMap,
         matrix = Dict.empty,
         position = (0.0, 0.0),
+        movementPosition = (0.0, 0.0),
         orientation = Down,
-        entityState = Standing
+        entityState = Standing,
+        eventBuffer = Deque.empty
     }
 
 -- Update
@@ -71,32 +76,60 @@ update msg model =
         NoOp ->
             Effects.return model
 
+onEntitySpawnedEvent : EntitySpawnedEvent -> Model -> Effects Model Effect
+onEntitySpawnedEvent entitySpawnedEvent model =
+    let
+        matrix = vertexMatrix entitySpawnedEvent.entity.vertices
+
+        position = entityPosition model.tmxMap matrix
+    in
+        Effects.return {model |
+                            matrix = matrix,
+                            position = position}
+
+deltaPos : (Float, Float) -> (Float, Float) -> Float
+deltaPos (x1, y1) (x2, y2) =
+    let
+        deltaX = x1 - x2
+
+        deltaY = y1 - y2
+    in
+        if deltaX > 0.0 then
+            deltaX
+        else
+            deltaY
+
+onEntityMovedEvent : EntityMovedEvent -> Model -> Effects Model Effect
+onEntityMovedEvent entityMovedEvent model =
+    let
+        updatedEventBuffer = Deque.pushBack entityMovedEvent model.eventBuffer
+    in
+        if Deque.isEmpty model.eventBuffer then
+            let
+                movementPosition = entityMovedEvent.entity.vertices
+                                    |> vertexMatrix
+                                    |> entityPosition model.tmxMap
+            in
+                Effects.init {model |
+                                eventBuffer = updatedEventBuffer,
+                                movementPosition = movementPosition} [
+
+                ]
+
 onEntityEvent : EntityEvent -> Model -> Effects Model Effect
 onEntityEvent entityEvent model =
     case entityEvent of
 
         EntityEvent.EntitySpawnedEv entitySpawnedEvent ->
-            let
-                matrix = entitySpawnedEvent.entity.vertices
-                            |> vertexMatrix
-
-                position = entityPosition model.tmxMap matrix
-            in
-                Effects.return {model |
-                                    matrix = matrix,
-                                    position = position}
+            onEntitySpawnedEvent entitySpawnedEvent model
 
         EntityEvent.EntityMovedEv entityMovedEvent ->
             let
-                matrix = entityMovedEvent.entity.vertices
-                            |> vertexMatrix
 
-                position = entityPosition model.tmxMap matrix
+                updatedEffectBuffer =
             in
                 Effects.return {model |
-                                    matrix = matrix,
-                                    position = position,
-                                    entityState = Moving}
+                                    movementPosition = movementPosition}
 
         EntityEvent.EntityDamagedEv entityDamagedEvent ->
             Effects.return {model |
