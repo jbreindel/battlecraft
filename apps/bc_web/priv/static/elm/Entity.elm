@@ -8,6 +8,7 @@ module Entity exposing (Effect(..),
 
 import Color exposing (green, orange, red)
 import Dict exposing (Dict)
+import Maybe exposing (Maybe)
 import Deque exposing (Deque)
 import Effects exposing (Effects)
 import Task exposing (Task)
@@ -31,7 +32,8 @@ type Effect =
 type Msg =
     ReceiveEntityEv EntityEvent |
     ConsumeEntityEv EntityEvent |
-    OnAnimationFrame Time
+    OnAnimationFrame Time |
+    NoOp String
 
 -- Model
 
@@ -51,12 +53,11 @@ type alias Model = {
     tmxMap : TmxMap,
     matrix : Dict Int (List Int),
     position : (Float, Float),
+    animation : Maybe (String, Animation),
     orientation : Orientation,
     entityState : EntityState,
     eventBuffer : Deque EntityEvent,
-    xAnimation : Maybe Animation,
-    yAnimation : Maybe Animation,
-    time : Time
+    clock : Time
 }
 
 init : TmxMap -> Entity -> Effects Model Effect
@@ -66,11 +67,10 @@ init tmxMap entity =
         tmxMap = tmxMap,
         matrix = Dict.empty,
         position = (0.0, 0.0),
+        animation = Nothing,
         orientation = Down,
         entityState = Standing,
         eventBuffer = Deque.empty,
-        xAnimation = Nothing,
-        yAnimation = Nothing,
         clock = 0.0
     }
 
@@ -87,55 +87,127 @@ update msg model =
             onConsumeEntityEvent entityEvent model
 
         OnAnimationFrame time ->
-            -- TODO set animations complete and pop off queue
+            onAnimationFrame time model
+
+        NoOp reason ->
+            Effects.return model
+
+onReceiveEntityEvent : EntityEvent -> Model -> Effects Model Effect
+onReceiveEntityEvent entityEvent model =
+    if Deque.isEmpty model.eventBuffer then
+        onConsumeEntityEvent entityEvent model
+
+    else
+        let
+            updatedEventBuffer =
+                Deque.pushBack entityEvent model.eventBuffer
+        in
             Effects.return {model |
-                                clock = clock}
+                                eventBuffer = updatedEventBuffer}
 
-onMoveComplete : Model -> Effects Model Effect
-onMoveComplete model =
+onConsumeEntityEvent : EntityEvent -> Model -> Effects Model Effect
+onConsumeEntityEvent entityEvent model =
+    case entityEvent of
+
+        EntityEvent.EntitySpawnedEv entitySpawnedEvent ->
+            onEntitySpawnedEvent entitySpawnedEvent model
+
+        EntityEvent.EntityMovedEv entityMovedEvent ->
+            onEntityMovedEvent entityMovedEvent model
+
+        EntityEvent.EntityDamagedEv entityDamagedEvent ->
+            Effects.return {model |
+                                entity = entityDamagedEvent.entity}
+
+onAnimationFrame : Time -> Model -> Effects Model Effect
+onAnimationFrame time model =
     let
-        (_, eventBuffer) =
-            Deque.popFront model.eventBuffer
+        (x, y) = model.position
+    in
+        case model.animation of
 
+            Just ("x", animation) ->
+                let
+                    x2 = Animation.animate time animation
+
+                    updatedModel = {model |
+                                        position = (x2, y),
+                                        clock = time}
+                in
+                    if Animation.isDone time animation then
+                        onAnimationComplete updatedModel
+
+                    else
+                        Effects.return updatedModel
+
+            Just ("y", animation) ->
+                let
+                    y2 = Animation.animate time animation
+
+                    updatedModel = {model |
+                                        position = (x, y2),
+                                        clock = time}
+                in
+                    if Animation.isDone time animation then
+                        onAnimationComplete updatedModel
+
+                    else
+                        Effects.return updatedModel
+
+            Just (_, _) ->
+                Effects.return {model |
+                                    clock = time}
+
+            Nothing ->
+                Effects.return {model |
+                                    clock = time}
+
+onAnimationComplete : Model -> Effects Model Effect
+onAnimationComplete model =
+    let
         (mbEntityEvent, updatedEventBuffer) =
-            Deque.popFront eventBuffer
+            Deque.popFront model.eventBuffer
+    in
+        case mbEntityEvent of
+
+            Just entityEvent ->
+                let
+                    entity = EntityEvent.entityEventEntity entityEvent
+
+                    matrix = vertexMatrix entity.vertices
+
+                    updatedModel = {model |
+                                        entity = entity,
+                                        matrix = matrix,
+                                        animation = Nothing,
+                                        eventBuffer = updatedEventBuffer}
+                in
+                    queueEntityEvent updatedModel
+
+            Nothing ->
+                Effects.return {model |
+                                    animation = Nothing,
+                                    eventBuffer = updatedEventBuffer}
+
+queueEntityEvent : Model -> Effects Model Effect
+queueEntityEvent model =
+    let
+        (mbEntityEvent, updatedEventBuffer) =
+            Deque.popFront model.eventBuffer
     in
         case mbEntityEvent of
 
             Just entityEvent ->
                 let
                     cmd = Task.succeed entityEvent
-                            |> Task.perform ConsumeEntityEv NoOp
+                            |> Task.perform NoOp ConsumeEntityEv
                 in
                     Effects.init {model |
                         eventBuffer = updatedEventBuffer
                     } [PerformCmd cmd]
 
             Nothing ->
-                Effects.return {model |
-                                    eventBuffer = updatedEventBuffer}
-
-onMoveTick : Float -> Model -> Effects Model Effect
-onMoveTick delta model =
-    let
-        (x, y) = model.position
-
-        (moveX, moveY) = model.movePosition
-    in
-        if x == moveX && moveY > y then
-            Effects.return {model | position = (x, y + delta)}
-
-        else if x == moveX && moveY < y then
-            Effects.return {model | position = (x, y - delta)}
-
-        else if y == moveY && moveX > x then
-            Effects.return {model | position = (x + delta, y)}
-
-        else if y == moveY && moveX < x then
-            Effects.return {model | position = (x - delta, y)}
-
-        else
-            Effects.return model
+                Effects.return model
 
 onEntitySpawnedEvent : EntitySpawnedEvent -> Model -> Effects Model Effect
 onEntitySpawnedEvent entitySpawnedEvent model =
@@ -184,64 +256,41 @@ onEntityMovedEvent entityMovedEvent model =
                         |> vertexMatrix
                         |> entityPosition model.tmxMap
 
-        (deltaX, deltaY) = deltaPos model.position movePosition
+        (deltaX, deltaY) = deltaPos model.position (x2, y2)
 
         speed = moveSpeed model.entity.entityType
 
         moveTime = 1000.0 - (1000.0 * speed)
 
-        xAnimation = if deltaX > 0.0 then
-                        Animation.animation model.clock
-                            |> Animation.from x1
-                            |> Animation.to x2
-                            |> Animation.duration moveTime
-                            |> Animation.ease Ease.linear
-                            |> Maybe.Just
-                    else
-                        Nothing
+        animation = if deltaX > 0.0 then
+                        let
+                            animation =
+                                Animation.animation model.clock
+                                    |> Animation.from x1
+                                    |> Animation.to x2
+                                    |> Animation.duration moveTime
+                                    |> Animation.ease Ease.linear
+                        in
+                            Maybe.Just ("x", animation)
 
-        yAnimation = if deltaY > 0.0 then
-                        Animation.animation model.clock
-                            |> Animation.from y1
-                            |> Animation.to y2
-                            |> Animation.duration moveTime
-                            |> Animation.ease Ease.linear
-                            |> Maybe.Just
-                     else
-                         Nothing
+                    else if deltaY > 0.0 then
+                        let
+                            animation =
+                                Animation.animation model.clock
+                                    |> Animation.from y1
+                                    |> Animation.to y2
+                                    |> Animation.duration moveTime
+                                    |> Animation.ease Ease.linear
+                        in
+                            Maybe.Just ("y", animation)
+
+                    else
+                        Maybe.Nothing
     in
         Effects.return {model |
-            eventBuffer = updatedEventBuffer,
-            xAnimation = xAnimation,
-            yAnimation = yAnimation
+            animation = animation,
+            eventBuffer = updatedEventBuffer
         }
-
-onReceiveEntityEvent : EntityEvent -> Model -> Effects Model Effect
-onReceiveEntityEvent entityEvent model =
-    if Deque.isEmpty model.eventBuffer then
-        onConsumeEntityEvent entityEvent model
-
-    else
-        let
-            updatedEventBuffer =
-                Deque.pushBack entityEvent model.eventBuffer
-        in
-            Effects.return {model |
-                                eventBuffer = updatedEventBuffer}
-
-onConsumeEntityEvent : EntityEvent -> Model -> Effects Model Effect
-onConsumeEntityEvent entityEvent model =
-    case entityEvent of
-
-        EntityEvent.EntitySpawnedEv entitySpawnedEvent ->
-            onEntitySpawnedEvent entitySpawnedEvent model
-
-        EntityEvent.EntityMovedEv entityMovedEvent ->
-            onEntityMovedEvent entityMovedEvent model
-
-        EntityEvent.EntityDamagedEv entityDamagedEvent ->
-            Effects.return {model |
-                                entity = entityDamagedEvent.entity}
 
 vertexMatrix : List Vertex -> Dict Int (List Int)
 vertexMatrix vertices =
