@@ -11,7 +11,9 @@ import Dict exposing (Dict)
 import Deque exposing (Deque)
 import Effects exposing (Effects)
 import Task exposing (Task)
-import Process
+import Time exposing (Time)
+import Animation exposing (Animation)
+import Ease
 import Element
 import Collage
 
@@ -29,10 +31,7 @@ type Effect =
 type Msg =
     ReceiveEntityEv EntityEvent |
     ConsumeEntityEv EntityEvent |
-    MoveTick String Float |
-    MoveSuccess |
-    MoveFail |
-    NoOp
+    OnAnimationFrame Time
 
 -- Model
 
@@ -52,10 +51,12 @@ type alias Model = {
     tmxMap : TmxMap,
     matrix : Dict Int (List Int),
     position : (Float, Float),
-    movePosition : (Float, Float),
     orientation : Orientation,
     entityState : EntityState,
-    eventBuffer : Deque EntityEvent
+    eventBuffer : Deque EntityEvent,
+    xAnimation : Maybe Animation,
+    yAnimation : Maybe Animation,
+    time : Time
 }
 
 init : TmxMap -> Entity -> Effects Model Effect
@@ -65,10 +66,12 @@ init tmxMap entity =
         tmxMap = tmxMap,
         matrix = Dict.empty,
         position = (0.0, 0.0),
-        movePosition = (0.0, 0.0),
         orientation = Down,
         entityState = Standing,
-        eventBuffer = Deque.empty
+        eventBuffer = Deque.empty,
+        xAnimation = Nothing,
+        yAnimation = Nothing,
+        clock = 0.0
     }
 
 -- Update
@@ -80,17 +83,13 @@ update msg model =
         ReceiveEntityEv entityEvent ->
             onReceiveEntityEvent entityEvent model
 
-        MoveTick _ delta ->
-            onMoveTick delta model
+        ConsumeEntityEv entityEvent ->
+            onConsumeEntityEvent entityEvent model
 
-        MoveSuccess ->
-            onMoveComplete model
-
-        MoveFail ->
-            onMoveComplete model
-
-        NoOp ->
-            Effects.return model
+        OnAnimationFrame time ->
+            -- TODO set animations complete and pop off queue
+            Effects.return {model |
+                                clock = clock}
 
 onMoveComplete : Model -> Effects Model Effect
 onMoveComplete model =
@@ -149,23 +148,17 @@ onEntitySpawnedEvent entitySpawnedEvent model =
                             matrix = matrix,
                             position = position}
 
-deltaPos : (Float, Float) -> (Float, Float) -> Float
+deltaPos : (Float, Float) -> (Float, Float) -> (Float, Float)
 deltaPos (x1, y1) (x2, y2) =
     let
-        deltaX = x1 - x2
-                |> abs
+        deltaX = (abs x1) - (abs x2)
 
-        deltaY = y1 - y2
-                |> abs
+        deltaY = (abs y1) - (abs y2)
     in
-        if deltaX > 0.0 then
-            deltaX
+        (deltaX, deltaY)
 
-        else
-            deltaY
-
-moveTime : String -> Float
-moveTime entityType =
+moveSpeed : String -> Float
+moveSpeed entityType =
     case entityType of
 
         "champion" ->
@@ -185,37 +178,43 @@ onEntityMovedEvent entityMovedEvent model =
         updatedEventBuffer =
             Deque.pushBack entityEvent model.eventBuffer
 
-        movePosition = entityMovedEvent.entity.vertices
+        (x1, y1) = model.position
+
+        (x2, y2) = entityMovedEvent.entity.vertices
                         |> vertexMatrix
                         |> entityPosition model.tmxMap
 
-        posDelta = deltaPos model.position movePosition
+        (deltaX, deltaY) = deltaPos model.position movePosition
 
-        moveDelta = 2
+        speed = moveSpeed model.entity.entityType
 
-        tick = posDelta / moveDelta
+        moveTime = 1000.0 - (1000.0 * speed)
 
-        moveSpeed = moveTime model.entity.entityType
+        xAnimation = if deltaX > 0.0 then
+                        Animation.animation model.clock
+                            |> Animation.from x1
+                            |> Animation.to x2
+                            |> Animation.duration moveTime
+                            |> Animation.ease Ease.linear
+                            |> Maybe.Just
+                    else
+                        Nothing
 
-        time = 1000.0 - (1000.0 * moveSpeed)
-
-        tickTime = time / tick
-
-        cmd = List.repeat tick moveDelta
-                |> List.map (
-                    \delta ->
-                        Task.succeed (MoveTick model.entity.uuid delta)
-                            `Task.andThen` (
-                                \msg -> Process.sleep tickTime
-                            )
-                )
-                |> List.foldl Task.andThen (Task.succeed NoOp)
-                |> Task.perform MoveSuccess MoveFail
+        yAnimation = if deltaY > 0.0 then
+                        Animation.animation model.clock
+                            |> Animation.from y1
+                            |> Animation.to y2
+                            |> Animation.duration moveTime
+                            |> Animation.ease Ease.linear
+                            |> Maybe.Just
+                     else
+                         Nothing
     in
-        Effects.init {model |
-            movePosition = movePosition,
-            eventBuffer = updatedEventBuffer
-        } [PerformCmd cmd]
+        Effects.return {model |
+            eventBuffer = updatedEventBuffer,
+            xAnimation = xAnimation,
+            yAnimation = yAnimation
+        }
 
 onReceiveEntityEvent : EntityEvent -> Model -> Effects Model Effect
 onReceiveEntityEvent entityEvent model =
