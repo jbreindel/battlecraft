@@ -14,6 +14,7 @@ import Effects exposing (Effects)
 import Task exposing (Task)
 import Time exposing (Time)
 import Animation exposing (Animation)
+import AnimationFrame
 import Ease
 import Element
 import Collage
@@ -385,6 +386,12 @@ entityPosition tmxMap matrix =
         offsetX = x - (mapWidth / 2)
     in
         (offsetX, offsetY)
+
+-- Subscriptions
+
+subscriptions : Model -> Sub Msg
+subscriptions model =
+    AnimationFrame.times OnAnimationFrame
 
 -- View
 

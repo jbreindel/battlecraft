@@ -13,6 +13,8 @@ import Collage exposing (..)
 import Effects exposing (Effects)
 import Task exposing (Task)
 import Keyboard.Extra as Keyboard
+import Time exposing (Time)
+import AnimationFrame
 import Window
 import Http
 
@@ -33,7 +35,8 @@ type Msg =
     KeyboardMsg Keyboard.Model |
     WindowMsg Window.Size |
     EntityEventMsg EntityEvent |
-    EntityMsg Entity.Msg
+    EntityMsg Entity.Msg |
+    OnAnimationFrame Time
 
 -- Model
 
@@ -95,6 +98,39 @@ update msg model =
 
         EntityMsg entityMsg ->
             Effects.return model
+
+        OnAnimationFrame time ->
+            onAnimationFrame time model
+
+onAnimationFrame : Time -> Model -> Effects Model Effect
+onAnimationFrame time model =
+    let
+        entityEffectsDict =
+            Dict.map (
+                \uuid entityModel ->
+                    let
+                        entityCmdMsg = Entity.OnAnimationFrame time
+                    in
+                        Entity.update entityCmdMsg entityModel
+            ) model.entities
+
+        entities = Dict.map (
+                       \uuid (entityModel, _) ->
+                           entityModel
+                   ) entityEffectsDict
+
+        entityEffects = Dict.values entityEffectsDict
+                        |> List.map (
+                            \(entityModel, entityEffects) ->
+                                entityEffects
+                        )
+                        |> List.concat
+
+        mapEffects = mapEntityEffect entityEffects
+    in
+        Effects.init {model |
+            entities = entities
+        } mapEffects
 
 onEntityEvent : Model -> EntityEvent -> Effects Model Effect
 onEntityEvent model entityEvent =
@@ -277,6 +313,16 @@ updatePos model direction =
 
         Keyboard.NoDirection ->
             model
+
+-- Subscriptions
+
+subscriptions : Model -> Sub Msg
+subscriptions model =
+    if Dict.isEmpty model.entities then
+        Sub.none
+
+    else
+        AnimationFrame.times OnAnimationFrame
 
 -- View
 
