@@ -25,8 +25,7 @@ import Entity
 -- Actions
 
 type Effect =
-    PerformCmd (Cmd Msg) |
-    NoOp
+    PerformCmd (Cmd Msg)
 
 type Msg =
     MapGetSuccess TmxMap |
@@ -112,15 +111,33 @@ onEntityEvent model entityEvent =
 
                 entityMsg = Entity.ReceiveEntityEv entityEvent
 
-                (entityModel, initEntityEffects) = Entity.init tmxMap entity
+                (entityModel, initEntityEffects) =
+                    Entity.init tmxMap entity
 
                 (updatedEntityModel, updatedEntityEffects) =
                     Entity.update entityMsg entityModel
 
-                updatedEntities = Dict.insert uuid updatedEntityModel model.entities
+                entityEffects = initEntityEffects ++ updatedEntityEffects
+
+                mapEffects = mapEntityEffect entityEffects
+
+                updatedEntities =
+                    Dict.insert uuid updatedEntityModel model.entities
             in
-                Effects.return {model |
-                                    entities = updatedEntities}
+                Effects.init {model |
+                                    entities = updatedEntities} mapEffects
+
+mapEntityEffect : List Entity.Effect -> List Effect
+mapEntityEffect entityEffect =
+    List.map (
+        \effect ->
+            case effect of
+
+                Entity.PerformCmd entityCmdMsg ->
+                    Cmd.map EntityMsg entityCmdMsg
+                        |> PerformCmd
+
+    ) entityEffect
 
 updateX : Model -> Float -> Float
 updateX model delta =

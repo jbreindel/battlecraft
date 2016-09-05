@@ -188,9 +188,6 @@ handleMapEffect effect model =
             in
                 update (PerformCmd cmdMsg) model
 
-        Map.NoOp ->
-            Effects.return model
-
 handleSpawnEffect : Effects.Handler Spawn.Effect Model (Cmd Msg)
 handleSpawnEffect effect model =
     case effect of
