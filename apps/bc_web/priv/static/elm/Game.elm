@@ -199,22 +199,27 @@ handleSpawnEffect effect model =
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    case model.state of
+    let
+        mapSub = Map.subscriptions model.mapModel
+    in
+        case model.state of
 
-        GameState.Joining ->
-            WebSocket.listen model.address WsReceiveMessage
+            GameState.Joining ->
+                WebSocket.listen model.address WsReceiveMessage
 
-        GameState.Pending ->
-            Sub.batch [
-                WebSocket.listen model.address WsReceiveMessage,
-                Sub.map KeyboardMsg Keyboard.subscriptions
-            ]
+            GameState.Pending ->
+                Sub.batch [
+                    WebSocket.listen model.address WsReceiveMessage,
+                    Sub.map KeyboardMsg Keyboard.subscriptions,
+                    Sub.map MapMsg mapSub
+                ]
 
-        GameState.Started ->
-            Sub.batch [
-                WebSocket.listen model.address WsReceiveMessage,
-                Sub.map KeyboardMsg Keyboard.subscriptions
-            ]
+            GameState.Started ->
+                Sub.batch [
+                    WebSocket.listen model.address WsReceiveMessage,
+                    Sub.map KeyboardMsg Keyboard.subscriptions,
+                    Sub.map MapMsg mapSub
+                ]
 
 -- View
 

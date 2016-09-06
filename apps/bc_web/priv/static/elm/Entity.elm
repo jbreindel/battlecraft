@@ -4,6 +4,7 @@ module Entity exposing (Effect(..),
                         Model,
                         init,
                         update,
+                        subscriptions,
                         view)
 
 import Color exposing (green, orange, red)
@@ -263,7 +264,7 @@ onEntityMovedEvent entityMovedEvent model =
 
         moveTime = 1000.0 - (1000.0 * speed)
 
-        animation = if deltaX > 0.0 then
+        animation = if deltaX /= 0.0 then
                         let
                             animation =
                                 Animation.animation model.clock
@@ -274,7 +275,7 @@ onEntityMovedEvent entityMovedEvent model =
                         in
                             Maybe.Just ("x", animation)
 
-                    else if deltaY > 0.0 then
+                    else if deltaY /= 0.0 then
                         let
                             animation =
                                 Animation.animation model.clock
@@ -289,6 +290,7 @@ onEntityMovedEvent entityMovedEvent model =
                         Maybe.Nothing
     in
         Effects.return {model |
+            entityState = Moving,
             animation = animation,
             eventBuffer = updatedEventBuffer
         }

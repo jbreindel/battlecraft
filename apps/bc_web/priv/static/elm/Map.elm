@@ -4,6 +4,7 @@ module Map exposing (Effect(..),
                      Model,
                      init,
                      update,
+                     subscriptions,
                      view)
 
 import Dict exposing (..)
@@ -97,7 +98,7 @@ update msg model =
             onEntityEvent model entityEvent
 
         EntityMsg entityMsg ->
-            Effects.return model
+            onEntityMsg model entityMsg
 
         OnAnimationFrame time ->
             onAnimationFrame time model
@@ -132,6 +133,53 @@ onAnimationFrame time model =
             entities = entities
         } mapEffects
 
+onEntityMsg : Model -> Entity.Msg -> Effects Model Effect
+onEntityMsg model entityMsg =
+    let
+        mbEntity =
+            case entityMsg of
+
+                Entity.ReceiveEntityEv entityEvent ->
+                    entityEventEntity entityEvent
+                        |> Maybe.Just
+
+                Entity.ConsumeEntityEv entityEvent ->
+                    entityEventEntity entityEvent
+                        |> Maybe.Just
+
+                _ -> Maybe.Nothing
+
+        mbUpdatedEntityEffects =
+            mbEntity `Maybe.andThen`
+            (\entity ->
+                Dict.get entity.uuid model.entities `Maybe.andThen`
+                (\entityModel ->
+                    let
+                        updatedEntityEffects =
+                            Entity.update entityMsg entityModel
+                    in
+                        Maybe.Just (entity.uuid, updatedEntityEffects)
+                )
+            )
+    in
+        case mbUpdatedEntityEffects of
+
+            Maybe.Just (uuid, updatedEntityEffects) ->
+                let
+                    (entityModel, entityEffects) =
+                        updatedEntityEffects
+
+                    mapEffects = mapEntityEffect entityEffects
+
+                    updatedEntities = Dict.insert uuid entityModel model.entities
+                in
+                    Effects.init {model |
+                        entities = updatedEntities
+                    } mapEffects
+
+            Nothing ->
+                Effects.return model
+
 onEntityEvent : Model -> EntityEvent -> Effects Model Effect
 onEntityEvent model entityEvent =
     case model.map of
@@ -148,7 +196,13 @@ onEntityEvent model entityEvent =
                 entityMsg = Entity.ReceiveEntityEv entityEvent
 
                 (entityModel, initEntityEffects) =
-                    Entity.init tmxMap entity
+                    case Dict.get entity.uuid model.entities of
+
+                        Just model ->
+                            (model, [])
+
+                        Nothing ->
+                            Entity.init tmxMap entity
 
                 (updatedEntityModel, updatedEntityEffects) =
                     Entity.update entityMsg entityModel
@@ -161,7 +215,7 @@ onEntityEvent model entityEvent =
                     Dict.insert uuid updatedEntityModel model.entities
             in
                 Effects.init {model |
-                                    entities = updatedEntities} mapEffects
+                                entities = updatedEntities} mapEffects
 
 mapEntityEffect : List Entity.Effect -> List Effect
 mapEntityEffect entityEffect =
@@ -322,6 +376,7 @@ subscriptions model =
         Sub.none
 
     else
+        -- TODO actually call Entity.subscriptions
         AnimationFrame.times OnAnimationFrame
 
 -- View
