@@ -74,7 +74,8 @@ standing(action_complete, #state{entity_config = BcEntityConfig,
 
 moving(action_complete, State) ->
 	%% TODO sense
-	{next_state, standing, State}.
+	TimerRef = gen_fsm:send_event_after(0, action_complete),
+	{next_state, standing, State#state{timer = TimerRef}}.
 
 %% ====================================================================
 %% All State functions
