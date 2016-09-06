@@ -181,6 +181,7 @@ onAnimationComplete model =
                     updatedModel = {model |
                                         entity = entity,
                                         matrix = matrix,
+                                        entityState = Standing,
                                         animation = Nothing,
                                         eventBuffer = updatedEventBuffer}
                 in
@@ -188,6 +189,7 @@ onAnimationComplete model =
 
             Nothing ->
                 Effects.return {model |
+                                    entityState = Standing,
                                     animation = Nothing,
                                     eventBuffer = updatedEventBuffer}
 
@@ -236,7 +238,7 @@ moveSpeed entityType =
     case entityType of
 
         "champion" ->
-            0.6
+            0.4
 
         "demon" ->
             0.5
@@ -476,9 +478,9 @@ view model =
         (x, y) = model.position
 
         backgroundForm = entityImage model
-
-        healthBarForm = entityHealthBar model
-
-        entityForm = Collage.group [backgroundForm, healthBarForm]
+        --
+        -- healthBarForm = entityHealthBar model
+        --
+        -- entityForm = Collage.group [backgroundForm]
     in
-       Collage.move (x, y) entityForm
+       Collage.move (x, y) backgroundForm
