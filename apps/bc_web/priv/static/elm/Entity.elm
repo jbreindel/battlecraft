@@ -238,7 +238,7 @@ moveSpeed entityType =
     case entityType of
 
         "champion" ->
-            0.4
+            0.6
 
         "demon" ->
             0.5

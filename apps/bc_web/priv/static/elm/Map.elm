@@ -405,11 +405,13 @@ view model =
                                     Entity.view entityModel
                             ) entityModels
 
-                mapForm = backgroundForm
-                            |> Collage.scale model.zoom
-                            |> Collage.move (model.x, model.y)
+                entityForm = Collage.group entityForms
+                                |> Collage.scale model.zoom
+                                |> Collage.move (model.x, model.y)
 
-                forms = entityForm :: mapForm 
+                mapForm = backgroundForm
+                                |> Collage.scale model.zoom
+                                |> Collage.move (model.x, model.y)
             in
-                Collage.collage model.windowWidth model.windowHeight [mapForm, entityForm]
-                    |> Element.toHtml
+                Collage.collage model.windowWidth model.windowHeight
+                    [mapForm, entityForm] |> Element.toHtml
