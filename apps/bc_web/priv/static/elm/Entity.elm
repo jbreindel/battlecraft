@@ -33,7 +33,7 @@ type Effect =
 
 type Msg =
     ReceiveEntityEv EntityEvent |
-    ConsumeEntityEv EntityEvent |
+    ConsumeEntityEv Entity |
     OnAnimationFrame Time |
     NoOp String
 
@@ -85,8 +85,8 @@ update msg model =
         ReceiveEntityEv entityEvent ->
             onReceiveEntityEvent entityEvent model
 
-        ConsumeEntityEv entityEvent ->
-            onConsumeEntityEvent entityEvent model
+        ConsumeEntityEv entity ->
+            onConsumeEntityEvent model
 
         OnAnimationFrame time ->
             onAnimationFrame time model
@@ -96,30 +96,33 @@ update msg model =
 
 onReceiveEntityEvent : EntityEvent -> Model -> Effects Model Effect
 onReceiveEntityEvent entityEvent model =
-    if Deque.isEmpty model.eventBuffer then
-        onConsumeEntityEvent entityEvent model
+    let
+        updatedEventBuffer =
+            Deque.pushBack entityEvent model.eventBuffer
+    in
+        queueEntityEvent {model |
+                            eventBuffer = updatedEventBuffer}
 
-    else
-        let
-            updatedEventBuffer =
-                Deque.pushBack entityEvent model.eventBuffer
-        in
-            onConsumeEntityEvent entityEvent {model |
-                                eventBuffer = updatedEventBuffer}
+onConsumeEntityEvent : Model -> Effects Model Effect
+onConsumeEntityEvent model =
+    Deque.first model.eventBuffer `Maybe.andThen` (
+        \entityEvent ->
+            case entityEvent of
 
-onConsumeEntityEvent : EntityEvent -> Model -> Effects Model Effect
-onConsumeEntityEvent entityEvent model =
-    case entityEvent of
+                EntityEvent.EntitySpawnedEv entitySpawnedEvent ->
+                    onEntitySpawnedEvent entitySpawnedEvent model
+                        |> Maybe.Just
 
-        EntityEvent.EntitySpawnedEv entitySpawnedEvent ->
-            onEntitySpawnedEvent entitySpawnedEvent model
+                EntityEvent.EntityMovedEv entityMovedEvent ->
+                    onEntityMovedEvent entityMovedEvent model
+                        |> Maybe.Just
 
-        EntityEvent.EntityMovedEv entityMovedEvent ->
-            onEntityMovedEvent entityMovedEvent model
+                EntityEvent.EntityDamagedEv entityDamagedEvent ->
+                    Effects.return {model |
+                                        entity = entityDamagedEvent.entity}
+                        |> Maybe.Just
 
-        EntityEvent.EntityDamagedEv entityDamagedEvent ->
-            Effects.return {model |
-                                entity = entityDamagedEvent.entity}
+    ) |> Maybe.withDefault (Effects.return model)
 
 onAnimationFrame : Time -> Model -> Effects Model Effect
 onAnimationFrame time model =
@@ -194,34 +197,24 @@ onAnimationComplete model =
 queueEntityEvent : Model -> Effects Model Effect
 queueEntityEvent model =
     let
-        (mbEntityEvent, updatedEventBuffer) =
-            Deque.popFront model.eventBuffer
+        cmd = Task.succeed model.entity
+                |> Task.perform NoOp ConsumeEntityEv
     in
-        case mbEntityEvent of
-
-            Just entityEvent ->
-                let
-                    cmd = Task.succeed entityEvent
-                            |> Task.perform NoOp ConsumeEntityEv
-                in
-                    Effects.init {model |
-                        eventBuffer = updatedEventBuffer
-                    } [PerformCmd cmd]
-
-            Nothing ->
-                Effects.return {model |
-                                    eventBuffer = updatedEventBuffer}
+        Effects.init model [PerformCmd cmd]
 
 onEntitySpawnedEvent : EntitySpawnedEvent -> Model -> Effects Model Effect
 onEntitySpawnedEvent entitySpawnedEvent model =
     let
+        (_, poppedEventBuffer) = Deque.popFront model.eventBuffer
+
         matrix = vertexMatrix entitySpawnedEvent.entity.vertices
 
         position = entityPosition model.tmxMap matrix
     in
         Effects.return {model |
                             matrix = matrix,
-                            position = position}
+                            position = position,
+                            eventBuffer = poppedEventBuffer}
 
 deltaPos : (Float, Float) -> (Float, Float) -> (Float, Float)
 deltaPos (x1, y1) (x2, y2) =
@@ -248,11 +241,6 @@ moveSpeed entityType =
 onEntityMovedEvent : EntityMovedEvent -> Model -> Effects Model Effect
 onEntityMovedEvent entityMovedEvent model =
     let
-        entityEvent = EntityEvent.EntityMovedEv entityMovedEvent
-
-        updatedEventBuffer =
-            Deque.pushBack entityEvent model.eventBuffer
-
         (x1, y1) = model.position
 
         (x2, y2) = entityMovedEvent.entity.vertices
@@ -292,8 +280,7 @@ onEntityMovedEvent entityMovedEvent model =
     in
         Effects.return {model |
             entityState = Moving,
-            animation = animation,
-            eventBuffer = updatedEventBuffer
+            animation = animation
         }
 
 vertexMatrix : List Vertex -> Dict Int (List Int)

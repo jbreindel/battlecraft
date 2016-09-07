@@ -143,9 +143,8 @@ onEntityMsg model entityMsg =
                     entityEventEntity entityEvent
                         |> Maybe.Just
 
-                Entity.ConsumeEntityEv entityEvent ->
-                    entityEventEntity entityEvent
-                        |> Maybe.Just
+                Entity.ConsumeEntityEv entity ->
+                    Maybe.Just entity
 
                 _ -> Maybe.Nothing
 
