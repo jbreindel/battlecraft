@@ -56,21 +56,9 @@ init([BcEntity, BcEntities, BcMap]) ->
 no_action(action_complete, State) ->
 	{next_state, no_action, State}.
 
-standing(action_complete, #state{entity_config = BcEntityConfig, 
-								 entities = BcEntities} = State) ->
-	case move(down, State) of
-		{ok, UpdatedBcEntity} ->
-			EntitiesEventPid = bc_entities:event(BcEntities),
-			gen_event:notify(EntitiesEventPid, {entity_moved, UpdatedBcEntity}),
-			MoveSpeed = bc_entity_config:move_speed(BcEntityConfig),
-			MoveDelayFloat = 1000 - (1000 * MoveSpeed),
-			MoveDelayInt = erlang:trunc(MoveDelayFloat),
-			TimerRef = gen_fsm:send_event_after(MoveDelayInt, action_complete),
-			{next_state, moving, State#state{entity = UpdatedBcEntity,
-											 timer = TimerRef}};
-		{error, _} ->
-			sense(State)
-	end.
+standing(action_complete, State) ->
+	%% TODO sense
+	move(down, State).
 
 moving(action_complete, State) ->
 	%% TODO sense
@@ -109,7 +97,25 @@ sense(State) ->
 	%% TODO implement sense phase
 	{next_state, standing, State}.
 
-move(Direction, #state{entity = BcEntity, map = BcMap} = State) ->
+move(Direction, #state{entity = BcEntity, 
+					   entity_config = BcEntityConfig,		 
+					   entities = BcEntities,
+					   map = BcMap} = State) ->
+	case move_entity(Direction, State) of
+		{ok, UpdatedBcEntity} ->
+			EntitiesEventPid = bc_entities:event(BcEntities),
+			gen_event:notify(EntitiesEventPid, {entity_moved, UpdatedBcEntity}),
+			MoveSpeed = bc_entity_config:move_speed(BcEntityConfig),
+			MoveDelayFloat = 1000 - (1000 * MoveSpeed),
+			MoveDelayInt = erlang:trunc(MoveDelayFloat),
+			TimerRef = gen_fsm:send_event_after(MoveDelayInt, action_complete),
+			{next_state, moving, State#state{entity = UpdatedBcEntity,
+											 timer = TimerRef}};
+		{error, _} ->
+			sense(State)
+	end.
+
+move_entity(Direction, #state{entity = BcEntity, map = BcMap} = State) ->
 	OriginalBcCollision = bc_entity:to_collision(BcEntity),
 	UpdatedBcCollision = bc_collision:move(Direction, OriginalBcCollision),
 	case bc_map:update_collision(BcMap, OriginalBcCollision, UpdatedBcCollision) of
