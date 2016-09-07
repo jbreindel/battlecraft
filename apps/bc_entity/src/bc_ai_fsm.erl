@@ -2,6 +2,9 @@
 -module(bc_ai_fsm).
 -behaviour(gen_fsm).
 
+%% distance to sense in vertices
+-define(SENSE_DIST, 4).
+
 -export([init/1, 
 		 no_action/2,
 		 standing/2,
@@ -93,8 +96,12 @@ code_change(OldVsn, StateName, StateData, Extra) ->
 %% Internal functions
 %% ====================================================================
 
-sense(State) ->
-	%% TODO implement sense phase
+sense(#state{entity = BcEntity,
+			 entities = BcEntities, 
+			 map = BcMap} = State) ->
+	EntityBcVertices = bc_entity:vertices(BcEntity),
+	NeighborBcVertices = bc_map:reaching_neighbors(
+						   BcMap, EntityBcVertices, ?SENSE_DIST),
 	{next_state, standing, State}.
 
 move(Direction, #state{entity = BcEntity, 
