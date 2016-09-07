@@ -219,9 +219,9 @@ onEntitySpawnedEvent entitySpawnedEvent model =
 deltaPos : (Float, Float) -> (Float, Float) -> (Float, Float)
 deltaPos (x1, y1) (x2, y2) =
     let
-        deltaX = (abs x1) - (abs x2)
+        deltaX = abs (x1 - x2)
 
-        deltaY = (abs y1) - (abs y2)
+        deltaY = abs (y1 - y2)
     in
         (deltaX, deltaY)
 
