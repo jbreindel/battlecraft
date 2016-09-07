@@ -104,7 +104,7 @@ onReceiveEntityEvent entityEvent model =
             updatedEventBuffer =
                 Deque.pushBack entityEvent model.eventBuffer
         in
-            Effects.return {model |
+            onConsumeEntityEvent entityEvent {model |
                                 eventBuffer = updatedEventBuffer}
 
 onConsumeEntityEvent : EntityEvent -> Model -> Effects Model Effect
@@ -177,15 +177,13 @@ onAnimationComplete model =
                     entity = EntityEvent.entityEventEntity entityEvent
 
                     matrix = vertexMatrix entity.vertices
-
-                    updatedModel = {model |
+                in
+                    queueEntityEvent {model |
                                         entity = entity,
                                         matrix = matrix,
                                         entityState = Standing,
                                         animation = Nothing,
                                         eventBuffer = updatedEventBuffer}
-                in
-                    queueEntityEvent updatedModel
 
             Nothing ->
                 Effects.return {model |
@@ -211,7 +209,8 @@ queueEntityEvent model =
                     } [PerformCmd cmd]
 
             Nothing ->
-                Effects.return model
+                Effects.return {model |
+                                    eventBuffer = updatedEventBuffer}
 
 onEntitySpawnedEvent : EntitySpawnedEvent -> Model -> Effects Model Effect
 onEntitySpawnedEvent entitySpawnedEvent model =
