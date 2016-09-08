@@ -96,13 +96,38 @@ code_change(OldVsn, StateName, StateData, Extra) ->
 %% Internal functions
 %% ====================================================================
 
-sense(#state{entity = BcEntity,
-			 entities = BcEntities, 
-			 map = BcMap} = State) ->
+sense(State) ->
+	{next_state, standing, State}.
+
+%% dist_entities(#state{entity = BcEntity} = State) ->
+%% 	NearbyBcEntities = nearby_entities(State),
+%% 	lists:map(fun(BcEntity) ->  end, NearbyBcEntities).
+
+nearby_entities(#state{entity = BcEntity, 
+					   entities = BcEntities, 
+					   map = BcMap} = State) ->
 	EntityBcVertices = bc_entity:vertices(BcEntity),
 	NeighborBcVertices = bc_map:reaching_neighbors(
 						   BcMap, EntityBcVertices, ?SENSE_DIST),
-	{next_state, standing, State}.
+	QueryRes = bc_map:query_collisions(BcMap, NeighborBcVertices),
+	UuidSet = lists:foldl(fun(#{uuid := Uuid}, Set) -> 
+						  	  sets:add_element(Uuid, Set) 
+						  end, sets:new(), QueryRes),
+	UuidList = sets:to_list(UuidSet),
+	QueryRes = bc_entities:query(UuidList, BcEntities),
+	lists:map(fun(BcEntity) ->  
+			 	BcVertices = lists:filtermap(
+					fun(#{uuid := Uuid,
+						  vertex := BcVertex}) -> 
+						case Uuid =:= bc_entity:uuid(BcEntity) of
+							true ->
+								{true, BcVertex};
+							false ->
+								false
+						end
+					end, QueryRes),	
+				bc_entity:set_vertices(BcVertices, BcEntity)
+			end, QueryRes).
 
 move(Direction, #state{entity = BcEntity, 
 					   entity_config = BcEntityConfig,		 

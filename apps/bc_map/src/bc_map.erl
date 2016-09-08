@@ -38,7 +38,7 @@
 %%
 %% @doc query result rows
 %%
--type query_res() :: #{id => string(), 
+-type query_res() :: #{uiid => string(), 
 					   vertex => bc_vertex:vertex()}.
 
 %% type exports
