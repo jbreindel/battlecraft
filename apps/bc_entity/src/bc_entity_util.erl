@@ -2,6 +2,7 @@
 -module(bc_entity_util).
 
 -export([spawn_entity/7,
+		 distance/2,
 		 iolist_to_entity_type/1]).
 
 -spec spawn_entity(BcCollision :: bc_collision:collision(), 
@@ -31,6 +32,22 @@ spawn_entity(BcCollision, BcPlayer, BcEntitySup,
 			{error_collision, "Cannot insert collision."}
 	end.
 
+-spec distance(BcEntity1 :: bc_entity:entity(), 
+			   BcEntity2 :: bc_entity:entity()) -> integer().
+distance(BcEntity1, BcEntity2) ->
+	BcVertex1 = lists:nth(1, bc_entity:vertices(BcEntity1)),
+	BcVertex2 = lists:nth(1, bc_entity:vertices(BcEntity2)),
+	bc_vertex:distance(BcVertex1, BcVertex2).
+
+-spec iolist_to_entity_type(EntityTypeStr :: io_list()) -> atom().
+iolist_to_entity_type(EntityTypeStr) ->
+	case EntityTypeStr of
+		<<"champion">> -> champion;
+		<<"demon">> -> demon;
+		<<"chaosbeast">> -> chaosbeast;
+		_ -> undefined
+	end.
+
 create_entity(BcCollision, BcPlayer, BcEntitySup, 
 			  BcEntityConfig, Orientation, BcMap, BcEntities) ->
 	Uuid = bc_collision:uuid(BcCollision),
@@ -50,11 +67,3 @@ create_entity(BcCollision, BcPlayer, BcEntitySup,
 		modules => [bc_ai_fsm]
 	}),
 	bc_entity:set_ai_fsm(BcAiFsm, BcEntity).
-
-iolist_to_entity_type(EntityTypeStr) ->
-	case EntityTypeStr of
-		<<"champion">> -> champion;
-		<<"demon">> -> demon;
-		<<"chaosbeast">> -> chaosbeast;
-		_ -> undefined
-	end.

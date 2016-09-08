@@ -8,7 +8,8 @@
 		 set_col/2,
 		 to_tuple/1,
 		 move/2,
-		 compare/2]).
+		 compare/2,
+		 distance/2]).
 		 
 %%
 % @doc vertex structure
@@ -84,6 +85,15 @@ compare(BcVertex1, BcVertex2) ->
 				equal -> true
 			end
 	end.
+
+-spec distance(BcVertex1 :: vertex(), 
+			   BcVertex2 :: vertex()) -> integer().
+distance(BcVertex1, BcVertex2) ->
+	Row1 = bc_vertex:row(BcVertex1),
+	Row2 = bc_vertex:row(BcVertex2),
+	Col1 = bc_vertex:col(BcVertex1),
+	Col2 = bc_vertex:col(BcVertex2),
+	erlang:abs(Row2 - Row1) + erlang:abs(Col1 - Col2).
 
 -spec intersect(BcVertices1 :: [vertex()], 
 				BcVertices2 :: [vertex()]) ->  [vertex()].
