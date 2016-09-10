@@ -101,36 +101,81 @@ code_change(OldVsn, StateName, StateData, Extra) ->
 %% ====================================================================
 
 sense(#state{bc_entity = BcEntity,
-			 bc_entity_config = BcEntityConfig} = State) ->
-	NearbyDistEntities = dist_entities(State),
+			 bc_entity_config = BcEntityConfig,
+			 map = BcMap} = State) ->
+	DistEntities = dist_entities(State),
 	case lists:filter(fun({_, NearbyBcEntity}) -> 
 						bc_entity:team(NearbyBcEntity) /= 
 							bc_entity:team(BcEntity)
-					 end, NearbyDistEntities) of
-		NearbyEnemyEntities when length(NearbyEnemyEntities) > 0 ->
-			SortedNearbyEnemyEntities = 
-				lists:sort(fun({Dist1, _}, 
-							   {Dist2, _}) -> 
-								   Dist1 =< Dist2 
-						   end, NearbyEnemyEntities),
-			Range = bc_entity_config:range(BcEntityConfig),
-			case lists:filtermap(fun({Dist, EnemyBcEntity}) -> 
-									case Dist =< Range of 
-										true -> {true, EnemyBcEntity};
-										false -> false 
-									end 
-								end, SortedNearbyEnemyEntities) of
-				InRangeEnemyBcEntities when length(InRangeEnemyBcEntities) > 0 ->
-					%% attack in range enemies
-					attack_entities(InRangeEnemyBcEntities, State);
-				_ ->
-					%% TODO move to closest reachable enemy to attack
-					attack_entities()
-			end;
+					 end, DistEntities) of
+		EnemyDistEntites when length(EnemyDistEntites) > 0 ->
+			plan_enemy_actions(DistEntities, EnemyDistEntites, State);
 		_ ->
-			%% there are no nearby enemies, move forward
-			
+			move_forward(State)
 	end.
+
+plan_enemy_actions(DistEntities, EnemyDistEntities, 
+				   #state{bc_entity = BcEntity, 
+						  bc_entity_config = BcEntityConfig, 
+						  map = BcMap} = State) ->
+	Range = bc_entity_config:range(BcEntityConfig),
+	case lists:filtermap(fun({Dist, EnemyBcEntity}) -> 
+							case Dist =< Range of 
+								true -> {true, EnemyBcEntity};
+								false -> false 
+							end 
+						end, EnemyDistEntities) of
+		InRangeEnemyBcEntities when length(InRangeEnemyBcEntities) > 0 ->
+			%% attack in range enemies
+			attack_entities(InRangeEnemyBcEntities, State);
+		_ ->
+			{_, EnemyBcEntity} = closest_dist_entity(EnemyDistEntities),
+			move_in_range(EnemyBcEntity, Range, DistEntities, State)
+	end.
+
+closest_dist_entity(EnemyDistEntities) ->
+	FirstDistEntity = lists:nth(1, EnemyDistEntities),
+	lists:foldl(fun({Dist1, _} = DistEntity,
+					{Dist2, _} = AccDistEntity) -> 
+					case Dist1 < Dist2 of
+						true -> DistEntity;
+						false -> AccDistEntity
+					end
+				end, FirstDistEntity, EnemyDistEntities).
+
+move_in_range(EnemyBcEntity, Range, DistEntities, #state{entity = BcEntity, 
+														 map = BcMap} = State) ->
+	EnemyBcVertices = bc_entity:vertices(EnemyBcEntity),
+	InRangeBcVertices = bc_map:reaching_neighbors(BcMap, EnemyBcVertices, Range),
+	DistBcVertices = 
+		lists:map(fun(BcVertex) -> 
+					Distance =
+						bc_entity_utils:vertex_distance(BcEntity, BcVertex),
+					{Distance, BcVertex} 
+				  end, InRangeBcVertices),
+	FirstDistBcVertex = lists:nth(1, DistBcVertices),
+	ClosestBcVertex = 
+		lists:foldl(fun({Dist, BcVertex} = DistBcVertex, 
+						{AccDist, AccBcVertex} = AccDistBcVertex) ->  
+						case Dist < AccDist of
+							true -> DistBcVertex;
+							false -> AccFistBcVertex
+						end
+					end, FirstDistBcVertex, DistBcVertices),
+	ClosestEntityBcVertex = bc_entity_utils:closest_entity_vertex(BcEntity, ClosestBcVertex),
+	PathBcVertices = bc_map:compute_path(BcMap, ClosestEntityBcVertex, ClosestBcVertex),
+	lists:nth(1, PathBcVertices).
+	%% TODO move to first vertex
+	
+choose_vertex(DistBcVertices, DistEntities, #state{map = BcMap} = State) ->
+	lists:foldl(fun({Dist, BcVertex}, AccBcVertex) -> 
+					case AccBcVertex of 
+						undefined ->
+							
+						{BestDist, BestBcVertex} ->
+							BestBcVertex
+					end
+				end, undefined, DistBcVertices).
 
 attack_entities(InRangeEnemyBcEntities, State) ->
 	case lists:filter(fun(EnemyBcEntity) ->
@@ -142,7 +187,7 @@ attack_entities(InRangeEnemyBcEntities, State) ->
 		_ ->
 			InRangeEnemyBcEntity = lists:nth(1, InRangeEnemyBcEntities),
 			attack_entity(InRangeEnemyBcEntity, State)
-	end
+	end.
 		
 %% attack_entity(InRangeEnemyBcEntity, State) ->
 %% 	

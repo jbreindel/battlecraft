@@ -147,11 +147,16 @@ are_neighbors(#{graph := MapGraph}, Vertex, Neighbor) ->
 			    end, OutNeighbors).
 
 -spec reaching_neighbors(MapGraph :: map_graph(), 
-						 Vertex :: bc_vertex:vertex(), 
+						 BcVertices :: [bc_vertex:vertex()] | bc_vertex:vertex(), 
 						 MaxDist :: integer()) -> [bc_vertex:vertex()].
-reaching_neighbors(#{graph := MapGraph}, Vertex, MaxDist) ->
-	Neighbors = reaching_neighbors(MapGraph, [Vertex], MaxDist, []),
-	lists:delete(Vertex, Neighbors).
+reaching_neighbors(#{graph := MapGraph}, BcVertices, MaxDist) when is_list(BcVertices) ->
+	Neighbors = reaching_neighbors(MapGraph, BcVertices, MaxDist, []),
+	NeighborSet = sets:from_list(Neighbors),
+	QuerySet = sets:from_list(BcVertices),
+	ReachingNeighbors = sets:subtract(NeighborSet, QuerySet),
+	sets:to_list(ReachingNeighbors);
+reaching_neighbors(BcMap, BcVertex, MaxDist) ->
+	reaching_neighbors(BcMap, [BcVertex], MaxDist).
 
 -spec update_collision(MapGraph :: map_graph(),
 					   OriginalBcCollision :: bc_collision:collision(),
