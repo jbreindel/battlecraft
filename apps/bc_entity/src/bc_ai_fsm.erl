@@ -19,7 +19,8 @@
 		 terminate/3, 
 		 code_change/4]).
 
--export([start_link/3]).
+-export([start_link/3,
+		 entity_died/2]).
 
 %% internal state
 -record(state, {entity,
@@ -39,6 +40,12 @@
 				 BcMap :: bc_map:map_graph()) -> gen:start_ret().
 start_link(PlayerNum, BcEntity, BcEntities, BcMap) ->
 	gen_fsm:start_link(?MODULE, [PlayerNum, BcEntity, BcEntities, BcMap], []).
+
+-spec entity_died(BcAiFsm :: pid(), 
+				  EntityDiedEvent :: 
+					  {entity_died, bc_entity:entity()}) -> ok.
+entity_died(BcAiFsm, EntityDiedEvent) ->
+	gen_fsm:send_all_state_event(BcAiFsm, EntityDiedEvent).
 
 %% ====================================================================
 %% Behavioural functions
@@ -77,6 +84,7 @@ attacking(action_complete, State) ->
 %% ====================================================================
 
 handle_event(Event, StateName, StateData) ->
+	
     {next_state, StateName, StateData}.
 
 handle_sync_event(Event, From, StateName, StateData) ->
@@ -107,7 +115,7 @@ sense(#state{bc_entity = BcEntity,
 	case lists:filter(fun({_, NearbyBcEntity}) -> 
 						bc_entity:team(NearbyBcEntity) /= 
 							bc_entity:team(BcEntity)
-					 end, DistEntities) of
+					  end, DistEntities) of
 		EnemyDistEntites when length(EnemyDistEntites) > 0 ->
 			plan_enemy_actions(DistEntities, EnemyDistEntites, State);
 		_ ->
@@ -188,7 +196,6 @@ choose_path(DistBcVertices, DistEntities, #state{map = BcMap} = State) ->
 			{_, FirstBcVertex} = lists:nth(1, SortedDistBcVertices),
 			compute_path(BcEntity, FirstBcVertex, State)
 	end.
-	
 
 compute_path(BcEntity, BcVertex, #state{map = BcMap} = State) ->
 	ClosestEntityBcVertex = 
@@ -206,9 +213,15 @@ attack_entities(InRangeEnemyBcEntities, State) ->
 			InRangeEnemyBcEntity = lists:nth(1, InRangeEnemyBcEntities),
 			attack_entity(InRangeEnemyBcEntity, State)
 	end.
-		
-%% attack_entity(InRangeEnemyBcEntity, State) ->
-%% 	
+
+attack_entity(InRangeEnemyBcEntity, #state{entity = BcEntity,
+										   entities = BcEntities} = State) ->
+	EntityUuid = bc_entity:uuid(BcEntity),
+	EnemyUuid = bc_entity:uuid(InRangeEnemyBcEntity),
+	EntitiesEvent = bc_entities:event(BcEntities),
+	gen_event:add_sup_handler(EntitiesEvent, {bc_entity_died, EntityUuid}, [EnemyUuid, self()]),
+	%% TODO set next state to attacking
+	{next_state, attacking, State}.
 
 dist_entities(#state{entity = BcEntity} = State) ->
 	NearbyBcEntities = nearby_entities(State),
