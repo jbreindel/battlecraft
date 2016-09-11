@@ -4,6 +4,7 @@
 -export([spawn_entity/7,
 		 entity_distance/2,
 		 vertex_distance/2,
+		 move_direction/2,
 		 iolist_to_entity_type/1]).
 
 -spec spawn_entity(BcCollision :: bc_collision:collision(), 
@@ -50,6 +51,37 @@ vertex_distance(BcEntity, QueryBcVertex) ->
 					bc_vertex:distance(EntityBcVertex, QueryBcVertex) 
 				  end, BcVertices),
 	lists:min(Distances).
+
+-spec move_direction(BcEntity :: bc_entity:entity(), 
+					 MoveBcVertex :: bc_vertex:vertex()) -> atom(). 
+move_direction(BcEntity, MoveBcVertex) ->
+	EntityBcVertices = bc_entity:vertices(BcEntity),
+	FirstEntityBcVertex = lists:nth(1, EntityBcVertices),
+	MoveRow = bc_vertex:row(MoveBcVertex),
+	case lists:any(fun(EntityBcVertex) -> 
+					 MoveRow =:= bc_vertex:row(EntityBcVertex)
+				   end, EntityBcVertices) of
+		true ->
+			FirstCol = bc_vertex:col(FirstEntityBcVertex),
+			case bc_vertex:col(MoveBcVertex) of
+				Col when Col > FirstCol ->
+					right;
+				Col when Col < FirstCol ->
+					left;
+				_ ->
+					left
+			end;
+		false ->
+			FirstRow = bc_vertex:row(FirstEntityBcVertex),
+			case bc_vertex:row(MoveBcVertex) of
+				Row when Row > FirstRow ->
+					down;
+				Row when Row < FirstRow ->
+					up;
+				_ ->
+					up
+			end
+	end.
 
 -spec closest_entity_vertex(BcEntity :: bc_entity:entity(), 
 							QueryBcVertex :: bc_vertex:vertex()) -> bc_vertex:vertex().
