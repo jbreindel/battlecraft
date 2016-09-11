@@ -26,6 +26,7 @@
 -record(state, {entity,
 				entity_config,
 				entities,
+				entity_event_handler,
 				player_num,
 				map,
 				timer}).
@@ -62,6 +63,7 @@ init([PlayerNum, BcEntity, BcEntities, BcMap]) ->
 	TimerRef = gen_fsm:send_event_after(5, action_complete),
 	{ok, StateName, #state{entity = UpdatedBcEntity,
 						   entity_config = BcEntityConfig, 
+						   entity_event_handler = undefined,
 					   	   entities = BcEntities, 
 						   player_num = PlayerNum,
 					   	   map = BcMap,
@@ -215,13 +217,23 @@ attack_entities(InRangeEnemyBcEntities, State) ->
 	end.
 
 attack_entity(InRangeEnemyBcEntity, #state{entity = BcEntity,
-										   entities = BcEntities} = State) ->
-	EntityUuid = bc_entity:uuid(BcEntity),
-	EnemyUuid = bc_entity:uuid(InRangeEnemyBcEntity),
-	EntitiesEvent = bc_entities:event(BcEntities),
-	gen_event:add_sup_handler(EntitiesEvent, {bc_entity_died, EntityUuid}, [EnemyUuid, self()]),
-	%% TODO set next state to attacking
-	{next_state, attacking, State}.
+										   entities = BcEntities,
+										   entity_event_handler = EventHandler} = State) ->
+	UpdatedState =
+		case EventHandler of
+			undefined ->			
+				EntityUuid = bc_entity:uuid(BcEntity),
+				EnemyUuid = bc_entity:uuid(InRangeEnemyBcEntity),
+				EntitiesEvent = bc_entities:event(BcEntities),
+				EventHandler = {bc_entity_died, EntityUuid},
+				gen_event:add_sup_handler(EntitiesEvent, 
+										  EventHandler, 
+										  [EnemyUuid, self()]),
+				State#state{event_handler = EventHandler};
+			_ ->
+				State
+		end,
+	{next_state, attacking, UpdatedState}.
 
 dist_entities(#state{entity = BcEntity} = State) ->
 	NearbyBcEntities = nearby_entities(State),
