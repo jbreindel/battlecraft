@@ -104,7 +104,7 @@ closest_entity_vertex(BcEntity, QueryBcVertex) ->
 					end, FirstDistVertex, DistVertices),
 	ClosestBcVertex.
 
--spec iolist_to_entity_type(EntityTypeStr :: io_list()) -> atom().
+-spec iolist_to_entity_type(EntityTypeStr :: iolist()) -> atom().
 iolist_to_entity_type(EntityTypeStr) ->
 	case EntityTypeStr of
 		<<"champion">> -> champion;

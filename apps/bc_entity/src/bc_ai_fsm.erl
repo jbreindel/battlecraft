@@ -19,8 +19,9 @@
 		 terminate/3, 
 		 code_change/4]).
 
--export([start_link/3,
-		 entity_died/2]).
+-export([start_link/4,
+		 entity_died/2,
+		 damage_entity/2]).
 
 %% internal state
 -record(state, {entity,
@@ -141,8 +142,8 @@ code_change(OldVsn, StateName, StateData, Extra) ->
 %% Internal functions
 %% ====================================================================
 
-sense(#state{bc_entity = BcEntity,
-			 bc_entity_config = BcEntityConfig,
+sense(#state{entity = BcEntity,
+			 entity_config = BcEntityConfig,
 			 map = BcMap} = State) ->
 	DistEntities = dist_entities(State),
 	case lists:filter(fun({_, NearbyBcEntity}) -> 
@@ -156,8 +157,8 @@ sense(#state{bc_entity = BcEntity,
 	end.
 
 plan_enemy_actions(DistEntities, EnemyDistEntities, 
-				   #state{bc_entity = BcEntity, 
-						  bc_entity_config = BcEntityConfig, 
+				   #state{entity = BcEntity, 
+						  entity_config = BcEntityConfig, 
 						  map = BcMap} = State) ->
 	Range = bc_entity_config:range(BcEntityConfig),
 	case lists:filtermap(fun({Dist, EnemyBcEntity}) -> 
@@ -198,7 +199,8 @@ move_in_range(EnemyBcEntity, Range, DistEntities, #state{entity = BcEntity,
 	Direction = bc_entity_utils:move_direction(BcEntity, MoveBcVertex),
 	move(Direction, State).
 	
-choose_path(DistBcVertices, DistEntities, #state{map = BcMap} = State) ->
+choose_path(DistBcVertices, DistEntities, #state{entity = BcEntity,
+												 map = BcMap} = State) ->
 	SortedDistBcVertices = 
 		lists:sort(fun({Dist1, _}, 
 					   {Dist2, _}) -> 
@@ -263,11 +265,11 @@ attack_entity(InRangeEnemyBcEntity, #state{entity = BcEntity,
 				gen_event:add_sup_handler(EntitiesEvent, 
 										  EventHandler, 
 										  [EnemyUuid, self()]),
-				State#state{event_handler = EventHandler};
+				State#state{entity_event_handler = EventHandler};
 			_ ->
 				State
 		end,
-	EnemyBcAiFsm = bc_entity:ai_fsm(InRangEnemyBcEntity),
+	EnemyBcAiFsm = bc_entity:ai_fsm(InRangeEnemyBcEntity),
 	Damage = calculate_damage(BcEntityConfig, InRangeEnemyBcEntity, BcEntityConfig),
 	bc_ai_fsm:damage_entity(EnemyBcAiFsm, Damage),
 	AttackSpeed = bc_entity_config:attack_speed(BcEntityConfig),
@@ -284,7 +286,7 @@ dist_entities(#state{entity = BcEntity} = State) ->
 	NearbyBcEntities = nearby_entities(State),
 	lists:map(fun(NearbyBcEntity) ->
 				Distance = bc_entity_util:distance(BcEntity, NearbyBcEntity),
-				{Dstaince, NearbyBcEntity}
+				{Distance, NearbyBcEntity}
 			  end, NearbyBcEntities).
 
 nearby_entities(#state{entity = BcEntity, 
@@ -330,7 +332,7 @@ move(Direction, #state{entity = BcEntity,
 			EntitiesEventPid = bc_entities:event(BcEntities),
 			gen_event:notify(EntitiesEventPid, {entity_moved, UpdatedBcEntity}),
 			MoveSpeed = bc_entity_config:move_speed(BcEntityConfig),
-			TimeRef = send_action_complete(MoveSpeed),
+			TimerRef = send_action_complete(MoveSpeed),
 			{next_state, moving, State#state{entity = UpdatedBcEntity,
 											 timer = TimerRef}};
 		{error, _} ->
