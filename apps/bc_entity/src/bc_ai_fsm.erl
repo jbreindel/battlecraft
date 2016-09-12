@@ -92,8 +92,26 @@ attacking(action_complete, State) ->
 
 handle_event({entity_died, EnemyBcEntity}, StateName, StateData) ->	
     {next_state, StateName, StateData};
-handle_event({entity_damaged, Damage}, StateName, StateData) ->
-	{next_state, StateName, StateData};
+handle_event({entity_damaged, Damage}, StateName, #state{entity = BcEntity,
+														 entities = BcEntities,
+														 map = BcMap} = State) ->
+	case bc_entity:health(BcEntity) - Damage of
+		UpdatedHealth when UpdatedHealth > 0 ->
+			DamagedEntity = bc_entity:set_health(BcEntity, UpdatedHealth),
+			bc_entities:insert(DamagedEntity, BcEntities),
+			EntitiesEventPid = bc_entities:event(BcEntities),
+			gen_event:notify(EntitiesEventPid, {entity_damaged, DamagedEntity}),
+			{next_state, StateName, State#state{entity = DamagedEntity}};
+		UpdatedHealth when UpdatedHealth =< 0 ->
+			DeadEntity = bc_entity:set_health(BcEntity, UpdatedHealth),
+			BcCollision = bc_entity:to_collision(BcEntity),
+			bc_map:delete_collision(BcMap, BcCollision),
+			Uuid = bc_entity:uuid(BcEntity),
+			bc_entities:delete(Uuid),
+			EntitiesEventPid = bc_entities:event(BcEntities),
+			gen_event:notify(EntitiesEventPid, {entity_died, DeadEntity}),
+			{stop, entity_died, State#state{entity = DeadEntity}}
+	end;
 handle_event(Event, StateName, StateData) ->
   {next_state, StateName, StateData}.
 
@@ -144,7 +162,6 @@ plan_enemy_actions(DistEntities, EnemyDistEntities,
 							end 
 						end, EnemyDistEntities) of
 		InRangeEnemyBcEntities when length(InRangeEnemyBcEntities) > 0 ->
-			%% attack in range enemies
 			attack_entities(InRangeEnemyBcEntities, State);
 		_ ->
 			{_, EnemyBcEntity} = closest_dist_entity(EnemyDistEntities),
@@ -228,6 +245,9 @@ attack_entity(InRangeEnemyBcEntity, #state{entity = BcEntity,
 										   entity_config = BcEntityConfig,
 										   entities = BcEntities,
 										   entity_event_handler = EventHandler} = State) ->
+	%% TODO change entity orientation if neccesary
+	EntitiesEventPid = bc_entities:event(BcEntities),
+	gen_event:notify(EntitiesEventPid, {entity_attacking, BcEntity}),
 	UpdatedState =
 		case EventHandler of
 			undefined ->			
@@ -242,15 +262,17 @@ attack_entity(InRangeEnemyBcEntity, #state{entity = BcEntity,
 			_ ->
 				State
 		end,
-	Damage = calculate_damage(BcEntityConfig, 
-							  InRangeEnemyBcEntity, 
-							  BcEntityConfig),
-	%% TODO calculate attack speed and publish attacking event
-	{next_state, attacking, UpdatedState}.
+	EnemyBcAiFsm = bc_entity:ai_fsm(InRangEnemyBcEntity),
+	Damage = calculate_damage(BcEntityConfig, InRangeEnemyBcEntity, BcEntityConfig),
+	bc_ai_fsm:damage_entity(EnemyBcAiFsm, Damage),
+	AttackSpeed = bc_entity_config:attack_speed(BcEntityConfig),
+	TimerRef = send_action_complete(AttackSpeed),
+	{next_state, attacking, UpdatedState#state{timer = TimerRef}}.
 
 calculate_damage(BcEntityConfig, EnemyBcEntity, BcEntities) ->
 	EnemyEntityType = bc_entity:entity_type(EnemyBcEntity),
 	{ok, EnemyBcEntityConfig} = bc_entities:entity_config(EnemyEntityType),
+	%% TODO calcuate damage
 	10.
 
 dist_entities(#state{entity = BcEntity} = State) ->
@@ -303,14 +325,17 @@ move(Direction, #state{entity = BcEntity,
 			EntitiesEventPid = bc_entities:event(BcEntities),
 			gen_event:notify(EntitiesEventPid, {entity_moved, UpdatedBcEntity}),
 			MoveSpeed = bc_entity_config:move_speed(BcEntityConfig),
-			MoveDelayFloat = 1000 - (1000 * MoveSpeed),
-			MoveDelayInt = erlang:trunc(MoveDelayFloat),
-			TimerRef = gen_fsm:send_event_after(MoveDelayInt, action_complete),
+			TimeRef = send_action_complete(MoveSpeed),
 			{next_state, moving, State#state{entity = UpdatedBcEntity,
 											 timer = TimerRef}};
 		{error, _} ->
 			sense(State)
 	end.
+
+send_action_complete(Speed) ->
+	DelayFloat = 1000 - (1000 * Speed),
+	DelayInt = erlang:trunc(DelayFloat),
+	gen_fsm:send_event_after(DelayInt, action_complete).
 
 move_entity(Direction, #state{entity = BcEntity, map = BcMap} = State) ->
 	OriginalBcCollision = bc_entity:to_collision(BcEntity),
