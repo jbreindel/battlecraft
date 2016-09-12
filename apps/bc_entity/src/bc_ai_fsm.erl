@@ -48,6 +48,11 @@ start_link(PlayerNum, BcEntity, BcEntities, BcMap) ->
 entity_died(BcAiFsm, EntityDiedEvent) ->
 	gen_fsm:send_all_state_event(BcAiFsm, EntityDiedEvent).
 
+-spec damage_entity(BcAiFsm :: pid(), 
+					Damage :: integer()) -> ok.
+damage_entity(BcAiFsm, Damage) ->
+	gen_fsm:send_all_state_event(BcAiFsm, {entity_damaged, Damage}).
+
 %% ====================================================================
 %% Behavioural functions
 %% ====================================================================
@@ -85,9 +90,12 @@ attacking(action_complete, State) ->
 %% All State functions
 %% ====================================================================
 
+handle_event({entity_died, EnemyBcEntity}, StateName, StateData) ->	
+    {next_state, StateName, StateData};
+handle_event({entity_damaged, Damage}, StateName, StateData) ->
+	{next_state, StateName, StateData};
 handle_event(Event, StateName, StateData) ->
-	
-    {next_state, StateName, StateData}.
+  {next_state, StateName, StateData}.
 
 handle_sync_event(Event, From, StateName, StateData) ->
     Reply = ok,
@@ -217,6 +225,7 @@ attack_entities(InRangeEnemyBcEntities, State) ->
 	end.
 
 attack_entity(InRangeEnemyBcEntity, #state{entity = BcEntity,
+										   entity_config = BcEntityConfig,
 										   entities = BcEntities,
 										   entity_event_handler = EventHandler} = State) ->
 	UpdatedState =
@@ -233,7 +242,16 @@ attack_entity(InRangeEnemyBcEntity, #state{entity = BcEntity,
 			_ ->
 				State
 		end,
+	Damage = calculate_damage(BcEntityConfig, 
+							  InRangeEnemyBcEntity, 
+							  BcEntityConfig),
+	%% TODO calculate attack speed and publish attacking event
 	{next_state, attacking, UpdatedState}.
+
+calculate_damage(BcEntityConfig, EnemyBcEntity, BcEntities) ->
+	EnemyEntityType = bc_entity:entity_type(EnemyBcEntity),
+	{ok, EnemyBcEntityConfig} = bc_entities:entity_config(EnemyEntityType),
+	10.
 
 dist_entities(#state{entity = BcEntity} = State) ->
 	NearbyBcEntities = nearby_entities(State),
