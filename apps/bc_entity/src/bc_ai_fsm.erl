@@ -90,8 +90,13 @@ attacking(action_complete, State) ->
 %% All State functions
 %% ====================================================================
 
-handle_event({entity_died, EnemyBcEntity}, StateName, StateData) ->	
-    {next_state, StateName, StateData};
+handle_event({entity_died, EnemyBcEntity}, StateName, State) ->
+	case StateName of
+		attacking ->
+			sense(State#state{entity_event_handler = undefined});
+		_ ->
+    		{next_state, StateName, State}
+	end;
 handle_event({entity_damaged, Damage}, StateName, #state{entity = BcEntity,
 														 entities = BcEntities,
 														 map = BcMap} = State) ->
