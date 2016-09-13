@@ -70,7 +70,7 @@ init tmxMap entity =
         matrix = Dict.empty,
         position = (0.0, 0.0),
         animation = Nothing,
-        orientation = Down,
+        orientation = entityOrientation entity,
         entityState = Standing,
         eventBuffer = Deque.empty,
         clock = 0.0
@@ -376,6 +376,15 @@ entityPosition tmxMap matrix =
         offsetX = x - (mapWidth / 2)
     in
         (offsetX, offsetY)
+
+entityOrientation : Entity -> Orientation
+entityOrientation entity =
+    case entity.orientation of
+        "down" -> Down
+        "left" -> Left
+        "up" -> Up
+        "right" -> Right
+        _ -> Down
 
 -- Subscriptions
 
