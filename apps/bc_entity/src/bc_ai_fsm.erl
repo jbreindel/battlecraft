@@ -213,7 +213,7 @@ choose_path(DistBcVertices, DistEntities, #state{entity = BcEntity,
 					   {Dist2, _}) -> 
 						Dist1 =< Dist2 
 				   end, DistBcVertices),
-	ClosestBcVertex = lists:nth(1, SortedDistBcVertices),
+	{_, ClosestBcVertex} = lists:nth(1, SortedDistBcVertices),
 	EntitiesBcVertices = lists:flatten(
 		lists:map(fun({_, NearbyBcEntity}) -> 
 					bc_entity:vertices(NearbyBcEntity) 
