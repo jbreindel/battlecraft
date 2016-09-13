@@ -4,6 +4,7 @@
 -export([spawn_entity/7,
 		 entity_distance/2,
 		 vertex_distance/2,
+		 closest_entity_vertex/2,
 		 move_direction/2,
 		 iolist_to_entity_type/1]).
 
@@ -89,8 +90,7 @@ closest_entity_vertex(BcEntity, QueryBcVertex) ->
 	BcVertices = bc_entity:vertices(BcEntity),
 	DistVertices = 
 		lists:map(fun(BcVertex) ->  
-					Distance = 
-						bc_entity_utils:vertex_distance(BcEntity, BcVertex),
+					Distance = vertex_distance(BcEntity, BcVertex),
 					{Distance, BcVertex} 
 				  end, BcVertices),
 	FirstDistVertex = lists:nth(1, DistVertices),

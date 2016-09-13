@@ -139,6 +139,7 @@ handle_info(Info, StateName, StateData) ->
     {next_state, StateName, StateData}.
 
 terminate(Reason, StateName, StatData) ->
+	io:format("BcAiFsm crashed with reason: ~p~n", [Reason]),
     ok.
 
 code_change(OldVsn, StateName, StateData, Extra) ->
@@ -202,7 +203,7 @@ move_in_range(EnemyBcEntity, Range, DistEntities, #state{entity = BcEntity,
 				  end, InRangeBcVertices),
 	PathBcVertices = choose_path(DistBcVertices, DistEntities, State),
 	MoveBcVertex = lists:nth(1, PathBcVertices),
-	Direction = bc_entity_utils:move_direction(BcEntity, MoveBcVertex),
+	Direction = bc_entity_util:move_direction(BcEntity, MoveBcVertex),
 	move(Direction, State).
 	
 choose_path(DistBcVertices, DistEntities, #state{entity = BcEntity,
@@ -213,17 +214,20 @@ choose_path(DistBcVertices, DistEntities, #state{entity = BcEntity,
 						Dist1 =< Dist2 
 				   end, DistBcVertices),
 	ClosestBcVertex = lists:nth(1, SortedDistBcVertices),
+	EntitiesBcVertices = lists:flatten(
+		lists:map(fun({_, NearbyBcEntity}) -> 
+					bc_entity:vertices(NearbyBcEntity) 
+				  end, DistEntities)
+	),
 	case lists:foldl(fun({_, BcVertex}, AccPath) -> 
 						case AccPath of
 							Path when is_list(Path) andalso length(Path) > 0 ->
 								Path;
 							undefined ->  
 								PathBcVertices = compute_path(BcEntity, ClosestBcVertex, State),
+								%% TODO there is deffinitly a faster way to do this
 								case lists:any(fun(PathBcVertex) -> 
-												 lists:any(fun({_, NearbyBcEntity}) -> 
-															  EntityBcVertices = 
-																  bc_entity:vertices(NearbyBcEntity) 
-														   end, DistEntities) 
+												 lists:member(PathBcVertex, EntitiesBcVertices)
 											   end, PathBcVertices) of
 									true -> undefined;
 									false -> PathBcVertices
@@ -239,7 +243,7 @@ choose_path(DistBcVertices, DistEntities, #state{entity = BcEntity,
 
 compute_path(BcEntity, BcVertex, #state{map = BcMap} = State) ->
 	ClosestEntityBcVertex = 
-		bc_entity_utils:closest_entity_vertex(BcEntity, BcVertex),
+		bc_entity_util:closest_entity_vertex(BcEntity, BcVertex),
 	bc_map:compute_path(BcMap, ClosestEntityBcVertex, BcVertex).
 
 attack_entities(InRangeEnemyBcEntities, State) ->
