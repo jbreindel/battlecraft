@@ -270,12 +270,12 @@ attack_entity(InRangeEnemyBcEntity, #state{entity = BcEntity,
 			undefined ->			
 				EntityUuid = bc_entity:uuid(BcEntity),
 				EnemyUuid = bc_entity:uuid(InRangeEnemyBcEntity),
-				EntitiesEvent = bc_entities:event(BcEntities),
-				EventHandler = {bc_entity_died, EntityUuid},
-				gen_event:add_sup_handler(EntitiesEvent, 
-										  EventHandler, 
+				EntitiesEventPid = bc_entities:event(BcEntities),
+				Handler = {bc_entity_died, EntityUuid},
+				gen_event:add_sup_handler(EntitiesEventPid, 
+										  Handler, 
 										  [EnemyUuid, self()]),
-				State#state{entity_event_handler = EventHandler};
+				State#state{entity_event_handler = Handler};
 			_ ->
 				State
 		end,
@@ -288,7 +288,7 @@ attack_entity(InRangeEnemyBcEntity, #state{entity = BcEntity,
 
 calculate_damage(BcEntityConfig, EnemyBcEntity, BcEntities) ->
 	EnemyEntityType = bc_entity:entity_type(EnemyBcEntity),
-	{ok, EnemyBcEntityConfig} = bc_entities:entity_config(EnemyEntityType),
+	{ok, EnemyBcEntityConfig} = bc_entities:entity_config(EnemyEntityType, BcEntities),
 	%% TODO calcuate damage
 	10.
 
