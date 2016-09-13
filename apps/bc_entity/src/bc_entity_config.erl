@@ -8,7 +8,7 @@
 		 size/1,
 		 health/1, 
 		 damage/1, 
-		 atk_speed/1,
+		 attack_speed/1,
 		 range/1, 
 		 move_speed/1]).
 
@@ -20,7 +20,7 @@
 						   size => integer(),
 	  					   health => integer(),
 	  					   damage => {integer(), integer()},
-						   atk_speed => float(),
+						   attack_speed => float(),
 	  					   range => integer(),
 	  					   move_speed => float()}.
 
@@ -34,7 +34,7 @@ init({EntityType, EntityClass, Size, Health, DamageTuple, AtkSpeed, Range, MoveS
 	  size => Size,
 	  health => Health,
 	  damage => DamageTuple,
-	  atk_speed => AtkSpeed,
+	  attack_speed => AtkSpeed,
 	  range => Range,
 	  move_speed => MoveSpeed}.
 
@@ -58,9 +58,9 @@ health(BcEntityConfig) ->
 damage(BcEntityConfig) ->
 	maps:get(damage, BcEntityConfig).
 
--spec atk_speed(BcEntityConfig :: entity_config()) -> float().
-atk_speed(BcEntityConfig) ->
-	maps:get(atk_speed, BcEntityConfig).
+-spec attack_speed(BcEntityConfig :: entity_config()) -> float().
+attack_speed(BcEntityConfig) ->
+	maps:get(attack_speed, BcEntityConfig).
 
 -spec range(BcEntityConfig :: entity_config()) -> integer().
 range(BcEntityConfig) ->

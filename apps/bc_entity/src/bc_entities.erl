@@ -86,7 +86,7 @@ query_type(EntityType, #{entities_tab := Tab}) ->
 
 -spec delete(Uuid :: uuid:uuid(),
 			 BcEntities :: entities()) -> true.
-delete(#{entities_tab := Tab}, Uuid) ->
+delete(Uuid, #{entities_tab := Tab}) ->
 	ets:delete(Tab, Uuid).
 
 %%====================================================================
