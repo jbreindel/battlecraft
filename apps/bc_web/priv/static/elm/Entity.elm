@@ -39,12 +39,6 @@ type Msg =
 
 -- Model
 
-type Orientation =
-    Up |
-    Right |
-    Down |
-    Left
-
 type EntityState =
     Standing |
     Moving |
@@ -56,7 +50,6 @@ type alias Model = {
     matrix : Dict Int (List Int),
     position : (Float, Float),
     animation : Maybe (String, Animation),
-    orientation : Orientation,
     entityState : EntityState,
     eventBuffer : Deque EntityEvent,
     clock : Time
@@ -70,7 +63,6 @@ init tmxMap entity =
         matrix = Dict.empty,
         position = (0.0, 0.0),
         animation = Nothing,
-        orientation = entityOrientation entity,
         entityState = Standing,
         eventBuffer = Deque.empty,
         clock = 0.0
@@ -279,6 +271,7 @@ onEntityMovedEvent entityMovedEvent model =
                         Maybe.Nothing
     in
         Effects.return {model |
+            entity = entityMovedEvent.entity,
             entityState = Moving,
             animation = animation
         }
@@ -377,15 +370,6 @@ entityPosition tmxMap matrix =
     in
         (offsetX, offsetY)
 
-entityOrientation : Entity -> Orientation
-entityOrientation entity =
-    case entity.orientation of
-        "down" -> Down
-        "left" -> Left
-        "up" -> Up
-        "right" -> Right
-        _ -> Down
-
 -- Subscriptions
 
 subscriptions : Model -> Sub Msg
@@ -394,21 +378,24 @@ subscriptions model =
 
 -- View
 
-entityAngle : Orientation -> Float
+entityAngle : String -> Float
 entityAngle orientation =
     case orientation of
 
-        Up ->
+        "up" ->
             degrees 0
 
-        Right ->
+        "right" ->
             degrees 270
 
-        Down ->
+        "down" ->
             degrees 180
 
-        Left ->
+        "left" ->
             degrees 90
+
+        _ ->
+            degrees 0
 
 championImage : Model -> Element.Element
 championImage model =
@@ -442,7 +429,7 @@ entityTypeImage model =
 entityImage : Model -> Collage.Form
 entityImage model =
     let
-        imageAngle = entityAngle model.orientation
+        imageAngle = entityAngle model.entity.orientation
     in
         entityTypeImage model
             |> Collage.toForm
