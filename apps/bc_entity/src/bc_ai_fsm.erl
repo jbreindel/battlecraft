@@ -19,7 +19,7 @@
 		 terminate/3, 
 		 code_change/4]).
 
--export([start_link/4,
+-export([start_link/3,
 		 entity_died/2,
 		 damage_entity/2]).
 
@@ -36,12 +36,11 @@
 %% API functions
 %% ====================================================================
 
--spec start_link(PlayerNum :: integer(),
-				 BcEntity :: bc_entity:entity(), 
+-spec start_link(BcEntity :: bc_entity:entity(), 
 				 BcEntities :: bc_entities:entities(), 
 				 BcMap :: bc_map:map_graph()) -> gen:start_ret().
-start_link(PlayerNum, BcEntity, BcEntities, BcMap) ->
-	gen_fsm:start_link(?MODULE, [PlayerNum, BcEntity, BcEntities, BcMap], []).
+start_link(BcEntity, BcEntities, BcMap) ->
+	gen_fsm:start_link(?MODULE, [BcEntity, BcEntities, BcMap], []).
 
 -spec entity_died(BcAiFsm :: pid(), 
 				  EntityDiedEvent :: 
@@ -58,7 +57,7 @@ damage_entity(BcAiFsm, Damage) ->
 %% Behavioural functions
 %% ====================================================================
 
-init([PlayerNum, BcEntity, BcEntities, BcMap]) ->
+init([BcEntity, BcEntities, BcMap]) ->
 	UpdatedBcEntity = bc_entity:set_ai_fsm(self(), BcEntity),
 	EntityType = bc_entity:entity_type(UpdatedBcEntity),
 	{ok, BcEntityConfig} = bc_entities:entity_config(EntityType, BcEntities),
@@ -66,6 +65,13 @@ init([PlayerNum, BcEntity, BcEntities, BcMap]) ->
 					structure -> no_action; 
 					_ -> standing 
 				end,
+	PlayerNum =  case bc_entity:orientation(BcEntity) of
+					 down -> 1;
+					 left -> 2;
+					 up -> 3;
+					 right -> 4;
+					 _ -> 0
+				 end,
 	TimerRef = gen_fsm:send_event_after(5, action_complete),
 	{ok, StateName, #state{entity = UpdatedBcEntity,
 						   entity_config = BcEntityConfig, 
@@ -285,7 +291,7 @@ calculate_damage(BcEntityConfig, EnemyBcEntity, BcEntities) ->
 dist_entities(#state{entity = BcEntity} = State) ->
 	NearbyBcEntities = nearby_entities(State),
 	lists:map(fun(NearbyBcEntity) ->
-				Distance = bc_entity_util:distance(BcEntity, NearbyBcEntity),
+				Distance = bc_entity_util:entity_distance(BcEntity, NearbyBcEntity),
 				{Distance, NearbyBcEntity}
 			  end, NearbyBcEntities).
 
@@ -295,12 +301,12 @@ nearby_entities(#state{entity = BcEntity,
 	EntityBcVertices = bc_entity:vertices(BcEntity),
 	NeighborBcVertices = bc_map:reaching_neighbors(
 						   BcMap, EntityBcVertices, ?SENSE_DIST),
-	QueryRes = bc_map:query_collisions(BcMap, NeighborBcVertices),
+	CollisionQueryRes = bc_map:query_collisions(BcMap, NeighborBcVertices),
 	UuidSet = lists:foldl(fun(#{uuid := Uuid}, Set) -> 
 						  	  sets:add_element(Uuid, Set) 
-						  end, sets:new(), QueryRes),
+						  end, sets:new(), CollisionQueryRes),
 	UuidList = sets:to_list(UuidSet),
-	QueryRes = bc_entities:query(UuidList, BcEntities),
+	EntityQueryRes = bc_entities:query(UuidList, BcEntities),
 	lists:map(fun(BcEntity) ->  
 			 	BcVertices = lists:filtermap(
 					fun(#{uuid := Uuid,
@@ -311,9 +317,9 @@ nearby_entities(#state{entity = BcEntity,
 							false ->
 								false
 						end
-					end, QueryRes),	
+					end, CollisionQueryRes),	
 				bc_entity:set_vertices(BcVertices, BcEntity)
-			end, QueryRes).
+			end, EntityQueryRes).
 
 move_forward(#state{player_num = PlayerNum} = State) ->
 	case PlayerNum of
