@@ -197,7 +197,7 @@ move_in_range(EnemyBcEntity, Range, DistEntities, #state{entity = BcEntity,
 	DistBcVertices = 
 		lists:map(fun(BcVertex) -> 
 					Distance =
-						bc_entity_utils:vertex_distance(BcEntity, BcVertex),
+						bc_entity_util:vertex_distance(BcEntity, BcVertex),
 					{Distance, BcVertex} 
 				  end, InRangeBcVertices),
 	PathBcVertices = choose_path(DistBcVertices, DistEntities, State),
