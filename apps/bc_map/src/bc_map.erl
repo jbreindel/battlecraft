@@ -127,7 +127,7 @@ query_ids(MapGraph, Uuid) ->
 				   Vertex1 :: bc_vertex:vertex(), 
 				   Vertex2 :: bc_vertex:vertex()) -> [bc_vertex:vertex()] | false.
 compute_path(#{graph := MapGraph}, Vertex1, Vertex2) ->
-	digraph:get_path(MapGraph, Vertex1, Vertex2).
+	digraph:get_short_path(MapGraph, Vertex1, Vertex2).
 
 -spec are_neighbors(MapGraph :: map_graph(), 
 					Vertex :: bc_vertex:vertex(), 
