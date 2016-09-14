@@ -114,6 +114,12 @@ onConsumeEntityEvent model =
                                         entity = entityDamagedEvent.entity}
                         |> Maybe.Just
 
+                EntityEvent.EntityAttackingEv entityAttackingEvent ->
+                    Effects.return {model |
+                                        entity = entityAttackingEvent.entity,
+                                        entityState = Attacking}
+                        |> Maybe.Just
+
     ) |> Maybe.withDefault (Effects.return model)
 
 onAnimationFrame : Time -> Model -> Effects Model Effect

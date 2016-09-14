@@ -82,12 +82,24 @@ entityDamagedEvent =
         |: ("event_type" := string)
         |: ("entity" := entity)
 
+type alias EntityAttackingEvent = {
+    eventType : String,
+    entity : Entity
+}
+
+entityAttackingEvent : Decoder EntityAttackingEvent
+entityAttackingEvent =
+    at ["entity_event"] <| succeed EntityAttackingEvent
+        |: ("event_type" := string)
+        |: ("entity" := entity)
+
 -- Aggregate Types
 
 type EntityEvent =
     EntitySpawnedEv EntitySpawnedEvent |
     EntityMovedEv EntityMovedEvent |
-    EntityDamagedEv EntityDamagedEvent
+    EntityDamagedEv EntityDamagedEvent |
+    EntityAttackingEv EntityAttackingEvent
 
 entityEventInfo : String -> Decoder EntityEvent
 entityEventInfo eventType =
@@ -101,6 +113,9 @@ entityEventInfo eventType =
 
         "entity_damaged" ->
             object1 EntityDamagedEv entityDamagedEvent
+
+        "entity_attacking" ->
+            object1 EntityAttackingEv entityAttackingEvent
 
         _ ->
             fail <| "Unable to parse eventType: " ++ eventType
@@ -123,3 +138,6 @@ entityEventEntity entityEvent =
 
         EntityDamagedEv entityDamagedEvent ->
             entityDamagedEvent.entity
+
+        EntityAttackingEv entityAttackingEvent ->
+            entityAttackingEvent.entity
