@@ -5,6 +5,8 @@ module EntityEvent exposing (EntityEvent(..),
                              EntitySpawnedEvent,
                              EntityMovedEvent,
                              EntityDamagedEvent,
+                             EntityAttackingEvent,
+                             EntityDiedEvent,
                              entityEvent,
                              entityEventEntity)
 
@@ -93,13 +95,25 @@ entityAttackingEvent =
         |: ("event_type" := string)
         |: ("entity" := entity)
 
+type alias EntityDiedEvent = {
+    eventType : String,
+    entity : Entity
+}
+
+entityDiedEvent : Decoder EntityDiedEvent
+entityDiedEvent =
+    at ["entity_event"] <| succeed EntityDiedEvent
+        |: ("event_type" := string)
+        |: ("entity" := entity)
+
 -- Aggregate Types
 
 type EntityEvent =
     EntitySpawnedEv EntitySpawnedEvent |
     EntityMovedEv EntityMovedEvent |
     EntityDamagedEv EntityDamagedEvent |
-    EntityAttackingEv EntityAttackingEvent
+    EntityAttackingEv EntityAttackingEvent |
+    EntityDiedEv EntityDiedEvent
 
 entityEventInfo : String -> Decoder EntityEvent
 entityEventInfo eventType =
@@ -116,6 +130,9 @@ entityEventInfo eventType =
 
         "entity_attacking" ->
             object1 EntityAttackingEv entityAttackingEvent
+
+        "entity_died" ->
+            object1 EntityDiedEv entityDiedEvent
 
         _ ->
             fail <| "Unable to parse eventType: " ++ eventType
@@ -141,3 +158,6 @@ entityEventEntity entityEvent =
 
         EntityAttackingEv entityAttackingEvent ->
             entityAttackingEvent.entity
+
+        EntityDiedEvent entityDiedEvent ->
+            entityDiedEvent.entity

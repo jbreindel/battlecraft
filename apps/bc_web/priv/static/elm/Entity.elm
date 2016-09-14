@@ -42,7 +42,8 @@ type Msg =
 type EntityState =
     Standing |
     Moving |
-    Attacking
+    Attacking |
+    Dead
 
 type alias Model = {
     entity : Entity,
@@ -118,6 +119,13 @@ onConsumeEntityEvent model =
                     Effects.return {model |
                                         entity = entityAttackingEvent.entity,
                                         entityState = Attacking}
+                        |> Maybe.Just
+
+                EntityEvent.EntityDiedEv entityDiedEvent ->
+                    -- TODO annimate blood pool
+                    Effects.return {model |
+                                        entity = entityDiedEvent.entity,
+                                        entityState = Dead}
                         |> Maybe.Just
 
     ) |> Maybe.withDefault (Effects.return model)
@@ -418,6 +426,10 @@ championImage model =
         Attacking ->
             Element.image 64 64
                 "/static/assets/gifs/champion.gif"
+
+        Dead ->
+            Element.image 64 64
+                "/static/assets/effects/blood/3.PNG"
 
 entityTypeImage : Model -> Element.Element
 entityTypeImage model =
