@@ -429,7 +429,7 @@ championImage model =
 
         Dead ->
             Element.image 64 64
-                "/static/assets/effects/blood/3.PNG"
+                "/static/assets/effects/blood/3-64x64.PNG"
 
 entityTypeImage : Model -> Element.Element
 entityTypeImage model =

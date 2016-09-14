@@ -159,5 +159,5 @@ entityEventEntity entityEvent =
         EntityAttackingEv entityAttackingEvent ->
             entityAttackingEvent.entity
 
-        EntityDiedEvent entityDiedEvent ->
+        EntityDiedEv entityDiedEvent ->
             entityDiedEvent.entity
