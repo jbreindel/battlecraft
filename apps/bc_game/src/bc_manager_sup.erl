@@ -26,7 +26,9 @@ start_link() ->
 %% Child :: {Id,StartFunc,Restart,Shutdown,Type,Modules}
 init([]) ->
 	{ok, {
-		{one_for_one, 0, 1}, 
+		#{strategy => one_for_all,
+		  intensity => 0,
+		  period => 1}, 
 			[#{
 			   id => bc_manager_serv,
 			   start => {bc_manager_serv, start_link, []},
