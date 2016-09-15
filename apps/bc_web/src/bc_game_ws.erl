@@ -33,7 +33,6 @@ websocket_init(_Type, Req, _Opts) ->
 websocket_handle({text, Json} = Frame, Req, #state{game_id = GameId,
 												   player_serv = BcPlayerServ} = State) ->
  	CommandMap = jsx:decode(Json, [return_maps]),
-	lager:info("Websocket message received: ~p~n", [CommandMap]),
 	case maps:get(<<"command_type">>, CommandMap, undefined) of
 		<<"join_command">> ->
 			Handle = maps:get(<<"handle">>, CommandMap),
@@ -47,7 +46,7 @@ websocket_handle({text, Json} = Frame, Req, #state{game_id = GameId,
 					{reply, {text, ReplyJson}, Req, State#state{player_id = PlayerId,
 																player_serv = JoinedBcPlayerServ}};
 				{error, Reason} = Error ->
-					io:format("Error occured while joining: ~p~n", [Error]),
+					lager:info("Error occured while joining: ~p", [Error]),
 					ErrorMap = #{type => command_response,
 								 command_response => #{response_type => join_error, 
 													   error => Reason}},
@@ -62,18 +61,15 @@ websocket_handle({text, Json} = Frame, Req, #state{game_id = GameId,
 			{reply, Frame, Req, State}
 	end;
 websocket_handle(Frame, Req, State) ->
-	lager:info("Websocket message receive: ~p", [Frame]),
 	{ok, Req, State}.
 
 websocket_info(WsMessage, Req, State) when erlang:is_map(WsMessage) ->
-	lager:info("Serializing ws message: ~p", [WsMessage]),
 	Json = jsx:encode(WsMessage),
 	{reply, {text, Json}, Req, State};
 websocket_info(_Info, Req, State) ->
 	{ok, Req, State}.
 
 websocket_terminate(Reason, _Req, _State) ->
-	lager:info("Websocket terminating: ~p", [Reason]),
     ok.
 
 join_game(GameId, Handle) ->
