@@ -51,9 +51,9 @@ handle_event({game_error, Reason},
 handle_event({PlayerEventType, JoinBcPlayer}, 
 			 #state{player = BcPlayer} = State) ->
 	PlayerPid = bc_player:pid(BcPlayer),
-	PlayerPid ! #{type => game_event,
-				  game_event => #{event_type => PlayerEventType,
-							 	  player => bc_player:serialize(JoinBcPlayer)}},
+%% 	PlayerPid ! #{type => game_event,
+%% 				  game_event => #{event_type => PlayerEventType,
+%% 							 	  player => bc_player:serialize(JoinBcPlayer)}},
 	{ok, State};
 handle_event(_, State) ->
 	{ok, State}.
