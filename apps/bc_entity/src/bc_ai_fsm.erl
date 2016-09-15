@@ -122,6 +122,7 @@ handle_event({entity_damaged, Damage}, StateName, #state{entity = BcEntity,
 			bc_entities:delete(Uuid, BcEntities),
 			EntitiesEventPid = bc_entities:event(BcEntities),
 			gen_event:notify(EntitiesEventPid, {entity_died, DeadEntity}),
+			lager:info("~p Entity Died", [bc_entity:uuid_str(BcEntity)]),
 			{stop, normal, State#state{entity = DeadEntity}}
 	end;
 handle_event(Event, StateName, StateData) ->
@@ -139,7 +140,7 @@ handle_info(Info, StateName, StateData) ->
     {next_state, StateName, StateData}.
 
 terminate(Reason, StateName, StatData) ->
-	io:format("BcAiFsm crashed with reason: ~p~n", [Reason]),
+	lager:info("BcAiFsm crashed with reason: ~p", [Reason]),
     ok.
 
 code_change(OldVsn, StateName, StateData, Extra) ->
@@ -258,11 +259,11 @@ attack_entities(InRangeEnemyBcEntities, State) ->
 			attack_entity(InRangeEnemyBcEntity, State)
 	end.
 
-attack_entity(InRangeEnemyBcEntity, #state{entity = BcEntity,
+attack_entity(EnemyBcEntity, #state{entity = BcEntity,
 										   entity_config = BcEntityConfig,
 										   entities = BcEntities,
 										   entity_event_handler = EventHandler} = State) ->
-	Orientation = determine_orientation(BcEntity, InRangeEnemyBcEntity),
+	Orientation = determine_orientation(BcEntity, EnemyBcEntity),
 	ReorientedEntity = reorient_entity(Orientation, BcEntity, BcEntities),
 	EntitiesEventPid = bc_entities:event(BcEntities),
 	gen_event:notify(EntitiesEventPid, {entity_attacking, ReorientedEntity}),
@@ -270,7 +271,7 @@ attack_entity(InRangeEnemyBcEntity, #state{entity = BcEntity,
 		case EventHandler of
 			undefined ->
 				EntityUuid = bc_entity:uuid(ReorientedEntity),
-				EnemyUuid = bc_entity:uuid(InRangeEnemyBcEntity),
+				EnemyUuid = bc_entity:uuid(EnemyBcEntity),
 				EntitiesEventPid = bc_entities:event(BcEntities),
 				Handler = {bc_entity_died, EntityUuid},
 				gen_event:add_sup_handler(EntitiesEventPid, 
@@ -281,11 +282,15 @@ attack_entity(InRangeEnemyBcEntity, #state{entity = BcEntity,
 			_ ->
 				State
 		end,
-	EnemyBcAiFsm = bc_entity:ai_fsm(InRangeEnemyBcEntity),
-	Damage = calculate_damage(BcEntityConfig, InRangeEnemyBcEntity, BcEntities),
+	EnemyBcAiFsm = bc_entity:ai_fsm(EnemyBcEntity),
+	Damage = calculate_damage(BcEntityConfig, EnemyBcEntity, BcEntities),
 	bc_ai_fsm:damage_entity(EnemyBcAiFsm, Damage),
 	AttackSpeed = bc_entity_config:attack_speed(BcEntityConfig),
 	TimerRef = send_action_complete(AttackSpeed),
+	lager:info("~p (~p) is attacking ~p (~p)", [bc_entity:uuid_str(BcEntity), 
+												bc_entity:vertices(BcEntity), 
+												bc_entity:uuid_str(EnemyBcEntity), 
+												bc_entity:vertices(EnemyBcEntity)]),
 	{next_state, attacking, UpdatedState#state{timer = TimerRef}}.
 
 determine_orientation(BcEntity, EnemyBcEntity) ->
