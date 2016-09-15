@@ -4,11 +4,14 @@
 -export([init/1,
 		 max_row/1,
 		 min_row/1,
+		 rows/1,
 		 row/2,
 		 max_col/1,
 		 min_col/1,
+		 cols/1,
 		 col/2,
-		 dimensions/1]).
+		 dimensions/1,
+		 to_vertices/1]).
 
 %% ====================================================================
 %% API functions
@@ -40,6 +43,11 @@ min_row(BcMatrix) ->
 	Keys = dict:fetch_keys(BcMatrix),
 	lists:min(Keys).
 
+-spec rows(BcMatrix :: dict:dict()) -> sets:set().
+rows(BcMatrix) ->
+	Rows = dict:fetch_keys(BcMatrix),
+	sets:from_list(Rows).
+
 -spec row(Row :: integer(), BcMatrix :: dict:dict()) -> {ok, [bc_vertex:vertex()]} | error.
 row(Row, BcMatrix) ->
 	case dict:find(Row, BcMatrix) of
@@ -60,6 +68,12 @@ max_col(BcMatrix) ->
 min_col(BcMatrix) ->
 	ColValues = col_values(BcMatrix),
 	lists:min(ColValues).
+
+-spec cols(BcMatrix :: dict:dict()) -> sets:set().
+cols(BcMatrix) ->
+	dict:fold(fun(Row, ColSet, AccColSet) -> 
+			 sets:union(ColSet, AccColSet) 
+		  end, sets:new(), BcMatrix)
 
 -spec col(Col :: integer(), BcMatrix :: dict:dict()) -> {ok, [bc_vertex:vertex()]} | error.
 col(Col, BcMatrix) ->
@@ -91,14 +105,23 @@ dimensions(BcMatrix) ->
 					error
 			end
 	end.
-				
+
+-spec to_vetices(BcMatrix :: dict:dict()) -> [bc_vertex:vertex()].
+to_vertices(BcMatrix) ->
+	dict:fold(fun(Row, ColSet, Acc) ->  
+				Cols = sets:to_list(ColSet),
+				BcVertices = 
+					lists:map(fun(Col) -> 
+								bc_vertex:init(Row, Col) 
+							  end, Cols),
+				BcVerticesSet = sets:from_list(BcVertices),
+				lists:append(Acc, BcVerticesSet)
+			  end, [], BcMatrix).
 
 %% ====================================================================
 %% Internal functions
 %% ====================================================================
 
 col_values(BcMatrix) ->
-	ValueSet = dict:fold(fun(_, ColSet, Values) -> 
-						 	sets:union(ColSet, Values) 
-						 end, sets:new(), BcMatrix),
+	ValueSet = cols(BcMatrix),
 	sets:to_list(ValueSet).

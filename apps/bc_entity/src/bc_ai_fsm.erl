@@ -262,20 +262,22 @@ attack_entity(InRangeEnemyBcEntity, #state{entity = BcEntity,
 										   entity_config = BcEntityConfig,
 										   entities = BcEntities,
 										   entity_event_handler = EventHandler} = State) ->
-	%% TODO change entity orientation if neccesary
+	Orientation = determine_orientation(BcEntity, InRangeEnemyBcEntity),
+	ReorientedEntity = reorient_entity(Orientation, BcEntity, BcEntities),
 	EntitiesEventPid = bc_entities:event(BcEntities),
-	gen_event:notify(EntitiesEventPid, {entity_attacking, BcEntity}),
+	gen_event:notify(EntitiesEventPid, {entity_attacking, ReorientedEntity}),
 	UpdatedState =
 		case EventHandler of
 			undefined ->
-				EntityUuid = bc_entity:uuid(BcEntity),
+				EntityUuid = bc_entity:uuid(ReorientedEntity),
 				EnemyUuid = bc_entity:uuid(InRangeEnemyBcEntity),
 				EntitiesEventPid = bc_entities:event(BcEntities),
 				Handler = {bc_entity_died, EntityUuid},
 				gen_event:add_sup_handler(EntitiesEventPid, 
 										  Handler, 
 										  [EnemyUuid, self()]),
-				State#state{entity_event_handler = Handler};
+				State#state{entity = ReorientedEntity,
+							entity_event_handler = Handler};
 			_ ->
 				State
 		end,
@@ -288,9 +290,29 @@ attack_entity(InRangeEnemyBcEntity, #state{entity = BcEntity,
 
 determine_orientation(BcEntity, EnemyBcEntity) ->
 	BcVertices = bc_entity:vertices(BcEntity),
+	BcMatrix = bc_matrix:init(BcVertices),
 	EnemyBcVertices = bc_entity:vertices(EnemyBcEntity),
-	%% TODO recalculate orientation
-	up.
+	EnemyBcMatrix = bc_matrix:init(EnemyBcVertices),
+	RowSet = bc_matrix:rows(BcMatrix),
+	EnemyRowSet = bc_matrix:rows(EnemyBcMatrix),
+	case sets:is_disjoint(RowSet, EnemyRowSet) of
+		true ->
+			MaxCol = bc_matrix:max_col(BcMatrix),
+			case bc_matrix:max_col(EnemyBcMatrix) of
+				EnemyMaxCol when EnemyMaxCol < MaxCol ->
+					left;
+				EnemyMaxCol when EnemyMaxCol >= MaxCol ->
+					right
+			end;
+		false ->
+			MaxRow = bc_matrix:max_row(BcMatrix),
+			case bc_matrix:max_col(EnemyBcMatrix) of
+				EnemyMaxRow when EnemyMaxRow < MaxRow ->
+					up;
+				EnemyMaxRow when EnemyMaxRow >= MaxRow ->
+					down
+			end
+	end.
 
 calculate_damage(BcEntityConfig, EnemyBcEntity, BcEntities) ->
 	EnemyEntityType = bc_entity:entity_type(EnemyBcEntity),
