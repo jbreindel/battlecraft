@@ -399,7 +399,7 @@ view model =
 
                 entityModels = Dict.values model.entities
 
-                entityForms = List.map (
+                entityForms = List.concatMap (
                                 \entityModel ->
                                     Entity.view entityModel
                             ) entityModels

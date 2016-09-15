@@ -472,7 +472,12 @@ entityHealthBar model =
         Collage.rect offsetWidth 2.0
             |> Collage.filled green
 
-view : Model -> Collage.Form
+entityUuid : Model -> Collage.Form
+entityUuid model =
+    Element.show model.entity.uuid
+        |> Collage.toForm
+
+view : Model -> List Collage.Form
 view model =
     let
         (x, y) = model.position
@@ -482,5 +487,11 @@ view model =
         -- healthBarForm = entityHealthBar model
         --
         -- entityForm = Collage.group [backgroundForm]
+
+        uuid = entityUuid model
     in
-       Collage.move (x, y) backgroundForm
+        [backgroundForm, uuid]
+            |> List.map (
+                \form ->
+                    Collage.move (x, y) form
+            )
