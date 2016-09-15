@@ -122,7 +122,7 @@ handle_event({entity_damaged, Damage}, StateName, #state{entity = BcEntity,
 			bc_entities:delete(Uuid, BcEntities),
 			EntitiesEventPid = bc_entities:event(BcEntities),
 			gen_event:notify(EntitiesEventPid, {entity_died, DeadEntity}),
-			{stop, entity_died, State#state{entity = DeadEntity}}
+			{stop, normal, State#state{entity = DeadEntity}}
 	end;
 handle_event(Event, StateName, StateData) ->
   {next_state, StateName, StateData}.
@@ -267,7 +267,7 @@ attack_entity(InRangeEnemyBcEntity, #state{entity = BcEntity,
 	gen_event:notify(EntitiesEventPid, {entity_attacking, BcEntity}),
 	UpdatedState =
 		case EventHandler of
-			undefined ->			
+			undefined ->
 				EntityUuid = bc_entity:uuid(BcEntity),
 				EnemyUuid = bc_entity:uuid(InRangeEnemyBcEntity),
 				EntitiesEventPid = bc_entities:event(BcEntities),
@@ -285,6 +285,12 @@ attack_entity(InRangeEnemyBcEntity, #state{entity = BcEntity,
 	AttackSpeed = bc_entity_config:attack_speed(BcEntityConfig),
 	TimerRef = send_action_complete(AttackSpeed),
 	{next_state, attacking, UpdatedState#state{timer = TimerRef}}.
+
+determine_orientation(BcEntity, EnemyBcEntity) ->
+	BcVertices = bc_entity:vertices(BcEntity),
+	EnemyBcVertices = bc_entity:vertices(EnemyBcEntity),
+	%% TODO recalculate orientation
+	up.
 
 calculate_damage(BcEntityConfig, EnemyBcEntity, BcEntities) ->
 	EnemyEntityType = bc_entity:entity_type(EnemyBcEntity),
@@ -338,12 +344,13 @@ move(Direction, #state{entity = BcEntity,
 					   entities = BcEntities,
 					   map = BcMap} = State) ->
 	case move_entity(Direction, State) of
-		{ok, UpdatedBcEntity} ->
+		{ok, MovedBcEntity} ->
+			ReorientedBcEntity = reorient_entity(Direction, MovedBcEntity, BcEntities),
 			EntitiesEventPid = bc_entities:event(BcEntities),
-			gen_event:notify(EntitiesEventPid, {entity_moved, UpdatedBcEntity}),
+			gen_event:notify(EntitiesEventPid, {entity_moved, ReorientedBcEntity}),
 			MoveSpeed = bc_entity_config:move_speed(BcEntityConfig),
 			TimerRef = send_action_complete(MoveSpeed),
-			{next_state, moving, State#state{entity = UpdatedBcEntity,
+			{next_state, moving, State#state{entity = ReorientedBcEntity,
 											 timer = TimerRef}};
 		{error, _} ->
 			sense(State)
@@ -359,9 +366,19 @@ move_entity(Direction, #state{entity = BcEntity, map = BcMap} = State) ->
 	UpdatedBcCollision = bc_collision:move(Direction, OriginalBcCollision),
 	case bc_map:update_collision(BcMap, OriginalBcCollision, UpdatedBcCollision) of
 		ok ->
+			OrientedBcEntity =
+				case bc_entity:orientation(BcEntity) =:= Direction of
+					true -> BcEntity;
+					false -> reorient_entity(Direction, BcEntity, BcEntities)
+				end,
 			UpdatedBcVertices = bc_collision:vertices(UpdatedBcCollision),
-			UpdatedBcEntity = bc_entity:set_vertices(UpdatedBcVertices, BcEntity),
-			{ok, UpdatedBcEntity};
+			MovedBcEntity = bc_entity:set_vertices(UpdatedBcVertices, OrientedBcEntity),
+			{ok, MovedBcEntity};
 		{error, _} = Error ->
 			Error
 	end.
+
+reorient_entity(Orientation, BcEntity, BcEntities) ->
+	UpdatedBcEntity = bc_entity:set_orientation(Orientation, BcEntity),
+	bc_entities:insert(UpdatedBcEntity, BcEntities),
+	UpdatedBcEntity.
