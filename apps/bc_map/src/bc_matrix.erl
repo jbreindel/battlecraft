@@ -73,7 +73,7 @@ min_col(BcMatrix) ->
 cols(BcMatrix) ->
 	dict:fold(fun(Row, ColSet, AccColSet) -> 
 			 sets:union(ColSet, AccColSet) 
-		  end, sets:new(), BcMatrix)
+		  end, sets:new(), BcMatrix).
 
 -spec col(Col :: integer(), BcMatrix :: dict:dict()) -> {ok, [bc_vertex:vertex()]} | error.
 col(Col, BcMatrix) ->
@@ -106,7 +106,7 @@ dimensions(BcMatrix) ->
 			end
 	end.
 
--spec to_vetices(BcMatrix :: dict:dict()) -> [bc_vertex:vertex()].
+-spec to_vertices(BcMatrix :: dict:dict()) -> [bc_vertex:vertex()].
 to_vertices(BcMatrix) ->
 	dict:fold(fun(Row, ColSet, Acc) ->  
 				Cols = sets:to_list(ColSet),

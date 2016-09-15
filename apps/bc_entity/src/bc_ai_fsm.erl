@@ -297,20 +297,20 @@ determine_orientation(BcEntity, EnemyBcEntity) ->
 	EnemyRowSet = bc_matrix:rows(EnemyBcMatrix),
 	case sets:is_disjoint(RowSet, EnemyRowSet) of
 		true ->
+			MaxRow = bc_matrix:max_row(BcMatrix),
+			case bc_matrix:max_row(EnemyBcMatrix) of
+				EnemyMaxRow when EnemyMaxRow < MaxRow ->
+					up;
+				EnemyMaxRow when EnemyMaxRow >= MaxRow ->
+					down
+			end;
+		false ->
 			MaxCol = bc_matrix:max_col(BcMatrix),
 			case bc_matrix:max_col(EnemyBcMatrix) of
 				EnemyMaxCol when EnemyMaxCol < MaxCol ->
 					left;
 				EnemyMaxCol when EnemyMaxCol >= MaxCol ->
 					right
-			end;
-		false ->
-			MaxRow = bc_matrix:max_row(BcMatrix),
-			case bc_matrix:max_col(EnemyBcMatrix) of
-				EnemyMaxRow when EnemyMaxRow < MaxRow ->
-					up;
-				EnemyMaxRow when EnemyMaxRow >= MaxRow ->
-					down
 			end
 	end.
 
@@ -383,7 +383,9 @@ send_action_complete(Speed) ->
 	DelayInt = erlang:trunc(DelayFloat),
 	gen_fsm:send_event_after(DelayInt, action_complete).
 
-move_entity(Direction, #state{entity = BcEntity, map = BcMap} = State) ->
+move_entity(Direction, #state{entity = BcEntity, 
+							  map = BcMap,
+							  entities = BcEntities} = State) ->
 	OriginalBcCollision = bc_entity:to_collision(BcEntity),
 	UpdatedBcCollision = bc_collision:move(Direction, OriginalBcCollision),
 	case bc_map:update_collision(BcMap, OriginalBcCollision, UpdatedBcCollision) of
@@ -401,6 +403,6 @@ move_entity(Direction, #state{entity = BcEntity, map = BcMap} = State) ->
 	end.
 
 reorient_entity(Orientation, BcEntity, BcEntities) ->
-	UpdatedBcEntity = bc_entity:set_orientation(Orientation, BcEntity),
+	UpdatedBcEntity = bc_entity:set_orientation(BcEntity, Orientation),
 	bc_entities:insert(UpdatedBcEntity, BcEntities),
 	UpdatedBcEntity.
