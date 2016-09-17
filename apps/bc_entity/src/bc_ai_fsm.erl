@@ -122,7 +122,6 @@ handle_event({entity_damaged, Damage}, StateName, #state{entity = BcEntity,
 			bc_entities:delete(Uuid, BcEntities),
 			EntitiesEventPid = bc_entities:event(BcEntities),
 			gen_event:notify(EntitiesEventPid, {entity_died, DeadEntity}),
-			lager:info("~p Entity Died", [bc_entity:uuid_str(BcEntity)]),
 			{stop, normal, State#state{entity = DeadEntity}}
 	end;
 handle_event(Event, StateName, StateData) ->
@@ -236,12 +235,10 @@ choose_path(DistBcVertices, DistEntities, #state{entity = BcEntity,
 						end 
 					end, undefined, SortedDistBcVertices) of
 		Path when is_list(Path) andalso length(Path) > 0 ->
-			lager:info("~p has chosen unobstucted path ~p", [bc_entity:uuid_str(BcEntity), Path]),
 			Path;
 		undefined ->
 			{_, FirstBcVertex} = lists:nth(1, SortedDistBcVertices),
 			Path = compute_path(BcEntity, FirstBcVertex, State),
-			lager:info("~p has chosen first path ~p", [bc_entity:uuid_str(BcEntity), Path]),
 			Path
 	end.
 
@@ -295,10 +292,6 @@ attack_entity(EnemyBcEntity, #state{entity = BcEntity,
 	bc_ai_fsm:damage_entity(EnemyBcAiFsm, Damage),
 	AttackSpeed = bc_entity_config:attack_speed(BcEntityConfig),
 	TimerRef = send_action_complete(AttackSpeed),
-	lager:info("~p (~p) is attacking ~p (~p)", [bc_entity:uuid_str(BcEntity), 
-												bc_entity:vertices(BcEntity), 
-												bc_entity:uuid_str(EnemyBcEntity), 
-												bc_entity:vertices(EnemyBcEntity)]),
 	{next_state, attacking, UpdatedState#state{timer = TimerRef}}.
 
 determine_orientation(BcEntity, EnemyBcEntity) ->
