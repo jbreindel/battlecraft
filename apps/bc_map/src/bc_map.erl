@@ -68,40 +68,49 @@ init(Heir, MapFile) ->
 
 -spec insert_collision(MapGraph :: map_graph(),
 					   BcCollision :: bc_collision:collision()) -> boolean().
-insert_collision(#{coll_tab := Tab}, BcCollision) ->
+insert_collision(MapGraph, BcCollision) ->
+	Tab = maps:get(coll_tab, MapGraph),
 	Rows = vertex_rows(BcCollision),
 	ets:insert_new(Tab, Rows).
 
 -spec base1_vertices(MapGraph :: map_graph()) -> [bc_vertex:vertex()].
-base1_vertices(#{base_vertices := BaseVertices}) ->
+base1_vertices(MapGraph) ->
+	BaseVertices = maps:get(base_vertices, MapGraph),
 	maps:get(base1, BaseVertices).
 
 -spec base1_spawn_vertices(MapGraph :: map_graph()) -> [bc_vertex:vertex()].
-base1_spawn_vertices(#{spawn_vertices := SpawnVertices}) ->
+base1_spawn_vertices(MapGraph) ->
+	SpawnVertices = maps:get(spawn_vertices, MapGraph),
 	maps:get(base1, SpawnVertices).
 
 -spec base2_vertices(MapGraph :: map_graph()) -> [bc_vertex:vertex()].
-base2_vertices(#{base_vertices := BaseVertices}) ->
+base2_vertices(MapGraph) ->
+	BaseVertices = maps:get(base_vertices, MapGraph),
 	maps:get(base2, BaseVertices).
 
 -spec base2_spawn_vertices(MapGraph :: map_graph()) -> [bc_vertex:vertex()].
-base2_spawn_vertices(#{spawn_vertices := SpawnVertices}) ->
+base2_spawn_vertices(MapGraph) ->
+	SpawnVertices = maps:get(spawn_vertices, MapGraph),
 	maps:get(base2, SpawnVertices).
 
 -spec base3_vertices(MapGraph :: map_graph()) -> [bc_vertex:vertex()].
-base3_vertices(#{base_vertices := BaseVertices}) ->
+base3_vertices(MapGraph) ->
+	BaseVertices = maps:get(base_vertices, MapGraph),
 	maps:get(base3, BaseVertices).
 
 -spec base3_spawn_vertices(MapGraph :: map_graph()) -> [bc_vertex:vertex()].
-base3_spawn_vertices(#{spawn_vertices := SpawnVertices}) ->
+base3_spawn_vertices(MapGraph) ->
+	SpawnVertices = maps:get(spawn_vertices, MapGraph),
 	maps:get(base3, SpawnVertices).
 
 -spec base4_vertices(MapGraph :: map_graph()) -> [bc_vertex:vertex()].
-base4_vertices(#{base_vertices := BaseVertices}) ->
+base4_vertices(MapGraph) ->
+	BaseVertices = maps:get(base_vertices, MapGraph),
 	maps:get(base4, BaseVertices).
 
 -spec base4_spawn_vertices(MapGraph :: map_graph()) -> [bc_vertex:vertex()].
-base4_spawn_vertices(#{spawn_vertices := SpawnVertices}) ->
+base4_spawn_vertices(MapGraph) ->
+	SpawnVertices = maps:get(spawn_vertices, MapGraph),
 	maps:get(base4, SpawnVertices).
 
 -spec query_collisions(MapGraph :: map_graph(),
@@ -115,7 +124,8 @@ query_collisions(#{coll_tab := Tab}, BcVertices) ->
 
 -spec query_ids(MapGraph :: map_graph(), 
 				Uuids :: uuid:uuid() | [uuid:uuid()]) -> [query_res()].
-query_ids(#{coll_tab := Tab}, Uuids) when is_list(Uuids) ->
+query_ids(MapGraph, Uuids) when is_list(Uuids) ->
+	Tab = maps:get(coll_tab, MapGraph),
 	Results = qlc:eval(qlc:q([{BcVertexTuple, Uuid} || 
 							  {BcVertexTuple, Uuid} <- ets:table(Tab),
 							  lists:member(Uuid, Uuids)])),
@@ -126,17 +136,19 @@ query_ids(MapGraph, Uuid) ->
 -spec compute_path(MapGraph :: map_graph(), 
 				   Vertex1 :: bc_vertex:vertex(), 
 				   Vertex2 :: bc_vertex:vertex()) -> [bc_vertex:vertex()] | false.
-compute_path(#{graph := MapGraph}, Vertex1, Vertex2) ->
-	digraph:get_short_path(MapGraph, Vertex1, Vertex2).
+compute_path(MapGraph, Vertex1, Vertex2) ->
+	Graph = maps:get(graph, MapGraph),
+	digraph:get_short_path(Graph, Vertex1, Vertex2).
 
 -spec are_neighbors(MapGraph :: map_graph(), 
 					Vertex :: bc_vertex:vertex(), 
 					Neighbor:: bc_vertex:vertex()) -> boolean().
-are_neighbors(#{graph := MapGraph}, Vertex, Neighbor) ->
+are_neighbors(MapGraph, Vertex, Neighbor) ->
+	Graph = maps:get(graph, MapGraph),
 	NeighborRow = bc_vertex:row(Neighbor),
 	NeighborCol = bc_vertex:col(Neighbor),
-	InNeighbors = digraph:in_neighbours(MapGraph, Vertex),
-	OutNeighbors = digraph:out_neighbours(MapGraph, Vertex),
+	InNeighbors = digraph:in_neighbours(Graph, Vertex),
+	OutNeighbors = digraph:out_neighbours(Graph, Vertex),
 	lists:any(fun(InNeighbor) -> 
 				bc_vertex:row(InNeighbor) =:= NeighborRow andalso
 				bc_vertex:col(InNeighbor) =:= NeighborCol
@@ -149,8 +161,9 @@ are_neighbors(#{graph := MapGraph}, Vertex, Neighbor) ->
 -spec reaching_neighbors(MapGraph :: map_graph(), 
 						 BcVertices :: [bc_vertex:vertex()] | bc_vertex:vertex(), 
 						 MaxDist :: integer()) -> [bc_vertex:vertex()].
-reaching_neighbors(#{graph := MapGraph}, BcVertices, MaxDist) when is_list(BcVertices) ->
-	Neighbors = reaching_neighbors(MapGraph, BcVertices, MaxDist, []),
+reaching_neighbors(MapGraph, BcVertices, MaxDist) when is_list(BcVertices) ->
+	Graph = maps:get(graph, MapGraph),
+	Neighbors = reaching_neighbors(Graph, BcVertices, MaxDist, []),
 	NeighborSet = sets:from_list(Neighbors),
 	QuerySet = sets:from_list(BcVertices),
 	ReachingNeighbors = sets:subtract(NeighborSet, QuerySet),
@@ -161,7 +174,8 @@ reaching_neighbors(BcMap, BcVertex, MaxDist) ->
 -spec update_collision(MapGraph :: map_graph(),
 					   OriginalBcCollision :: bc_collision:collision(),
 					   UpdatedBcCollision :: bc_collision:collision()) -> ok | {error, Reason :: string()}.
-update_collision(#{coll_tab := Tab}, OriginalBcCollision, UpdatedBcCollision) ->
+update_collision(MapGraph, OriginalBcCollision, UpdatedBcCollision) ->
+	Tab = maps:get(coll_tab, MapGraph),
 	case bc_collision:difference_vertices(UpdatedBcCollision, OriginalBcCollision) of
 		InsertBcVertices when length(InsertBcVertices) > 0 ->
 			Uuid = bc_collision:uuid(UpdatedBcCollision),
@@ -171,7 +185,7 @@ update_collision(#{coll_tab := Tab}, OriginalBcCollision, UpdatedBcCollision) ->
 					DeleteBcVertices = bc_collision:difference_vertices(
 									   OriginalBcCollision, UpdatedBcCollision),
 					Ms = collision_ms(DeleteBcVertices),
-					ets:match_delete(Tab, Ms),
+					ets:select_delete(Tab, Ms),
 					ok;
 				false ->
 					{error, "Unable to insert new vertices."}
@@ -181,10 +195,11 @@ update_collision(#{coll_tab := Tab}, OriginalBcCollision, UpdatedBcCollision) ->
 	end.
 
 -spec delete_collision(MapGraph :: map_graph(),
-					   BcCollision :: bc_collision:collision()) -> true.
-delete_collision(#{coll_tab := Tab}, BcCollision) ->
+					   BcCollision :: bc_collision:collision()) -> boolean().
+delete_collision(MapGraph, BcCollision) ->
+	Tab = maps:get(coll_tab, MapGraph),
 	Ms = collision_ms(BcCollision),
-	ets:match_delete(Tab, Ms).
+	ets:select_delete(Tab, Ms) > 0.
 
 %%====================================================================
 %% Internal functions
@@ -226,5 +241,6 @@ collision_ms(BcCollision) when is_map(BcCollision) ->
 	collision_ms(BcVertices);
 collision_ms(BcVertices) when is_list(BcVertices) ->
 	[{{{'$1','$2'},'_'},
-	  [{'andalso',{'=:=','$1',Row},
-		{'=:=','$2',Col}}],['$_']} || #{row := Row, col := Col} <- BcVertices].
+	  [{'andalso',{'==','$1',Row},
+		{'==','$2',Col}}],[true]} || 
+	 	#{row := Row, col := Col} <- BcVertices].

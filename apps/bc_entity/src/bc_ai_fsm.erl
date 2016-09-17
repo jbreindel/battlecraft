@@ -236,16 +236,24 @@ choose_path(DistBcVertices, DistEntities, #state{entity = BcEntity,
 						end 
 					end, undefined, SortedDistBcVertices) of
 		Path when is_list(Path) andalso length(Path) > 0 ->
+			lager:info("~p has chosen unobstucted path ~p", [bc_entity:uuid_str(BcEntity), Path]),
 			Path;
 		undefined ->
 			{_, FirstBcVertex} = lists:nth(1, SortedDistBcVertices),
-			compute_path(BcEntity, FirstBcVertex, State)
+			Path = compute_path(BcEntity, FirstBcVertex, State),
+			lager:info("~p has chosen first path ~p", [bc_entity:uuid_str(BcEntity), Path]),
+			Path
 	end.
 
 compute_path(BcEntity, BcVertex, #state{map = BcMap} = State) ->
 	ClosestEntityBcVertex = 
 		bc_entity_util:closest_entity_vertex(BcEntity, BcVertex),
-	bc_map:compute_path(BcMap, ClosestEntityBcVertex, BcVertex).
+	case bc_map:compute_path(BcMap, ClosestEntityBcVertex, BcVertex) of
+		Path when is_list(Path) andalso length(Path) > 1 ->
+			lists:sublist(Path, 2, length(Path) + 1);
+		EmptyPath ->
+			[]
+	end.
 
 attack_entities(InRangeEnemyBcEntities, State) ->
 	case lists:filter(fun(EnemyBcEntity) ->
@@ -339,23 +347,25 @@ nearby_entities(#state{entity = BcEntity,
 	NeighborBcVertices = bc_map:reaching_neighbors(
 						   BcMap, EntityBcVertices, ?SENSE_DIST),
 	CollisionQueryRes = bc_map:query_collisions(BcMap, NeighborBcVertices),
-	UuidSet = lists:foldl(fun(#{uuid := Uuid}, Set) -> 
-						  	  sets:add_element(Uuid, Set) 
+	UuidSet = lists:foldl(fun(QueryMap, AccSet) ->
+							CollUuid = maps:get(uuid, QueryMap),
+						  	sets:add_element(CollUuid, AccSet) 
 						  end, sets:new(), CollisionQueryRes),
 	UuidList = sets:to_list(UuidSet),
 	EntityQueryRes = bc_entities:query(UuidList, BcEntities),
-	lists:map(fun(BcEntity) ->  
-			 	BcVertices = lists:filtermap(
-					fun(#{uuid := Uuid,
-						  vertex := BcVertex}) -> 
-						case Uuid =:= bc_entity:uuid(BcEntity) of
+	lists:map(fun(QueryBcEntity) ->  
+			 	QueryBcVertices = lists:filtermap(
+					fun(QueryResult) ->
+						QueryUuid = maps:get(uuid, QueryResult),
+						QueryBcVertex = maps:get(vertex, QueryResult),
+						case QueryUuid =:= bc_entity:uuid(QueryBcEntity) of
 							true ->
-								{true, BcVertex};
+								{true, QueryBcVertex};
 							false ->
 								false
 						end
-					end, CollisionQueryRes),	
-				bc_entity:set_vertices(BcVertices, BcEntity)
+					end, CollisionQueryRes),
+				bc_entity:set_vertices(QueryBcVertices, QueryBcEntity)
 			end, EntityQueryRes).
 
 move_forward(#state{player_num = PlayerNum} = State) ->
