@@ -7,7 +7,7 @@ module Entity exposing (Effect(..),
                         subscriptions,
                         view)
 
-import Color exposing (green, orange, red)
+import Color exposing (green, yellow, red)
 import Dict exposing (Dict)
 import Maybe exposing (Maybe)
 import Deque exposing (Deque)
@@ -111,19 +111,19 @@ onConsumeEntityEvent model =
                         |> Maybe.Just
 
                 EntityEvent.EntityDamagedEv entityDamagedEvent ->
-                    Effects.return {model |
+                    popAndQueueEntityEvent {model |
                                         entity = entityDamagedEvent.entity}
-                        |> Maybe.Just
+                            |> Maybe.Just
 
                 EntityEvent.EntityAttackingEv entityAttackingEvent ->
-                    Effects.return {model |
+                    popAndQueueEntityEvent {model |
                                         entity = entityAttackingEvent.entity,
                                         entityState = Attacking}
                         |> Maybe.Just
 
                 EntityEvent.EntityDiedEv entityDiedEvent ->
                     -- TODO annimate blood pool
-                    Effects.return {model |
+                    popAndQueueEntityEvent {model |
                                         entity = entityDiedEvent.entity,
                                         entityState = Dead}
                         |> Maybe.Just
@@ -199,6 +199,14 @@ onAnimationComplete model =
                                     entityState = Standing,
                                     animation = Nothing,
                                     eventBuffer = updatedEventBuffer}
+
+popAndQueueEntityEvent : Model -> Effects Model Effect
+popAndQueueEntityEvent model =
+    let
+        (_, poppedEventBuffer) = Deque.popFront model.eventBuffer
+    in
+        queueEntityEvent {model |
+                            eventBuffer = poppedEventBuffer}
 
 queueEntityEvent : Model -> Effects Model Effect
 queueEntityEvent model =
@@ -456,11 +464,6 @@ entityImage model =
 entityHealthBar : Model -> Collage.Form
 entityHealthBar model =
     let
-        width = entityWidth model.tmxMap model.matrix
-                    |> toFloat
-
-        offsetWidth = width - (width * 0.25)
-
         health = model.entity.health
                     |> toFloat
 
@@ -468,9 +471,24 @@ entityHealthBar model =
                         |> toFloat
 
         healthPct = health / maxHealth
+
+        width = entityWidth model.tmxMap model.matrix
+                    |> toFloat
+
+        offsetWidth = width - (width * 0.25)
+
+        healthWidth = offsetWidth * healthPct
+
+        healthColor =
+            if healthPct < 0.25 then
+                red
+            else if healthPct < 0.5 then
+                yellow
+            else
+                green
     in
-        Collage.rect offsetWidth 2.0
-            |> Collage.filled green
+        Collage.rect healthWidth 2.0
+            |> Collage.filled healthColor
 
 entityUuid : Model -> Collage.Form
 entityUuid model =
@@ -483,14 +501,14 @@ view model =
         (x, y) = model.position
 
         backgroundForm = entityImage model
-        --
-        -- healthBarForm = entityHealthBar model
+
+        healthBarForm = entityHealthBar model
         --
         -- entityForm = Collage.group [backgroundForm]
 
-        uuid = entityUuid model
+        -- uuid = entityUuid model
     in
-        [backgroundForm, uuid]
+        [backgroundForm, healthBarForm]
             |> List.map (
                 \form ->
                     Collage.move (x, y) form

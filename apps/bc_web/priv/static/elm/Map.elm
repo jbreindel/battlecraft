@@ -170,7 +170,8 @@ onEntityMsg model entityMsg =
 
                     mapEffects = mapEntityEffect entityEffects
 
-                    updatedEntities = Dict.insert uuid entityModel model.entities
+                    updatedEntities =
+                        Dict.insert uuid entityModel model.entities
                 in
                     Effects.init {model |
                         entities = updatedEntities
