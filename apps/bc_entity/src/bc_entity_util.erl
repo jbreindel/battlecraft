@@ -39,9 +39,16 @@ spawn_entity(BcCollision, BcPlayer, BcEntitySup,
 					  BcEntity2 :: bc_entity:entity()) -> integer().
 entity_distance(BcEntity1, BcEntity2) ->
 	%% TODO implement a better distance algorithm
-	BcVertex1 = lists:nth(1, bc_entity:vertices(BcEntity1)),
-	BcVertex2 = lists:nth(1, bc_entity:vertices(BcEntity2)),
-	bc_vertex:distance(BcVertex1, BcVertex2).
+	BcVertices1 = bc_entity:vertices(BcEntity1),
+	BcVertices2 = bc_entity:vertices(BcEntity2),
+	Distances = lists:flatten(
+		lists:map(fun(BcVertex1) -> 
+					lists:map(fun(BcVertex2) ->
+								bc_vertex:distance(BcVertex1, BcVertex2) 
+							  end, BcVertices2) 
+				  end, BcVertices1)
+	),
+	lists:min(Distances).
 
 -spec vertex_distance(BcEntity :: bc_entity:entity(), 
 					  QueryBcVertex :: bc_vertex:vertex()) -> integer().
