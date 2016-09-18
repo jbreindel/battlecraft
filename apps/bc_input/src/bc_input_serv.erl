@@ -97,13 +97,21 @@ handle_call({spawn_player_bases, BcPlayers}, _From,
 	lists:foreach(fun(BcPlayer) -> 
 					gen_event:add_handler(EntitiesEventPid, bc_entity_event, [BcPlayer]) 
 				  end, BcPlayers),
-	SortedBcPlayers = lists:sort(fun(BcPlayer1, BcPlayer2) -> 
-									bc_player:team(BcPlayer1) < bc_player:team(BcPlayer2) 
-								 end, BcPlayers),
-	BaseBcCollisions = [bc_collision:init(uuid:get_v4(), bc_map:base1_vertices(BcMap)),
-			 	 		bc_collision:init(uuid:get_v4(), bc_map:base2_vertices(BcMap)),
-			 	 		bc_collision:init(uuid:get_v4(), bc_map:base3_vertices(BcMap)),
-			 	 		bc_collision:init(uuid:get_v4(), bc_map:base4_vertices(BcMap))],
+	SortedBcPlayers = 
+		lists:sort(fun(BcPlayer1, BcPlayer2) -> 
+					 bc_player:team(BcPlayer1) < bc_player:team(BcPlayer2)
+				   end, BcPlayers),
+	BaseBcCollisions = 
+		case SortedBcPlayers of
+			Players when length(Players) == 2 ->
+				[bc_collision:init(uuid:get_v4(), bc_map:base1_vertices(BcMap)),
+			 	 bc_collision:init(uuid:get_v4(), bc_map:base3_vertices(BcMap))];
+			Players when length(Players) == 4 ->
+				[bc_collision:init(uuid:get_v4(), bc_map:base1_vertices(BcMap)),
+			 	 bc_collision:init(uuid:get_v4(), bc_map:base2_vertices(BcMap)),
+			 	 bc_collision:init(uuid:get_v4(), bc_map:base3_vertices(BcMap)),
+			 	 bc_collision:init(uuid:get_v4(), bc_map:base4_vertices(BcMap))]
+		end,
 	lists:foldl(fun(BcPlayer, Num) -> 
 					BaseBcCollision = lists:nth(Num, BaseBcCollisions),
 					BaseUuid = bc_collision:uuid(BaseBcCollision),
