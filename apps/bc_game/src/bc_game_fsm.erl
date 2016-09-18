@@ -4,7 +4,7 @@
 -include("../include/bc_game_state.hrl").
 
 %% number of players to start game
--define(MAX_PLAYERS, 1).
+-define(MAX_PLAYERS, 2).
 
 %% exported funcs
 -export([start_link/4, 
