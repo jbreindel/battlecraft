@@ -261,6 +261,14 @@ attack_entities(InRangeEnemyBcEntities, State) ->
 			attack_entity(EnemyBaseBcEntity, State);
 		_ ->
 			InRangeEnemyBcEntity = lists:nth(1, InRangeEnemyBcEntities),
+			EnemyBcEntity = 
+				lists:foldl(fun(BcEntity, AccBcEntity) -> 
+								case bc_entity:health(BcEntity) < 
+										 bc_entity:health(AccBcEntity) of 
+									true -> BcEntity; 
+									false -> AccBcEntity 
+								end 
+							end, InRangeEnemyBcEntity, InRangeEnemyBcEntities),
 			attack_entity(InRangeEnemyBcEntity, State)
 	end.
 
