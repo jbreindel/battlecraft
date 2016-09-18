@@ -29,7 +29,8 @@ import EntityEvent exposing (Vertex, Entity, EntityEvent,
 -- Actions
 
 type Effect =
-    PerformCmd (Cmd Msg)
+    PerformCmd (Cmd Msg) |
+    EntityDied Entity
 
 type Msg =
     ReceiveEntityEv EntityEvent |
@@ -123,10 +124,11 @@ onConsumeEntityEvent model =
 
                 EntityEvent.EntityDiedEv entityDiedEvent ->
                     -- TODO annimate blood pool
-                    popAndQueueEntityEvent {model |
-                                        entity = entityDiedEvent.entity,
-                                        entityState = Dead}
-                        |> Maybe.Just
+                    Effects.init {model |
+                                    entity = entityDiedEvent.entity,
+                                    entityState = Dead} [
+                        EntityDied entityDiedEvent.entity
+                    ] |> Maybe.Just
 
     ) |> Maybe.withDefault (Effects.return model)
 

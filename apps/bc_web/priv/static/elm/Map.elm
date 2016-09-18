@@ -103,35 +103,42 @@ update msg model =
         OnAnimationFrame time ->
             onAnimationFrame time model
 
-onAnimationFrame : Time -> Model -> Effects Model Effect
-onAnimationFrame time model =
-    let
-        entityEffectsDict =
-            Dict.map (
-                \uuid entityModel ->
-                    let
-                        entityCmdMsg = Entity.OnAnimationFrame time
-                    in
-                        Entity.update entityCmdMsg entityModel
-            ) model.entities
+onEntityEvent : Model -> EntityEvent -> Effects Model Effect
+onEntityEvent model entityEvent =
+    case model.map of
 
-        entities = Dict.map (
-                       \uuid (entityModel, _) ->
-                           entityModel
-                   ) entityEffectsDict
+        Nothing ->
+            Effects.return model
 
-        entityEffects = Dict.values entityEffectsDict
-                        |> List.map (
-                            \(entityModel, entityEffects) ->
-                                entityEffects
-                        )
-                        |> List.concat
+        Just tmxMap ->
+            let
+                entity = entityEventEntity entityEvent
 
-        mapEffects = mapEntityEffect entityEffects
-    in
-        Effects.init {model |
-            entities = entities
-        } mapEffects
+                uuid = entity.uuid
+
+                entityMsg = Entity.ReceiveEntityEv entityEvent
+
+                (entityModel, initEntityEffects) =
+                    case Dict.get entity.uuid model.entities of
+
+                        Just model ->
+                            (model, [])
+
+                        Nothing ->
+                            Entity.init tmxMap entity
+
+                (updatedEntityModel, updatedEntityEffects) =
+                    Entity.update entityMsg entityModel
+
+                entityEffects = initEntityEffects ++ updatedEntityEffects
+
+                mapEffects = mapEntityEffect entityEffects
+
+                updatedEntities =
+                    Dict.insert uuid updatedEntityModel model.entities
+            in
+                Effects.init {model |
+                                entities = updatedEntities} mapEffects
 
 onEntityMsg : Model -> Entity.Msg -> Effects Model Effect
 onEntityMsg model entityMsg =
@@ -180,42 +187,35 @@ onEntityMsg model entityMsg =
             Nothing ->
                 Effects.return model
 
-onEntityEvent : Model -> EntityEvent -> Effects Model Effect
-onEntityEvent model entityEvent =
-    case model.map of
+onAnimationFrame : Time -> Model -> Effects Model Effect
+onAnimationFrame time model =
+    let
+        entityEffectsDict =
+            Dict.map (
+                \uuid entityModel ->
+                    let
+                        entityCmdMsg = Entity.OnAnimationFrame time
+                    in
+                        Entity.update entityCmdMsg entityModel
+            ) model.entities
 
-        Nothing ->
-            Effects.return model
+        entities = Dict.map (
+                       \uuid (entityModel, _) ->
+                           entityModel
+                   ) entityEffectsDict
 
-        Just tmxMap ->
-            let
-                entity = entityEventEntity entityEvent
+        entityEffects = Dict.values entityEffectsDict
+                        |> List.map (
+                            \(entityModel, entityEffects) ->
+                                entityEffects
+                        )
+                        |> List.concat
 
-                uuid = entity.uuid
-
-                entityMsg = Entity.ReceiveEntityEv entityEvent
-
-                (entityModel, initEntityEffects) =
-                    case Dict.get entity.uuid model.entities of
-
-                        Just model ->
-                            (model, [])
-
-                        Nothing ->
-                            Entity.init tmxMap entity
-
-                (updatedEntityModel, updatedEntityEffects) =
-                    Entity.update entityMsg entityModel
-
-                entityEffects = initEntityEffects ++ updatedEntityEffects
-
-                mapEffects = mapEntityEffect entityEffects
-
-                updatedEntities =
-                    Dict.insert uuid updatedEntityModel model.entities
-            in
-                Effects.init {model |
-                                entities = updatedEntities} mapEffects
+        mapEffects = mapEntityEffect entityEffects
+    in
+        Effects.init {model |
+            entities = entities
+        } mapEffects
 
 mapEntityEffect : List Entity.Effect -> List Effect
 mapEntityEffect entityEffect =
@@ -372,12 +372,21 @@ updatePos model direction =
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    if Dict.isEmpty model.entities then
-        Sub.none
+    let
+        annimationFrameSub =
+            if Dict.isEmpty model.entities then
+                Sub.none
 
-    else
-        -- TODO actually call Entity.subscriptions
-        AnimationFrame.times OnAnimationFrame
+            else
+                -- TODO actually call Entity.subscriptions
+                AnimationFrame.times OnAnimationFrame
+
+        windowResizeSub = Window.resizes WindowMsg
+    in
+        Sub.batch [
+            annimationFrameSub,
+            windowResizeSub
+        ]
 
 -- View
 
