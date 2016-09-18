@@ -186,11 +186,23 @@ onAnimationComplete model =
                     entity = EntityEvent.entityEventEntity entityEvent
 
                     matrix = vertexMatrix entity.vertices
+
+                    state = Deque.first updatedEventBuffer `Maybe.andThen` (
+                                \entityEvent ->
+                                    case entityEvent of
+
+                                        EntityEvent.EntityMovedEv _ ->
+                                            Maybe.Just Moving
+
+                                        _ ->
+                                            Maybe.Just Standing
+
+                            ) |> Maybe.withDefault Standing
                 in
                     queueEntityEvent {model |
                                         entity = entity,
                                         matrix = matrix,
-                                        entityState = Standing,
+                                        entityState = state,
                                         animation = Nothing,
                                         eventBuffer = updatedEventBuffer}
 
