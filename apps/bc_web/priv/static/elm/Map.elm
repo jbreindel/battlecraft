@@ -405,12 +405,12 @@ view model =
             let
                 backgroundForm = backgroundImageForm
 
-                entityModels = Dict.values model.entities
-
-                entityForms = List.concatMap (
-                                \entityModel ->
-                                    Entity.view entityModel
-                            ) entityModels
+                entityForms =
+                    Dict.values model.entities
+                    |> List.concatMap (
+                        \entityModel ->
+                            Entity.view entityModel
+                    )
 
                 entityForm = Collage.group entityForms
                                 |> Collage.scale model.zoom
