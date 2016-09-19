@@ -6,6 +6,8 @@ module TmxMap exposing (TmxTileLayer,
                         TmxTileSet,
                         TmxMap,
                         tmxMap,
+                        MinTmxMap,
+                        minTmxMap,
                         tmxMapHeight,
                         tmxMapWidth)
 
@@ -148,10 +150,25 @@ tmxMap =
         |: ("layers" := list tmxLayer)
         |: ("tilesets" := list tmxTileSet)
 
-tmxMapHeight : TmxMap -> Int
-tmxMapHeight tmxMap =
-    tmxMap.height * tmxMap.tileHeight
+type alias MinTmxMap = {
+    height : Int,
+    width : Int,
+    tileHeight : Int,
+    tileWidth : Int
+}
 
-tmxMapWidth : TmxMap -> Int
-tmxMapWidth tmxMap =
-    tmxMap.width * tmxMap.tileWidth
+minTmxMap : Decoder MinTmxMap
+minTmxMap =
+    succeed MinTmxMap
+        |: ("height" := int)
+        |: ("width" := int)
+        |: ("tileheight" := int)
+        |: ("tilewidth" := int)
+
+tmxMapHeight : MinTmxMap -> Int
+tmxMapHeight minTmxMap =
+    minTmxMap.height * minTmxMap.tileHeight
+
+tmxMapWidth : MinTmxMap -> Int
+tmxMapWidth minTmxMap =
+    minTmxMap.width * minTmxMap.tileWidth

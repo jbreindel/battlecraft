@@ -22,7 +22,7 @@ import Collage
 
 -- Local imports
 
-import TmxMap exposing (TmxMap, tmxMapHeight, tmxMapWidth)
+import TmxMap exposing (MinTmxMap, tmxMapHeight, tmxMapWidth)
 import EntityEvent exposing (Vertex, Entity, EntityEvent,
                              EntitySpawnedEvent, EntityMovedEvent)
 
@@ -48,7 +48,7 @@ type EntityState =
 
 type alias Model = {
     entity : Entity,
-    tmxMap : TmxMap,
+    tmxMap : MinTmxMap,
     matrix : Dict Int (List Int),
     position : (Float, Float),
     animation : Maybe (String, Animation),
@@ -57,7 +57,7 @@ type alias Model = {
     clock : Time
 }
 
-init : TmxMap -> Entity -> Effects Model Effect
+init : MinTmxMap -> Entity -> Effects Model Effect
 init tmxMap entity =
     Effects.return {
         entity = entity,
@@ -334,7 +334,7 @@ entityRowCount matrix =
     in
         (List.length rows)
 
-entityHeight : TmxMap -> Dict Int (List Int) -> Int
+entityHeight : MinTmxMap -> Dict Int (List Int) -> Int
 entityHeight tmxMap matrix =
     let
         entityRows = entityRowCount matrix
@@ -353,14 +353,14 @@ entityColCount matrix =
     in
         (List.length cols)
 
-entityWidth : TmxMap -> Dict Int (List Int) -> Int
+entityWidth : MinTmxMap -> Dict Int (List Int) -> Int
 entityWidth tmxMap matrix =
     let
         colCount = entityColCount matrix
     in
         (colCount * tmxMap.tileWidth)
 
-entityPosition : TmxMap -> Dict Int (List Int) -> (Float, Float)
+entityPosition : MinTmxMap -> Dict Int (List Int) -> (Float, Float)
 entityPosition tmxMap matrix =
     let
         -- Y pos

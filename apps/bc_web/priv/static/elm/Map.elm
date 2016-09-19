@@ -21,7 +21,7 @@ import Http
 
 -- Local imports
 
-import TmxMap exposing (TmxMap, tmxMap)
+import TmxMap exposing (MinTmxMap, minTmxMap)
 import EntityEvent exposing (EntityEvent, entityEventEntity)
 import Entity
 
@@ -31,7 +31,7 @@ type Effect =
     PerformCmd (Cmd Msg)
 
 type Msg =
-    MapGetSuccess TmxMap |
+    MapGetSuccess MinTmxMap |
     MapGetFail Http.Error |
     KeyboardMsg Keyboard.Model |
     WindowMsg Window.Size |
@@ -42,7 +42,7 @@ type Msg =
 -- Model
 
 type alias Model = {
-    map : Maybe TmxMap,
+    map : Maybe MinTmxMap,
     step : Float,
     x : Float,
     y : Float,
@@ -52,9 +52,9 @@ type alias Model = {
     entities : Dict String (Entity.Model)
 }
 
-getMap : Task Http.Error TmxMap
+getMap : Task Http.Error MinTmxMap
 getMap =
-    Http.get tmxMap "/static/map.json"
+    Http.get minTmxMap "/static/map.json"
 
 init : Effects Model Effect
 init =
