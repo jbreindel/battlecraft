@@ -155,37 +155,35 @@ onEntityMsg model entityMsg =
 
                 _ -> Maybe.Nothing
 
-        mbUpdatedEntityEffects =
+        in
             mbEntity `Maybe.andThen` (
-            \entity ->
-                Dict.get entity.uuid model.entities `Maybe.andThen` (
-                \entityModel ->
-                    let
-                        updatedEntityEffects =
-                            Entity.update entityMsg entityModel
-                    in
-                        Maybe.Just (entity.uuid, updatedEntityEffects)
+                \entity ->
+                    Dict.get entity.uuid model.entities `Maybe.andThen` (
+                        \entityModel ->
+                            let
+                                updatedEntityEffects =
+                                    Entity.update entityMsg entityModel
+                            in
+                                Maybe.Just (entity.uuid, updatedEntityEffects)
+
                 )
-            )
-    in
-        case mbUpdatedEntityEffects of
+            ) `Maybe.andThen` (
+                \(uuid, updatedEntityEffects) ->
+                    let
+                        (entityModel, entityEffects) =
+                            updatedEntityEffects
 
-            Maybe.Just (uuid, updatedEntityEffects) ->
-                let
-                    (entityModel, entityEffects) =
-                        updatedEntityEffects
+                        mapEffects = mapEntityEffect entityEffects
 
-                    mapEffects = mapEntityEffect entityEffects
+                        updatedEntities =
+                            Dict.insert uuid entityModel model.entities
+                    in
+                        Effects.init {model |
+                            entities = updatedEntities
+                        } mapEffects
+                        |> Maybe.Just
 
-                    updatedEntities =
-                        Dict.insert uuid entityModel model.entities
-                in
-                    Effects.init {model |
-                        entities = updatedEntities
-                    } mapEffects
-
-            Nothing ->
-                Effects.return model
+            ) |> Maybe.withDefault (Effects.return model)
 
 onAnimationFrame : Time -> Model -> Effects Model Effect
 onAnimationFrame time model =
@@ -262,7 +260,7 @@ mapEntityEffect entityEffect =
 
                 Entity.EntityDied _ ->
                     PerformCmd Cmd.none
-                    
+
     ) entityEffect
 
 updateX : Model -> Float -> Float

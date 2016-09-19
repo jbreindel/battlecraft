@@ -114,7 +114,7 @@ onConsumeEntityEvent model =
                 EntityEvent.EntityDamagedEv entityDamagedEvent ->
                     popAndQueueEntityEvent {model |
                                         entity = entityDamagedEvent.entity}
-                            |> Maybe.Just
+                        |> Maybe.Just
 
                 EntityEvent.EntityAttackingEv entityAttackingEvent ->
                     popAndQueueEntityEvent {model |
@@ -410,7 +410,7 @@ entityPosition tmxMap matrix =
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    AnimationFrame.times OnAnimationFrame
+    AnimationFrame.diffs OnAnimationFrame
 
 -- View
 
