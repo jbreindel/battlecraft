@@ -132,13 +132,13 @@ onEntityEvent model entityEvent =
 
                 entityEffects = initEntityEffects ++ updatedEntityEffects
 
-                mapEffects = mapEntityEffect entityEffects
-
                 updatedEntities =
                     Dict.insert uuid updatedEntityModel model.entities
             in
-                Effects.init {model |
-                                entities = updatedEntities} mapEffects
+                Effects.return {model |
+                    entities = updatedEntities
+                } `Effects.andThen`
+                    Effects.handle handleEntityEffect entityEffects
 
 onEntityMsg : Model -> Entity.Msg -> Effects Model Effect
 onEntityMsg model entityMsg =
@@ -173,14 +173,13 @@ onEntityMsg model entityMsg =
                         (entityModel, entityEffects) =
                             updatedEntityEffects
 
-                        mapEffects = mapEntityEffect entityEffects
-
                         updatedEntities =
                             Dict.insert uuid entityModel model.entities
                     in
-                        Effects.init {model |
+                        Effects.return {model |
                             entities = updatedEntities
-                        } mapEffects
+                        } `Effects.andThen`
+                            Effects.handle handleEntityEffect entityEffects
                         |> Maybe.Just
 
             ) |> Maybe.withDefault (Effects.return model)
@@ -188,80 +187,45 @@ onEntityMsg model entityMsg =
 onAnimationFrame : Time -> Model -> Effects Model Effect
 onAnimationFrame time model =
     let
-        entityEffectsDict =
-            Dict.map (
-                \uuid entityModel ->
-                    let
-                        entityCmdMsg = Entity.OnAnimationFrame time
-                    in
-                        Entity.update entityCmdMsg entityModel
-            ) model.entities
+        entityCmdMsg = Entity.OnAnimationFrame time
 
-        entities =
-            Dict.map (
-               \uuid (entityModel, _) ->
-                   entityModel
-            ) entityEffectsDict
-
-        entityEffects =
-            Dict.values entityEffectsDict
+        (entityTuples, entityEffects) =
+            Dict.toList model.entities
                 |> List.map (
-                    \(entityModel, entityEffects) ->
-                        entityEffects
+                    \(uuid, entityModel) ->
+                        let
+                            (updatedModel, effects) =
+                                Entity.update entityCmdMsg entityModel
+                        in
+                            ((uuid, updatedModel), effects)
                 )
-                |> List.concat
+                |> Effects.batch
 
-        deadEntityUuids =
-            List.filterMap (
-                \entityEffect ->
-                    case entityEffect of
-
-                        Entity.EntityDied entity ->
-                            Maybe.Just entity.uuid
-
-                        _ ->
-                            Maybe.Nothing
-
-            ) entityEffects
-
-        aliveEntities =
-            Dict.filter (
-                \uuid entityModel ->
-                    not (List.member uuid deadEntityUuids)
-            ) entities
-
-        mapEffects =
-            List.filter (
-                \effect ->
-                    case effect of
-
-                        Entity.PerformCmd _ ->
-                            True
-
-                        _ ->
-                            False
-
-            ) entityEffects
-            |> mapEntityEffect
+        updatedEntities = Dict.fromList entityTuples
     in
-        Effects.init {model |
-            entities = aliveEntities
-        } mapEffects
+        Effects.return {model |
+            entities = updatedEntities
+        } `Effects.andThen` Effects.handle handleEntityEffect entityEffects
 
-mapEntityEffect : List Entity.Effect -> List Effect
-mapEntityEffect entityEffect =
-    List.map (
-        \effect ->
-            case effect of
+handleEntityEffect : Effects.Handler Entity.Effect Model Effect
+handleEntityEffect entityEffect model =
+    case entityEffect of
 
-                Entity.PerformCmd entityCmdMsg ->
+        Entity.PerformCmd entityCmdMsg ->
+            let
+                mapEffect =
                     Cmd.map EntityMsg entityCmdMsg
                         |> PerformCmd
+            in
+                Effects.init model [mapEffect]
 
-                Entity.EntityDied _ ->
-                    PerformCmd Cmd.none
-
-    ) entityEffect
+        Entity.EntityDied entity ->
+            let
+                entities =
+                    Dict.remove entity.uuid model.entities
+            in
+                Effects.return {model |
+                                    entities = entities}
 
 updateX : Model -> Float -> Float
 updateX model delta =
