@@ -156,10 +156,10 @@ onEntityMsg model entityMsg =
                 _ -> Maybe.Nothing
 
         mbUpdatedEntityEffects =
-            mbEntity `Maybe.andThen`
-            (\entity ->
-                Dict.get entity.uuid model.entities `Maybe.andThen`
-                (\entityModel ->
+            mbEntity `Maybe.andThen` (
+            \entity ->
+                Dict.get entity.uuid model.entities `Maybe.andThen` (
+                \entityModel ->
                     let
                         updatedEntityEffects =
                             Entity.update entityMsg entityModel
@@ -199,22 +199,55 @@ onAnimationFrame time model =
                         Entity.update entityCmdMsg entityModel
             ) model.entities
 
-        entities = Dict.map (
-                       \uuid (entityModel, _) ->
-                           entityModel
-                   ) entityEffectsDict
+        entities =
+            Dict.map (
+               \uuid (entityModel, _) ->
+                   entityModel
+            ) entityEffectsDict
 
-        entityEffects = Dict.values entityEffectsDict
-                        |> List.map (
-                            \(entityModel, entityEffects) ->
-                                entityEffects
-                        )
-                        |> List.concat
+        entityEffects =
+            Dict.values entityEffectsDict
+                |> List.map (
+                    \(entityModel, entityEffects) ->
+                        entityEffects
+                )
+                |> List.concat
 
-        mapEffects = mapEntityEffect entityEffects
+        deadEntityUuids =
+            List.filterMap (
+                \entityEffect ->
+                    case entityEffect of
+
+                        Entity.EntityDied entity ->
+                            Maybe.Just entity.uuid
+
+                        _ ->
+                            Maybe.Nothing
+
+            ) entityEffects
+
+        aliveEntities =
+            Dict.filter (
+                \uuid entityModel ->
+                    not (List.member uuid deadEntityUuids)
+            ) entities
+
+        mapEffects =
+            List.filter (
+                \effect ->
+                    case effect of
+
+                        Entity.PerformCmd _ ->
+                            True
+
+                        _ ->
+                            False
+
+            ) entityEffects
+            |> mapEntityEffect
     in
         Effects.init {model |
-            entities = entities
+            entities = aliveEntities
         } mapEffects
 
 mapEntityEffect : List Entity.Effect -> List Effect
@@ -227,6 +260,9 @@ mapEntityEffect entityEffect =
                     Cmd.map EntityMsg entityCmdMsg
                         |> PerformCmd
 
+                Entity.EntityDied _ ->
+                    PerformCmd Cmd.none
+                    
     ) entityEffect
 
 updateX : Model -> Float -> Float
