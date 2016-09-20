@@ -11,6 +11,7 @@ module Command exposing (JoinCommand,
                          joinResponse)
 
 import Json.Decode exposing (..)
+import Json.Decode.Extra exposing (..)
 import Json.Encode exposing (..)
 
 -- Command types
@@ -56,9 +57,9 @@ type alias JoinErrorResponse = {
 
 joinErrorResponse : Json.Decode.Decoder JoinErrorResponse
 joinErrorResponse =
-    at ["command_response"] <| object2 JoinErrorResponse
-        ("response_type" := Json.Decode.string)
-        ("error" := Json.Decode.string)
+    at ["command_response"] <| Json.Decode.succeed JoinErrorResponse
+        |: ("response_type" := Json.Decode.string)
+        |: ("error" := Json.Decode.string)
 
 type alias JoinSuccessResponse = {
     responseType : String,
@@ -68,10 +69,10 @@ type alias JoinSuccessResponse = {
 
 joinSuccessResponse : Json.Decode.Decoder JoinSuccessResponse
 joinSuccessResponse =
-    at ["command_response"] <| object3 JoinSuccessResponse
-        ("response_type" := Json.Decode.string)
-        ("player_id" := Json.Decode.int)
-        ("team" := Json.Decode.int)
+    at ["command_response"] <| Json.Decode.succeed JoinSuccessResponse
+        |: ("response_type" := Json.Decode.string)
+        |: ("player_id" := Json.Decode.int)
+        |: ("team" := Json.Decode.int)
 
 -- Aggregate types
 

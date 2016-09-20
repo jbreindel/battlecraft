@@ -8,6 +8,7 @@ module GameEvent exposing (Player,
                            player)
 
 import Json.Decode exposing (..)
+import Json.Decode.Extra exposing (..)
 
 -- Model types
 
@@ -19,10 +20,10 @@ type alias Player = {
 
 player : Decoder Player
 player =
-    object3 Player
-        ("id" := int)
-        ("handle" := string)
-        ("team" := int)
+    succeed Player
+        |: ("id" := int)
+        |: ("handle" := string)
+        |: ("team" := int)
 
 -- GameEvent Types
 
@@ -33,9 +34,9 @@ type alias PlayerEvent = {
 
 playerEvent : Decoder PlayerEvent
 playerEvent =
-    at ["game_event"] <| object2 PlayerEvent
-        ("event_type" := string)
-        ("player" := player)
+    at ["game_event"] <| succeed PlayerEvent
+        |: ("event_type" := string)
+        |: ("player" := player)
 
 type alias GameStartedEvent = {
     eventType : String,
@@ -44,9 +45,9 @@ type alias GameStartedEvent = {
 
 gameStartedEvent : Decoder GameStartedEvent
 gameStartedEvent =
-    at ["game_event"] <| object2 GameStartedEvent
-        ("event_type" := string)
-        ("players" := list player)
+    at ["game_event"] <| succeed GameStartedEvent
+        |: ("event_type" := string)
+        |: ("players" := list player)
 
 type alias GameErrorEvent = {
     eventType : String,
@@ -55,9 +56,9 @@ type alias GameErrorEvent = {
 
 gameErrorEvent : Decoder GameErrorEvent
 gameErrorEvent =
-    at ["game_event"] <| object2 GameErrorEvent
-        ("event_type" := string)
-        ("reason" := string)
+    at ["game_event"] <| succeed GameErrorEvent
+        |: ("event_type" := string)
+        |: ("reason" := string)
 
 -- Aggregate Types
 
