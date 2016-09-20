@@ -48,16 +48,30 @@ accruing(gold_accrued, #state{player = BcPlayer} = State) ->
 	gen_fsm:send_event_after(State#state.accrue_time, gold_accrued),
 	PlayerPid = bc_player:pid(BcPlayer),
 	Gold = State#state.gold + State#state.accrue_gold,
-	PlayerPid ! #{type => gold_event, 
-				  gold_event => #{event_type => gold_accrued, gold => Gold}},
+	send_gold_event(PlayerPid, gold_accrued, Gold),
 	{next_state, accruing, State#state{gold = Gold}};
 accruing(_, State) ->
 	{next_state, accruing, State}.
 
-accruing({gold_cost, Cost}, _From, State) ->
+accruing({gold_cost, Cost}, _From, #state{player = BcPlayer} = State) ->
 	case State#state.gold - Cost of
 		Gold when Gold >= 0 ->
+			PlayerPid = bc_player:pid(BcPlayer),
+			send_gold_event(PlayerPid, gold_subtracted, Gold),
 			{reply, {ok, Gold}, accruing, State#state{gold = Gold}};
 		_ ->
 			{reply, {error, not_enough_gold}, accruing, State}
 	end.
+
+%%====================================================================
+%% Internal functions
+%%====================================================================
+
+-spec send_gold_event(PlayerPid :: pid(), 
+					  GoldEventType :: atom(), 
+					  Gold :: integer()) -> ok.
+send_gold_event(PlayerPid, GoldEventType, Gold) ->
+	PlayerPid ! #{type => gold_event,
+				  gold_event => #{event_type => GoldEventType, 
+								  gold => Gold}},
+	ok.

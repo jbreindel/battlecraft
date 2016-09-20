@@ -165,6 +165,8 @@ minTmxMap =
         |: ("tileheight" := int)
         |: ("tilewidth" := int)
 
+-- Helper funs
+
 tmxMapHeight : MinTmxMap -> Int
 tmxMapHeight minTmxMap =
     minTmxMap.height * minTmxMap.tileHeight
