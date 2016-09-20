@@ -411,6 +411,12 @@ view model =
                         \entityModel ->
                             Entity.view entityModel
                     )
+                    |> List.sortBy (
+                        \(z, _) -> z
+                    )
+                    |> List.map (
+                        \(_, form) -> form
+                    )
 
                 entityForm = Collage.group entityForms
                                 |> Collage.scale model.zoom

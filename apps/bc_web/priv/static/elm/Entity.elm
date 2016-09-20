@@ -509,7 +509,7 @@ entityUuid model =
     Element.show model.entity.uuid
         |> Collage.toForm
 
-view : Model -> List Collage.Form
+view : Model -> List (Int, Collage.Form)
 view model =
     let
         (x, y) = model.position
@@ -522,8 +522,11 @@ view model =
 
         -- uuid = entityUuid model
     in
-        [backgroundForm, healthBarForm]
+        [(0, backgroundForm), (1, healthBarForm)]
             |> List.map (
-                \form ->
-                    Collage.move (x, y) form
+                \(z, form) ->
+                    let
+                        movedForm = Collage.move (x, y) form
+                    in
+                        (z, movedForm)
             )
