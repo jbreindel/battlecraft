@@ -516,13 +516,13 @@ view model =
 
         backgroundForm = entityImage model
 
-        healthBarForm = entityHealthBar model
+        -- healthBarForm = entityHealthBar model
         --
         -- entityForm = Collage.group [backgroundForm]
 
         -- uuid = entityUuid model
     in
-        [backgroundForm, healthBarForm]
+        [backgroundForm]
             |> List.map (
                 \form ->
                     Collage.move (x, y) form
