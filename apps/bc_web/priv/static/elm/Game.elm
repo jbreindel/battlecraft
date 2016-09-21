@@ -276,13 +276,11 @@ view model =
             Spawn.view model.spawnModel
                 |> App.map SpawnMsg
     in
-        div [class "is-full-width"] [
+        div [] [
             div [class "game-content"] [
                 body
             ],
-            div [class "spawn-content"] [
-                spawnContent
-            ]
+            spawnContent
         ]
 
 -- Main

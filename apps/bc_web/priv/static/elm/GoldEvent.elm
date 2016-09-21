@@ -4,7 +4,8 @@ module GoldEvent exposing (GoldAccruedEvent,
                            GoldSubtractedEvent,
                            goldSubtractedEvent,
                            GoldEvent,
-                           goldEvent)
+                           goldEvent,
+                           goldEventGold)
 
 import Json.Decode exposing (..)
 import Json.Decode.Extra exposing (..)
@@ -55,3 +56,15 @@ goldEventInfo eventType =
 goldEvent : Decoder GoldEvent
 goldEvent =
     at ["gold_event", "event_type"] string `andThen` goldEventInfo
+
+-- Helper funs
+
+goldEventGold : GoldEvent -> Int
+goldEventGold goldEvent =
+    case goldEvent of
+
+        GoldAccruedEv goldAccruedEvent ->
+            goldAccruedEvent.gold
+
+        GoldSubtractedEv goldSubtractedEvent ->
+            goldSubtractedEvent.gold

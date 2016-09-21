@@ -3,3 +3,19 @@
         margin: auto;
     }
 }
+
+.spawn-content {
+    top: auto;
+
+    .spawn-header {
+        align-items: center;
+    }
+
+    .spawn-gold {
+        align-items: center;
+
+        .gold-amount {
+            padding-left: 5px;
+        }
+    }
+}
