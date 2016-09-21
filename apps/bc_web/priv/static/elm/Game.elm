@@ -30,8 +30,8 @@ type Msg =
     JoinMsg Join.Msg |
     MapMsg Map.Msg |
     PerformCmd (Cmd Msg) |
-    WsReceiveMessage String |
-    WsSendMessage String
+    WsReceiveMsg String |
+    WsSendMsg String
 
 -- Model
 
@@ -91,66 +91,88 @@ update msg model =
             Effects.return {model | state = state}
 
         KeyboardMsg keyMsg ->
-            let
-                (updatedKeyboardModel, keyboardCmd) =
-                    Keyboard.update keyMsg model.keyboardModel
-
-                (updatedMapModel, mapEffects) =
-                    Map.update (Map.KeyboardMsg updatedKeyboardModel) model.mapModel
-
-                (updatedSpawnModel, spawnEffects) =
-                    Spawn.update (Spawn.KeyboardMsg updatedKeyboardModel) model.spawnModel
-            in
-                Effects.init {model |
-                    keyboardModel = updatedKeyboardModel,
-                    mapModel = updatedMapModel,
-                    spawnModel = updatedSpawnModel
-                } [Cmd.map KeyboardMsg keyboardCmd]
-                    `Effects.andThen` Effects.handle handleMapEffect mapEffects
-                    `Effects.andThen` Effects.handle handleSpawnEffect spawnEffects
+            onKeyboardMsg keyMsg model
 
         WindowSize windowSize ->
-            let
-                (updatedMapModel, mapEffects) =
-                    Map.update (Map.WindowMsg windowSize) model.mapModel
-            in
-                Effects.return {model |
-                    mapModel = updatedMapModel
-                } `Effects.andThen` Effects.handle handleMapEffect mapEffects
+            onWindowSize windowSize model
 
         WindowError reason ->
             Effects.return model
 
-        JoinMsg sub ->
-            let
-                (updateJoinModel, joinEffects) =
-                    Join.update sub model.joinModel
-            in
-                Effects.return {model | joinModel = updateJoinModel}
-                    `Effects.andThen` Effects.handle handleJoinEffect joinEffects
+        JoinMsg joinMsg ->
+            onJoinMsg joinMsg model
 
-        MapMsg sub ->
-            let
-                (updateMapModel, mapEffects) =
-                    Map.update sub model.mapModel
-            in
-                Effects.return {model | mapModel = updateMapModel}
-                    `Effects.andThen` Effects.handle handleMapEffect mapEffects
+        MapMsg mapMsg ->
+            onMapMsg mapMsg model
 
         PerformCmd cmd ->
             Effects.init model [cmd]
 
-        WsReceiveMessage str ->
-            case decodeString message str of
-                Ok message ->
-                    onWsReceiveMessage message model
-                Err reason ->
-                    Debug.crash reason
-                    -- TODO handle error
-                    -- Effects.return model
+        WsReceiveMsg str ->
+            onWsReceiveMsg str model
 
-        WsSendMessage str ->
+        WsSendMsg str ->
             Effects.init model [WebSocket.send model.address str]
+            
+onKeyboardMsg : Keyboard.Msg -> Model -> Effects Model (Cmd Msg)
+onKeyboardMsg keyboardMsg model =
+    let
+        (updatedKeyboardModel, keyboardCmd) =
+            Keyboard.update keyMsg model.keyboardModel
+
+        (updatedMapModel, mapEffects) =
+            Map.update (Map.KeyboardMsg updatedKeyboardModel) model.mapModel
+
+        (updatedSpawnModel, spawnEffects) =
+            Spawn.update (Spawn.KeyboardMsg updatedKeyboardModel) model.spawnModel
+    in
+        Effects.init {model |
+            keyboardModel = updatedKeyboardModel,
+            mapModel = updatedMapModel,
+            spawnModel = updatedSpawnModel
+        } [Cmd.map KeyboardMsg keyboardCmd]
+            `Effects.andThen` Effects.handle handleMapEffect mapEffects
+            `Effects.andThen` Effects.handle handleSpawnEffect spawnEffects
+
+onWindowSize : Window.Size -> Model -> Effects Model (Cmd Msg)
+onWindowSize windowSize model =
+    let
+        (updatedMapModel, mapEffects) =
+            Map.update (Map.WindowMsg windowSize) model.mapModel
+    in
+        Effects.return {model |
+            mapModel = updatedMapModel
+        } `Effects.andThen` Effects.handle handleMapEffect mapEffects
+        
+onJoinMsg : Join.Msg -> Model -> Effects Model (Cmd Msg)
+onJoinMsg joinMsg model =
+    let
+        (updateJoinModel, joinEffects) =
+            Join.update joinMsg model.joinModel
+    in
+        Effects.return {model | joinModel = updateJoinModel}
+            `Effects.andThen` Effects.handle handleJoinEffect joinEffects
+            
+onMapMsg : Map.Msg -> Model -> Effects Model (Cmd Msg)
+onMapMsg mapMsg model =
+    let
+        (updateMapModel, mapEffects) =
+            Map.update mapMsg model.mapModel
+    in
+        Effects.return {model | mapModel = updateMapModel}
+            `Effects.andThen` Effects.handle handleMapEffect mapEffects
+
+onWsReceiveMsg : String -> Model -> Effects Model (Cmd Msg)
+onWsReceiveMsg str model =
+    case decodeString message str of
+        
+        Ok message ->
+            onWsReceiveMessage message model
+        
+        Err reason ->
+            Debug.crash reason
+            -- TODO handle error
+            -- Effects.return model
 
 onWsReceiveMessage : Message -> Model -> Effects Model (Cmd Msg)
 onWsReceiveMessage message model =
@@ -176,8 +198,8 @@ handleJoinEffect effect model =
         Join.UpdateGameState state ->
             update (UpdateGameState state) model
 
-        Join.WsSendMessage str ->
-            update (WsSendMessage str) model
+        Join.WsSendMsg str ->
+            update (WsSendMsg str) model
 
 handleMapEffect : Effects.Handler Map.Effect Model (Cmd Msg)
 handleMapEffect effect model =
@@ -193,8 +215,8 @@ handleSpawnEffect : Effects.Handler Spawn.Effect Model (Cmd Msg)
 handleSpawnEffect effect model =
     case effect of
 
-        Spawn.WsSendMessage str ->
-            update (WsSendMessage str) model
+        Spawn.WsSendMsg str ->
+            update (WsSendMsg str) model
 
 -- Subscriptions
 
@@ -206,18 +228,18 @@ subscriptions model =
         case model.state of
 
             GameState.Joining ->
-                WebSocket.listen model.address WsReceiveMessage
+                WebSocket.listen model.address WsReceiveMsg
 
             GameState.Pending ->
                 Sub.batch [
-                    WebSocket.listen model.address WsReceiveMessage,
+                    WebSocket.listen model.address WsReceiveMsg,
                     Sub.map KeyboardMsg Keyboard.subscriptions,
                     Sub.map MapMsg mapSub
                 ]
 
             GameState.Started ->
                 Sub.batch [
-                    WebSocket.listen model.address WsReceiveMessage,
+                    WebSocket.listen model.address WsReceiveMsg,
                     Sub.map KeyboardMsg Keyboard.subscriptions,
                     Sub.map MapMsg mapSub
                 ]
