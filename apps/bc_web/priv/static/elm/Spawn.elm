@@ -3,9 +3,10 @@ module Spawn exposing (Effect(..),
                        Msg(..),
                        Model,
                        init,
-                       update)
+                       update,
+                       view)
 
-import Html exposing (div, h3)
+import Html exposing (Html, div, h3, text)
 import Html.Attributes exposing (class)
 import Effects exposing (Effects)
 import Keyboard.Extra as Keyboard
@@ -18,7 +19,7 @@ import Command exposing (SpawnCommand, initSpawnCommand, encodeSpawnCommand)
 -- Actions
 
 type Effect =
-    WsSendMessage String
+    WsSendMsg String
 
 type Msg =
     KeyboardMsg Keyboard.Model
@@ -52,7 +53,7 @@ update msg model =
                                         |> encode 0
                     in
                         Effects.init {model | entityType = entity} [
-                            WsSendMessage spawnCmdJson
+                            WsSendMsg spawnCmdJson
                         ]
                 Nothing ->
                     Effects.return model

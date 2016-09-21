@@ -29,6 +29,7 @@ type Msg =
     WindowError String |
     JoinMsg Join.Msg |
     MapMsg Map.Msg |
+    SpawnMsg Spawn.Msg |
     PerformCmd (Cmd Msg) |
     WsReceiveMsg String |
     WsSendMsg String
@@ -75,8 +76,7 @@ init flags =
             joinModel = joinModel,
             mapModel = mapModel,
             spawnModel = spawnModel
-        }
-        [cmdBatch]
+        } [cmdBatch]
         `Effects.andThen` Effects.handle handleJoinEffect joinEffects
         `Effects.andThen` Effects.handle handleMapEffect mapEffects
         `Effects.andThen` Effects.handle handleSpawnEffect spawnEffects
@@ -105,6 +105,9 @@ update msg model =
         MapMsg mapMsg ->
             onMapMsg mapMsg model
 
+        SpawnMsg spawnMsg ->
+            onSpawnMsg spawnMsg model
+
         PerformCmd cmd ->
             Effects.init model [cmd]
 
@@ -113,12 +116,12 @@ update msg model =
 
         WsSendMsg str ->
             Effects.init model [WebSocket.send model.address str]
-            
+
 onKeyboardMsg : Keyboard.Msg -> Model -> Effects Model (Cmd Msg)
 onKeyboardMsg keyboardMsg model =
     let
         (updatedKeyboardModel, keyboardCmd) =
-            Keyboard.update keyMsg model.keyboardModel
+            Keyboard.update keyboardMsg model.keyboardModel
 
         (updatedMapModel, mapEffects) =
             Map.update (Map.KeyboardMsg updatedKeyboardModel) model.mapModel
@@ -143,7 +146,7 @@ onWindowSize windowSize model =
         Effects.return {model |
             mapModel = updatedMapModel
         } `Effects.andThen` Effects.handle handleMapEffect mapEffects
-        
+
 onJoinMsg : Join.Msg -> Model -> Effects Model (Cmd Msg)
 onJoinMsg joinMsg model =
     let
@@ -152,7 +155,7 @@ onJoinMsg joinMsg model =
     in
         Effects.return {model | joinModel = updateJoinModel}
             `Effects.andThen` Effects.handle handleJoinEffect joinEffects
-            
+
 onMapMsg : Map.Msg -> Model -> Effects Model (Cmd Msg)
 onMapMsg mapMsg model =
     let
@@ -162,13 +165,22 @@ onMapMsg mapMsg model =
         Effects.return {model | mapModel = updateMapModel}
             `Effects.andThen` Effects.handle handleMapEffect mapEffects
 
+onSpawnMsg : Spawn.Msg -> Model -> Effects Model (Cmd Msg)
+onSpawnMsg spawnMsg model =
+    let
+        (updateSpawnModel, spawnEffects) =
+            Spawn.update spawnMsg model.spawnModel
+    in
+        Effects.return {model | spawnModel = updateSpawnModel}
+            `Effects.andThen` Effects.handle handleSpawnEffect spawnEffects
+
 onWsReceiveMsg : String -> Model -> Effects Model (Cmd Msg)
 onWsReceiveMsg str model =
     case decodeString message str of
-        
+
         Ok message ->
             onWsReceiveMessage message model
-        
+
         Err reason ->
             Debug.crash reason
             -- TODO handle error
@@ -253,18 +265,24 @@ view model =
             case model.state of
 
                 GameState.Joining ->
-                    App.map JoinMsg <| Join.view model.joinModel
+                    Join.view model.joinModel
+                        |> App.map JoinMsg
 
-                GameState.Pending ->
-                    App.map MapMsg <| Map.view model.mapModel
+                _ ->
+                    Map.view model.mapModel
+                        |> App.map MapMsg
 
-                GameState.Started ->
-                    -- TODO create map view
-                    div [] []
-
+        spawnContent =
+            Spawn.view model.spawnModel
+                |> App.map SpawnMsg
     in
-        div [class "game-content is-full-width"] [
-            body
+        div [class "is-full-width"] [
+            div [class "game-content"] [
+                body
+            ],
+            div [class "spawn-content"] [
+                spawnContent
+            ]
         ]
 
 -- Main

@@ -23,7 +23,7 @@ import GameState exposing (..)
 
 type Effect =
     UpdateGameState GameState |
-    WsSendMessage String
+    WsSendMsg String
 
 type Msg =
     JoinGame |
@@ -63,7 +63,7 @@ update msg model =
                     |> encodeJoinCommand
                     |> encode 0
             in
-                Effects.init model [WsSendMessage joinCommandJson]
+                Effects.init model [WsSendMsg joinCommandJson]
 
         OnJoinResponse joinResponse ->
             case joinResponse of
