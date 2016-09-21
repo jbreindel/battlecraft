@@ -421,4 +421,5 @@ view model =
                                 |> Collage.move (model.x, model.y)
             in
                 Collage.collage model.windowWidth model.windowHeight
-                    [mapForm, entityForm] |> Element.toHtml
+                    [mapForm, entityForm]
+                    |> Element.toHtml

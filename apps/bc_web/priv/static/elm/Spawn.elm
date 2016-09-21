@@ -5,6 +5,8 @@ module Spawn exposing (Effect(..),
                        init,
                        update)
 
+import Html exposing (div, h3)
+import Html.Attributes exposing (class)
 import Effects exposing (Effects)
 import Keyboard.Extra as Keyboard
 import Json.Encode exposing (encode)
@@ -24,13 +26,15 @@ type Msg =
 -- Model
 
 type alias Model = {
-    entityType : String
+    entityType : String,
+    gold : Int
 }
 
 init : Effects Model Effect
 init =
     Effects.return {
-        entityType = ""
+        entityType = "",
+        gold = 0
     }
 
 -- Update
@@ -63,3 +67,13 @@ entityType keyboardModel =
 
     else
         Nothing
+
+view : Model -> Html Msg
+view model =
+    div [class "box spawn"] [
+        div [class "spawn-content"] [
+            h3 [class "spawn-header"] [
+                text "Spawn"
+            ]
+        ]
+    ]
