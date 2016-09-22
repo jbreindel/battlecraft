@@ -111,7 +111,7 @@ view model =
         -- Entities
         div [class "columns"] [
             div [class "column is-half is-flex is-vcentered"] [
-                div [class "columns"] [
+                div [class "columns is-gapless"] [
                     div [class "column is-flex is-vcentered"] [
                         a [class "button is-medium"] [
                             h5 [class "title is-5 entity-key"] [
@@ -120,17 +120,14 @@ view model =
                         ]
                     ],
                     div [class "column is-flex is-vcentered"] [
-                        figure [class "image is-48x48"] [
+                        figure [class "image is-48x48 entity-image"] [
                             img [class "entity", src "/static/assets/units/b_champion/champion_stand_1.PNG"] []
-                        ],
-                        p [] [
-                            text "100"
                         ]
                     ]
                 ]
             ],
             div [class "column is-half is-flex is-vcentered"] [
-                div [class "columns"] [
+                div [class "columns is-gapless"] [
                     div [class "column is-flex is-vcentered"] [
                         a [class "button is-medium"] [
                             h5 [class "title is-5 entity-key"] [
@@ -139,12 +136,8 @@ view model =
                         ]
                     ],
                     div [class "column is-flex is-vcentered"] [
-                        figure [class "image is-48x48"] [
+                        figure [class "image is-48x48 entity-image"] [
                             img [class "entity", src "/static/assets/units/b_demon/demon_stand_1.PNG"] []
-                        ],
-                        div [class "is-clearfix"] [],
-                        p [] [
-                            text "300"
                         ]
                     ]
                 ]
