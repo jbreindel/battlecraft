@@ -7,15 +7,15 @@
 .spawn-content {
     top: auto;
 
-    .spawn-header {
-        align-items: center;
+    .gold-amount {
+        padding-left: 5px;
     }
 
-    .spawn-gold {
-        align-items: center;
+    .entity-key {
+        margin: auto;
+    }
 
-        .gold-amount {
-            padding-left: 5px;
-        }
+    .entity-name {
+        padding-left: 5px;
     }
 }

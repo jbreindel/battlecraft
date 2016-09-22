@@ -101,6 +101,11 @@ body, html {
     }
 }
 
+// vertically center the items
+.is-flex.is-vcentered {
+	align-items: center;
+}
+
 // override primary button background
 .button.is-primary {
 	color: $black;
