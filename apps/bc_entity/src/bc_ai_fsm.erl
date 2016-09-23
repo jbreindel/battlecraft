@@ -73,6 +73,10 @@ init([BcEntity, BcEntities, BcMap]) ->
 					 _ -> 0
 				 end,
 	TimerRef = gen_fsm:send_event_after(5, action_complete),
+	%% properly seed with <<A:32, B:32, C:32>> = crypto:rand_bytes(12),
+	_ = rand:seed(exs1024, {erlang:unique_integer([positive]), 
+							erlang:unique_integer([positive]), 
+							erlang:unique_integer([positive])}),
 	{ok, StateName, #state{entity = UpdatedBcEntity,
 						   entity_config = BcEntityConfig, 
 						   entity_event_handler = undefined,
@@ -331,8 +335,25 @@ determine_orientation(BcEntity, EnemyBcEntity) ->
 calculate_damage(BcEntityConfig, EnemyBcEntity, BcEntities) ->
 	EnemyEntityType = bc_entity:entity_type(EnemyBcEntity),
 	{ok, EnemyBcEntityConfig} = bc_entities:entity_config(EnemyEntityType, BcEntities),
-	%% TODO calcuate damage
-	10.
+	EntityClass = bc_entity_config:entity_class(BcEntityConfig),
+	EnemyEntityClass = bc_entity_config:entity_class(EnemyBcEntityConfig),
+	Modifier = 
+		case {EntityClass, EnemyEntityClass} of
+			{infantry, light_armor} -> 0.8;
+			{infantry, armor} -> 0.65;
+			{anti_infantry, infantry} -> 1.35;
+			{anti_infantry, light_armor} -> 0.75;
+			{anti_infantry, armor} -> 0.7;
+			{armor, structure} -> 1.3;
+			{light_armor, structure} -> 1.2;
+			_ -> 1.0
+		end,
+	{MinDamage, MaxDamage} = bc_entity_config:damage(BcEntityConfig),
+	{ModMinDamage, ModMaxDamage} = {erlang:trunc(MaxDamage * Modifier), 
+									erlang:trunc(MinDamage * Modifier)},
+	DamageDiff = ModMinDamage - ModMaxDamage,
+	RandDamage = rand:uniform(DamageDiff),
+	ModMinDamage + RandDamage.
 
 dist_entities(#state{entity = BcEntity} = State) ->
 	NearbyBcEntities = nearby_entities(State),
