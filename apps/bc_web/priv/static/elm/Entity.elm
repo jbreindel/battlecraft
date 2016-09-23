@@ -414,6 +414,25 @@ subscriptions model =
 
 -- View
 
+view : Model -> List Collage.Form
+view model =
+    let
+        (x, y) = model.position
+
+        backgroundForm = entityImage model
+
+        -- healthBarForm = entityHealthBar model
+        --
+        -- entityForm = Collage.group [backgroundForm]
+
+        -- uuid = entityUuid model
+    in
+        [backgroundForm]
+            |> List.map (
+                \form ->
+                    Collage.move (x, y) form
+            )
+
 entityAngle : String -> Float
 entityAngle orientation =
     case orientation of
@@ -443,11 +462,71 @@ championImage model =
 
         Moving ->
             Element.image 64 64
-                "/static/assets/gifs/champion2.gif"
+                "/static/assets/units/b_champion/walk_175ms.gif"
 
         Attacking ->
             Element.image 64 64
-                "/static/assets/gifs/champion.gif"
+                "/static/assets/units/b_champion/attack_150ms.gif"
+
+        Dead ->
+            Element.image 64 64
+                "/static/assets/effects/blood/3-64x64.PNG"
+
+demonImage : Model -> Element.Element
+demonImage model =
+    case model.entityState of
+
+        Standing ->
+            Element.image 64 64
+                "/static/assets/units/b_demon/demon_stand_1.PNG"
+
+        Moving ->
+            Element.image 64 64
+                "/static/assets/units/b_demon/walk_175ms.gif"
+
+        Attacking ->
+            Element.image 64 64
+                "/static/assets/units/b_demon/attack_125ms.gif"
+
+        Dead ->
+            Element.image 64 64
+                "/static/assets/effects/bluelight/1.PNG"
+
+romanGuardImage : Model -> Element.Element
+romanGuardImage model =
+    case model.entityState of
+
+        Standing ->
+            Element.image 64 64
+                "/static/assets/units/r_roman_guard/stand.PNG"
+
+        Moving ->
+            Element.image 64 64
+                "/static/assets/units/r_roman_guard/walk_200ms.gif"
+
+        Attacking ->
+            Element.image 64 64
+                "/static/assets/units/r_roman_guard/attack_200ms.gif"
+
+        Dead ->
+            Element.image 64 64
+                "/static/assets/effects/blood/3-64x64.PNG"
+
+chaosRiderImage : Model -> Element.Element
+chaosRiderImage model =
+    case model.entityState of
+
+        Standing ->
+            Element.image 64 64
+                "/static/assets/units/b_chaos_rider/chaosreiter_attack_1.gif"
+
+        Moving ->
+            Element.image 64 64
+                "/static/assets/units/b_chaos_rider/walk_175ms.gif"
+
+        Attacking ->
+            Element.image 64 64
+                "/static/assets/units/b_chaos_rider/attack_150ms.gif"
 
         Dead ->
             Element.image 64 64
@@ -462,6 +541,15 @@ entityTypeImage model =
 
         "champion" ->
             championImage model
+
+        "demon" ->
+            demonImage model
+
+        "roman_guard" ->
+            romanGuardImage model
+
+        "chaos_rider" ->
+            chaosRiderImage model
 
         _ ->
             Element.empty
@@ -508,22 +596,3 @@ entityUuid : Model -> Collage.Form
 entityUuid model =
     Element.show model.entity.uuid
         |> Collage.toForm
-
-view : Model -> List Collage.Form
-view model =
-    let
-        (x, y) = model.position
-
-        backgroundForm = entityImage model
-
-        -- healthBarForm = entityHealthBar model
-        --
-        -- entityForm = Collage.group [backgroundForm]
-
-        -- uuid = entityUuid model
-    in
-        [backgroundForm]
-            |> List.map (
-                \form ->
-                    Collage.move (x, y) form
-            )
