@@ -20,7 +20,7 @@ type alias GoldAccruedEvent = {
 goldAccruedEvent : Decoder GoldAccruedEvent
 goldAccruedEvent =
     at ["gold_event"] <| succeed GoldAccruedEvent
-        |: ("eventType" := string)
+        |: ("event_type" := string)
         |: ("gold" := int)
 
 type alias GoldSubtractedEvent = {
@@ -31,7 +31,7 @@ type alias GoldSubtractedEvent = {
 goldSubtractedEvent : Decoder GoldSubtractedEvent
 goldSubtractedEvent =
     at ["gold_event"] <| succeed GoldSubtractedEvent
-        |: ("eventType" := string)
+        |: ("event_type" := string)
         |: ("gold" := int)
 
 -- Aggregate Types
@@ -44,10 +44,10 @@ goldEventInfo : String -> Decoder GoldEvent
 goldEventInfo eventType =
     case eventType of
 
-        "gold_accrued_event" ->
+        "gold_accrued" ->
             object1 GoldAccruedEv goldAccruedEvent
 
-        "gold_subtracted_event" ->
+        "gold_subtracted" ->
             object1 GoldSubtractedEv goldSubtractedEvent
 
         _ ->
