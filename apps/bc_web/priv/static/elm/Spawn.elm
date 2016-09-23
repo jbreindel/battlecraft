@@ -106,7 +106,7 @@ spawnTile model =
 
         -- Heading
         div [class "columns"] [
-            spawnTitle,
+            spawnTitleColumn,
             goldColumn model
         ],
 
@@ -122,8 +122,8 @@ spawnTile model =
         ]
     ]
 
-spawnTitle : Html Msg
-spawnTitle =
+spawnTitleColumn : Html Msg
+spawnTitleColumn =
     div [class "column is-two-thirds is-flex is-vcentered"] [
         h5 [class "title is-5"] [
             text "Spawn"
