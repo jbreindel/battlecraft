@@ -85,6 +85,12 @@ entityType keyboardModel =
     else if Keyboard.isPressed Keyboard.CharS keyboardModel then
         Just "demon"
 
+    else if Keyboard.isPressed Keyboard.CharD keyboardModel then
+        Just "roman_guard"
+
+    else if Keyboard.isPressed Keyboard.CharW keyboardModel then
+        Just "chaos_rider"
+
     else
         Nothing
 
