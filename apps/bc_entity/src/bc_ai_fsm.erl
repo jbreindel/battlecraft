@@ -349,10 +349,11 @@ calculate_damage(BcEntityConfig, EnemyBcEntity, BcEntities) ->
 			_ -> 1.0
 		end,
 	{MinDamage, MaxDamage} = bc_entity_config:damage(BcEntityConfig),
-	{ModMinDamage, ModMaxDamage} = {erlang:trunc(MaxDamage * Modifier), 
-									erlang:trunc(MinDamage * Modifier)},
-	DamageDiff = ModMinDamage - ModMaxDamage,
+	{ModMinDamage, ModMaxDamage} = {erlang:trunc(MinDamage * Modifier), 
+									erlang:trunc(MaxDamage * Modifier)},
+	DamageDiff = ModMaxDamage - ModMinDamage,
 	RandDamage = rand:uniform(DamageDiff),
+	lager:info("Damage done: ~p with modifier: ~p", [ModMinDamage + RandDamage, Modifier]),
 	ModMinDamage + RandDamage.
 
 dist_entities(#state{entity = BcEntity} = State) ->
