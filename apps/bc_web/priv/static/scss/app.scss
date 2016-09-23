@@ -105,6 +105,10 @@ body, html {
 .is-flex.is-vcentered {
 	align-items: center;
 }
+// horizontally center
+.is-margin-auto {
+    margin: auto;
+}
 
 // override primary button background
 .button.is-primary {
