@@ -370,6 +370,7 @@ nearby_entities(#state{entity = BcEntity,
 			end, EntityQueryRes).
 
 move_forward(#state{player_num = PlayerNum} = State) ->
+	%% TODO move toward remaining enemy base.
 	case PlayerNum of
 		1 -> move(down, State);
 		2 -> move(left, State);
