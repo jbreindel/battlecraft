@@ -191,7 +191,10 @@ onWsReceiveMessage message model =
     case message of
 
         JoinResp joinResp ->
-            update (JoinMsg (Join.OnJoinResponse joinResp)) model
+            let
+                joinMsg = Join.OnJoinResponse joinResp
+            in
+                update (JoinMsg joinMsg) model
 
         GameEv gameEv ->
             -- TODO handle game event
@@ -199,9 +202,15 @@ onWsReceiveMessage message model =
 
         EntityEv entityEv ->
             let
-                mapMsg = Map.EntityEventMsg entityEv
+                mapMsg = Map.EntityEv entityEv
             in
                 update (MapMsg mapMsg) model
+
+        GoldEv goldEv ->
+            let
+                spawnMsg = Spawn.GoldEv goldEv
+            in
+                update (SpawnMsg spawnMsg) model
 
 handleJoinEffect : Effects.Handler Join.Effect Model (Cmd Msg)
 handleJoinEffect effect model =

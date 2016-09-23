@@ -35,7 +35,7 @@ type Msg =
     MapGetFail Http.Error |
     KeyboardMsg Keyboard.Model |
     WindowMsg Window.Size |
-    EntityEventMsg EntityEvent |
+    EntityEv EntityEvent |
     EntityMsg Entity.Msg |
     OnAnimationFrame Time
 
@@ -94,7 +94,7 @@ update msg model =
                             windowHeight = windowSize.height,
                             windowWidth = windowSize.width}
 
-        EntityEventMsg entityEvent ->
+        EntityEv entityEvent ->
             onEntityEvent model entityEvent
 
         EntityMsg entityMsg ->
