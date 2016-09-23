@@ -10,7 +10,8 @@
 		 damage/1, 
 		 attack_speed/1,
 		 range/1, 
-		 move_speed/1]).
+		 move_speed/1,
+		 cost/1]).
 
 %%
 % @doc type for storing entity configuration data
@@ -22,13 +23,14 @@
 	  					   damage => {integer(), integer()},
 						   attack_speed => float(),
 	  					   range => integer(),
-	  					   move_speed => float()}.
+	  					   move_speed => float(),
+						   cost => integer()}.
 
 %% type exports
 -export_type([entity_config/0]).
 
 -spec init(EntityTuple :: tuple()) -> entity_config().
-init({EntityType, EntityClass, Size, Health, DamageTuple, AtkSpeed, Range, MoveSpeed}) ->
+init({EntityType, EntityClass, Size, Health, DamageTuple, AtkSpeed, Range, MoveSpeed, Cost}) ->
 	#{entity_type => EntityType,
 	  entity_class => EntityClass,
 	  size => Size,
@@ -36,7 +38,8 @@ init({EntityType, EntityClass, Size, Health, DamageTuple, AtkSpeed, Range, MoveS
 	  damage => DamageTuple,
 	  attack_speed => AtkSpeed,
 	  range => Range,
-	  move_speed => MoveSpeed}.
+	  move_speed => MoveSpeed,
+	  cost => Cost}.
 
 -spec entity_type(BcEntityConfig :: entity_config()) -> atom().
 entity_type(BcEntityConfig) ->
@@ -69,3 +72,7 @@ range(BcEntityConfig) ->
 -spec move_speed(BcEntityConfig :: entity_config()) -> float().
 move_speed(BcEntityConfig) ->
 	maps:get(move_speed, BcEntityConfig).
+
+-spec cost(BcEntityConfig :: entity_config()) -> integer().
+cost(BcEntityConfig) ->
+	maps:get(cost, BcEntityConfig).
