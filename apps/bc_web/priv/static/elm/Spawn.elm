@@ -134,7 +134,7 @@ spawnTile model =
 
                 -- Heading
                 div [class "columns"] [
-                    spawnTitleColumn,
+                    spawnTitleColumn model,
                     goldColumn model
                 ],
 
@@ -151,13 +151,20 @@ spawnTile model =
             ]
         ]
 
-spawnTitleColumn : Html Msg
-spawnTitleColumn =
-    div [class "column is-two-thirds is-flex is-vcentered"] [
-        h5 [class "title is-5"] [
-            text "Spawn"
+spawnTitleColumn : Model -> Html Msg
+spawnTitleColumn model =
+    let
+        spawnTitleColumnClass =
+            if model.minimized then
+                "column is-one-thirds is-flex is-vcentered"
+            else
+                "column is-two-thirds is-flex is-vcentered"
+    in
+        div [class spawnTitleColumnClass] [
+            h5 [class "title is-5"] [
+                text "Spawn"
+            ]
         ]
-    ]
 
 goldColumn : Model -> Html Msg
 goldColumn model =
