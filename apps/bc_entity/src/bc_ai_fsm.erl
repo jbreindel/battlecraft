@@ -101,11 +101,12 @@ attacking(action_complete, State) ->
 %% All State functions
 %% ====================================================================
 
-handle_event({entity_died, EnemyBcEntity}, StateName, State) ->
+handle_event({entity_died, EnemyBcEntity}, StateName, #state{timer = TimerRef} = State) ->
 	case StateName of
 		attacking ->
-			%% TODO cancel timer
-			sense(State#state{entity_event_handler = undefined});
+			gen_fsm:cancel_timer(TimerRef),
+			sense(State#state{entity_event_handler = undefined,
+							  timer = undefined});
 		_ ->
     		{next_state, StateName, State}
 	end;
@@ -118,6 +119,7 @@ handle_event({entity_damaged, Damage}, StateName, #state{entity = BcEntity,
 			bc_entities:insert(DamagedEntity, BcEntities),
 			EntitiesEventPid = bc_entities:event(BcEntities),
 			gen_event:notify(EntitiesEventPid, {entity_damaged, DamagedEntity}),
+			%% TODO if standing cancel timer and sense again
 			{next_state, StateName, State#state{entity = DamagedEntity}};
 		UpdatedHealth when UpdatedHealth =< 0 ->
 			DeadEntity = bc_entity:set_health(BcEntity, UpdatedHealth),
