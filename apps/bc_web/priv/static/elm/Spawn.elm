@@ -6,8 +6,9 @@ module Spawn exposing (Effect(..),
                        update,
                        view)
 
-import Html exposing (Html, div, h5, p, figure, a, img, text)
+import Html exposing (Html, div, button, h5, p, figure, a, img, text)
 import Html.Attributes exposing (class, src)
+import Html.Events exposing (onClick)
 import Html.Lazy exposing (lazy)
 import Effects exposing (Effects)
 import Keyboard.Extra as Keyboard
@@ -25,12 +26,14 @@ type Effect =
 
 type Msg =
     KeyboardMsg Keyboard.Model |
+    Minimize |
     GoldEv GoldEvent
 
 -- Model
 
 type alias Model = {
     entityType : String,
+    minimized : Bool,
     gold : Int
 }
 
@@ -38,6 +41,7 @@ init : Effects Model Effect
 init =
     Effects.return {
         entityType = "",
+        minimized = False,
         gold = 0
     }
 
@@ -50,8 +54,12 @@ update msg model =
         KeyboardMsg keyboardModel ->
             onKeyboardMsg keyboardModel model
 
+        Minimize ->
+            onMinimize model
+
         GoldEv goldEvent ->
             onGoldEvent goldEvent model
+
 
 onKeyboardMsg : Keyboard.Model -> Model -> Effects Model Effect
 onKeyboardMsg keyboardModel model =
@@ -69,6 +77,17 @@ onKeyboardMsg keyboardModel model =
 
         Nothing ->
             Effects.return model
+
+onMinimize : Model -> Effects Model Effect
+onMinimize model =
+    let
+        minimized =
+            if model.minimized then
+                False
+            else
+                True
+    in
+        Effects.return {model | minimized = minimized}
 
 onGoldEvent : GoldEvent -> Model -> Effects Model Effect
 onGoldEvent goldEvent model =
@@ -102,25 +121,35 @@ view model =
 
 spawnTile : Model -> Html Msg
 spawnTile model =
-    div [class "tile is-vertical is-2 box is-overlay spawn-content"] [
+    let
+        entityColumnsClass =
+            if model.minimized then
+                "columns is-hidden"
+            else
+                "columns"
+    in
+        div [class "is-overlay spawn-content"] [
+            div [class "notification"] [
+                button [class "delete", onClick Minimize] [],
 
-        -- Heading
-        div [class "columns"] [
-            spawnTitleColumn,
-            goldColumn model
-        ],
+                -- Heading
+                div [class "columns"] [
+                    spawnTitleColumn,
+                    goldColumn model
+                ],
 
-        -- Entities
-        div [class "columns"] [
-            championColumn,
-            demonColumn
-        ],
+                -- Entities
+                div [class entityColumnsClass] [
+                    championColumn,
+                    demonColumn
+                ],
 
-        div [class "columns"] [
-            romanGuardColumn,
-            chaosRiderColumn
+                div [class entityColumnsClass] [
+                    romanGuardColumn,
+                    chaosRiderColumn
+                ]
+            ]
         ]
-    ]
 
 spawnTitleColumn : Html Msg
 spawnTitleColumn =
