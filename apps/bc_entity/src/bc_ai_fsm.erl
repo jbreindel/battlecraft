@@ -104,6 +104,7 @@ attacking(action_complete, State) ->
 handle_event({entity_died, EnemyBcEntity}, StateName, State) ->
 	case StateName of
 		attacking ->
+			%% TODO cancel timer
 			sense(State#state{entity_event_handler = undefined});
 		_ ->
     		{next_state, StateName, State}
@@ -404,17 +405,28 @@ move(Direction, #state{entity = BcEntity,
 					   entity_config = BcEntityConfig,		 
 					   entities = BcEntities,
 					   map = BcMap} = State) ->
-	case move_entity(Direction, State) of
-		{ok, MovedBcEntity} ->
-			ReorientedBcEntity = reorient_entity(Direction, MovedBcEntity, BcEntities),
-			EntitiesEventPid = bc_entities:event(BcEntities),
-			gen_event:notify(EntitiesEventPid, {entity_moved, ReorientedBcEntity}),
-			MoveSpeed = bc_entity_config:move_speed(BcEntityConfig),
-			TimerRef = send_action_complete(MoveSpeed),
-			{next_state, moving, State#state{entity = ReorientedBcEntity,
-											 timer = TimerRef}};
-		{error, _} ->
-			sense(State)
+	OriginalBcCollision = bc_entity:to_collision(BcEntity),
+	UpdatedBcCollision = bc_collision:move(Direction, OriginalBcCollision),
+	UpdatedBcVertices = bc_collision:vertices(UpdatedBcCollision),
+	case bc_map:are_vertices(BcMap, UpdatedBcVertices) of
+		true ->
+			case bc_map:update_collision(BcMap, OriginalBcCollision, UpdatedBcCollision) of
+				ok ->
+					MovedBcEntity = bc_entity:set_vertices(UpdatedBcVertices, BcEntity),
+					ReorientedBcEntity = reorient_entity(Direction, MovedBcEntity, BcEntities),
+					EntitiesEventPid = bc_entities:event(BcEntities),
+					gen_event:notify(EntitiesEventPid, {entity_moved, ReorientedBcEntity}),
+					MoveSpeed = bc_entity_config:move_speed(BcEntityConfig),
+					TimerRef = send_action_complete(MoveSpeed),
+					{next_state, moving, State#state{entity = ReorientedBcEntity,
+													 timer = TimerRef}};
+				{error, _} ->
+					{next_state, standing, State#state{timer = 
+												gen_fsm:send_event_after(100, action_complete)}}
+			end;
+		false ->
+			{next_state, standing, State#state{timer = 
+												gen_fsm:send_event_after(100, action_complete)}}
 	end.
 
 send_action_complete(Speed) ->
@@ -422,26 +434,12 @@ send_action_complete(Speed) ->
 	DelayInt = erlang:trunc(DelayFloat),
 	gen_fsm:send_event_after(DelayInt, action_complete).
 
-move_entity(Direction, #state{entity = BcEntity, 
-							  map = BcMap,
-							  entities = BcEntities} = State) ->
-	OriginalBcCollision = bc_entity:to_collision(BcEntity),
-	UpdatedBcCollision = bc_collision:move(Direction, OriginalBcCollision),
-	case bc_map:update_collision(BcMap, OriginalBcCollision, UpdatedBcCollision) of
-		ok ->
-			OrientedBcEntity =
-				case bc_entity:orientation(BcEntity) =:= Direction of
-					true -> BcEntity;
-					false -> reorient_entity(Direction, BcEntity, BcEntities)
-				end,
-			UpdatedBcVertices = bc_collision:vertices(UpdatedBcCollision),
-			MovedBcEntity = bc_entity:set_vertices(UpdatedBcVertices, OrientedBcEntity),
-			{ok, MovedBcEntity};
-		{error, _} = Error ->
-			Error
-	end.
-
 reorient_entity(Orientation, BcEntity, BcEntities) ->
-	UpdatedBcEntity = bc_entity:set_orientation(BcEntity, Orientation),
-	bc_entities:insert(UpdatedBcEntity, BcEntities),
-	UpdatedBcEntity.
+	case bc_entity:orientation(BcEntity) =:= Orientation of
+		true ->
+			BcEntity;
+		false ->
+			UpdatedBcEntity = bc_entity:set_orientation(BcEntity, Orientation),
+			bc_entities:insert(UpdatedBcEntity, BcEntities),
+			UpdatedBcEntity
+	end.

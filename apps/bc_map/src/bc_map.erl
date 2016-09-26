@@ -23,6 +23,7 @@
 		 query_collisions/2,
 		 query_ids/2,
 		 compute_path/3,
+		 are_vertices/2,
 		 are_neighbors/3,
 		 reaching_neighbors/3,
 		 update_collision/3, 
@@ -140,9 +141,18 @@ compute_path(MapGraph, Vertex1, Vertex2) ->
 	Graph = maps:get(graph, MapGraph),
 	digraph:get_short_path(Graph, Vertex1, Vertex2).
 
+-spec are_vertices(MapGraph :: map_graph(),
+				   BcVertices :: [bc_vertex:vertex()]) -> boolean().
+are_vertices(MapGraph, BcVertices) ->
+	Graph = maps:get(graph, MapGraph),
+	DigraphBcVertices = digraph:vertices(Graph),
+	lists:all(fun(BcVertex) -> 
+				lists:member(BcVertex, DigraphBcVertices) 
+			  end, BcVertices).
+
 -spec are_neighbors(MapGraph :: map_graph(), 
 					Vertex :: bc_vertex:vertex(), 
-					Neighbor:: bc_vertex:vertex()) -> boolean().
+					Neighbor :: bc_vertex:vertex()) -> boolean().
 are_neighbors(MapGraph, Vertex, Neighbor) ->
 	Graph = maps:get(graph, MapGraph),
 	NeighborRow = bc_vertex:row(Neighbor),
