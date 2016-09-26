@@ -56,22 +56,33 @@ update msg model =
             Effects.return {model | handle = handle}
 
         JoinGame ->
-            -- TODO check handle length
-
-            let
-                joinCommandJson = initJoinCommand model.handle
-                    |> encodeJoinCommand
-                    |> encode 0
-            in
-                Effects.init model [WsSendMsg joinCommandJson]
+            onJoinGame model
 
         OnJoinResponse joinResponse ->
-            case joinResponse of
-                JoinErr joinErrorResp ->
-                    Effects.return {model | error = Just joinErrorResp.error}
-                JoinSucc joinSuccResp ->
-                    Effects.init {model | playerId = joinSuccResp.playerId}
-                        [UpdateGameState Pending]
+            onJoinResponse joinResponse model
+
+onJoinGame : Model -> Effects Model Effect
+onJoinGame model =
+    -- TODO check handle length
+    let
+        joinCommandJson = initJoinCommand model.handle
+            |> encodeJoinCommand
+            |> encode 0
+    in
+        Effects.init model [WsSendMsg joinCommandJson]
+
+onJoinResponse : JoinResponse -> Model -> Effects Model Effect
+onJoinResponse joinResponse model =
+    case joinResponse of
+
+        JoinErr joinErrorResp ->
+            Effects.return {model |
+                                error = Just joinErrorResp.error}
+
+        JoinSucc joinSuccResp ->
+            Effects.init {model |
+                playerId = joinSuccResp.playerId
+            } [UpdateGameState Pending]
 
 -- View
 
