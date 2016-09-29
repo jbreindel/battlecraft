@@ -116,7 +116,8 @@ iolist_to_entity_type(EntityTypeStr) ->
 	case EntityTypeStr of
 		<<"champion">> -> champion;
 		<<"demon">> -> demon;
-		<<"chaosbeast">> -> chaosbeast;
+		<<"roman_guard">> -> roman_guard;
+		<<"chaos_rider">> -> chaos_rider;
 		_ -> undefined
 	end.
 
