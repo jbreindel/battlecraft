@@ -224,11 +224,17 @@ popAndQueueEntityEvent model =
 
 queueEntityEvent : Model -> Effects Model Effect
 queueEntityEvent model =
-    let
-        cmd = Task.succeed model.entity
-                |> Task.perform NoOp ConsumeEntityEv
-    in
-        Effects.init model [PerformCmd cmd]
+    case model.animation of
+
+        Just _ ->
+            Effects.return model
+
+        Nothing ->
+            let
+                cmd = Task.succeed model.entity
+                        |> Task.perform NoOp ConsumeEntityEv
+            in
+                Effects.init model [PerformCmd cmd]
 
 onEntitySpawnedEvent : EntitySpawnedEvent -> Model -> Effects Model Effect
 onEntitySpawnedEvent entitySpawnedEvent model =
