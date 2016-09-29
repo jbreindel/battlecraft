@@ -90,8 +90,14 @@ handle_cast({spawn_entities, EntityTypeStr}, #state{entities = BcEntities} = Sta
 		{ok, BcEntityConfig} ->
 			{ok, BaseNum, State1} = player_num(State),
 			{ok, BcMatrix, State2} = spawn_matrix(State1),
-			spawn_entity_batch(BcEntityConfig, State2),
-			{noreply, State2};
+			Cost = bc_entity_config:cost(BcEntityConfig),
+			case bc_gold_fsm:subtract(State2#state.gold, Cost) of
+				{ok, _} ->					
+					spawn_entity_batch(BcEntityConfig, State2),
+					{noreply, State2};
+				{error, _} ->
+					{noreply, State2}
+			end;
 		error ->
 			{noreply, State}
 	end.
