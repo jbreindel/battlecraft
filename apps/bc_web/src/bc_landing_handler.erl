@@ -6,7 +6,7 @@
 init(_Type, Req, _Opts) ->
 	ViewFile = bc_web_files:view_file("index.html"),
 	erlydtl:compile(ViewFile, landing_view, 
-					[{vars, [{title, "Battlecraft Online"}, 
+					[{vars, [{title, "BattleCraft Online"}, 
 							 {description, "An online real time strategy simulation game."}]}]),
 	{ok, Req, no_state}.
 
