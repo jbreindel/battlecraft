@@ -108,7 +108,8 @@ handle_event({entity_died, EnemyBcEntity}, StateName, #state{timer = TimerRef} =
 			sense(State#state{entity_event_handler = undefined,
 							  timer = undefined});
 		_ ->
-    		{next_state, StateName, State}
+    		{next_state, StateName, 
+			 State#state{entity_event_handler = undefined}}
 	end;
 handle_event({entity_damaged, Damage}, StateName, #state{entity = BcEntity,
 														 entities = BcEntities,
@@ -285,11 +286,11 @@ attack_entity(EnemyBcEntity, #state{entity = BcEntity,
 										   entity_event_handler = EventHandler} = State) ->
 	Orientation = determine_orientation(BcEntity, EnemyBcEntity),
 	ReorientedEntity = reorient_entity(Orientation, BcEntity, BcEntities),
-	EntitiesEventPid = bc_entities:event(BcEntities),
-	gen_event:notify(EntitiesEventPid, {entity_attacking, ReorientedEntity}),
 	UpdatedState =
 		case EventHandler of
 			undefined ->
+				EntitiesEventPid = bc_entities:event(BcEntities),
+				gen_event:notify(EntitiesEventPid, {entity_attacking, ReorientedEntity}),
 				EntityUuid = bc_entity:uuid(ReorientedEntity),
 				EnemyUuid = bc_entity:uuid(EnemyBcEntity),
 				EntitiesEventPid = bc_entities:event(BcEntities),
