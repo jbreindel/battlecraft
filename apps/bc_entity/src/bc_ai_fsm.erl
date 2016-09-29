@@ -281,9 +281,9 @@ attack_entities(InRangeEnemyBcEntities, State) ->
 	end.
 
 attack_entity(EnemyBcEntity, #state{entity = BcEntity,
-										   entity_config = BcEntityConfig,
-										   entities = BcEntities,
-										   entity_event_handler = EventHandler} = State) ->
+									entity_config = BcEntityConfig,
+									entities = BcEntities, 
+									entity_event_handler = EventHandler} = State) ->
 	Orientation = determine_orientation(BcEntity, EnemyBcEntity),
 	ReorientedEntity = reorient_entity(Orientation, BcEntity, BcEntities),
 	UpdatedState =
@@ -294,10 +294,10 @@ attack_entity(EnemyBcEntity, #state{entity = BcEntity,
 				EntityUuid = bc_entity:uuid(ReorientedEntity),
 				EnemyUuid = bc_entity:uuid(EnemyBcEntity),
 				EntitiesEventPid = bc_entities:event(BcEntities),
-				Handler = {bc_entity_died, EntityUuid},
-				gen_event:add_sup_handler(EntitiesEventPid, 
-										  Handler, 
-										  [EnemyUuid, self()]),
+				Handler = {bc_died_event, EntityUuid},
+				Result = gen_event:add_sup_handler(EntitiesEventPid, 
+												   Handler, 
+												   [EnemyUuid, self()]),
 				State#state{entity = ReorientedEntity,
 							entity_event_handler = Handler};
 			_ ->
@@ -357,7 +357,6 @@ calculate_damage(BcEntityConfig, EnemyBcEntity, BcEntities) ->
 									erlang:trunc(MaxDamage * Modifier)},
 	DamageDiff = ModMaxDamage - ModMinDamage,
 	RandDamage = rand:uniform(DamageDiff),
-	lager:info("Damage done: ~p with modifier: ~p", [ModMinDamage + RandDamage, Modifier]),
 	ModMinDamage + RandDamage.
 
 dist_entities(#state{entity = BcEntity} = State) ->
