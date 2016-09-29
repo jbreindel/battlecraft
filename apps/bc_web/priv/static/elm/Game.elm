@@ -251,14 +251,7 @@ subscriptions model =
             GameState.Joining ->
                 WebSocket.listen model.address WsReceiveMsg
 
-            GameState.Pending ->
-                Sub.batch [
-                    WebSocket.listen model.address WsReceiveMsg,
-                    Sub.map KeyboardMsg Keyboard.subscriptions,
-                    Sub.map MapMsg mapSub
-                ]
-
-            GameState.Started ->
+            _ ->
                 Sub.batch [
                     WebSocket.listen model.address WsReceiveMsg,
                     Sub.map KeyboardMsg Keyboard.subscriptions,
