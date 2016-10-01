@@ -12,6 +12,7 @@
 -export([init/1,
 		 init/2,
 		 insert_collision/2,
+		 base_vertices/2,
 		 base1_vertices/1,
 		 base1_spawn_vertices/1,
 		 base2_vertices/1,

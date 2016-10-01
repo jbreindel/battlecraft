@@ -74,7 +74,7 @@ init([BcEntity, BcEntities, BcMap]) ->
 			 left -> {2, 4};
 			 up -> {3, 1};
 			 right -> {4, 2};
-			 _ -> 0
+			 _ -> {0, 0}
 		end,
 	TimerRef = gen_fsm:send_event_after(5, action_complete),
 	%% properly seed with <<A:32, B:32, C:32>> = crypto:rand_bytes(12),
