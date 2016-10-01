@@ -280,12 +280,7 @@ spawn_matrix(#state{base_num = BaseNum,
 					map = BcMap} = State) ->
 	case SpawnBcMatrix of
 		undefined ->
-			BcVertices = case BaseNum of
-							 1 -> bc_map:base1_spawn_vertices(BcMap);
-							 2 -> bc_map:base2_spawn_vertices(BcMap);
-							 3 -> bc_map:base3_spawn_vertices(BcMap);
-							 4 -> bc_map:base4_spawn_vertices(BcMap)
-						 end,
+			BcVertices = bc_map:base_vertices(BcMap, BaseNum),
 			BcMatrix = bc_matrix:init(BcVertices),
 			{ok, BcMatrix, State#state{spawn_matrix = BcMatrix}};
 		BcMatrix ->

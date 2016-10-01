@@ -27,9 +27,12 @@
 -record(state, {entity,
 				entity_config,
 				entities,
+				map,
 				entity_event_handler,
 				player_num,
-				map,
+				enemy_num,
+				enemy_base_uuid,
+				path,
 				timer}).
 
 %% ====================================================================
@@ -61,17 +64,19 @@ init([BcEntity, BcEntities, BcMap]) ->
 	UpdatedBcEntity = bc_entity:set_ai_fsm(self(), BcEntity),
 	EntityType = bc_entity:entity_type(UpdatedBcEntity),
 	{ok, BcEntityConfig} = bc_entities:entity_config(EntityType, BcEntities),
-	StateName = case bc_entity_config:entity_class(BcEntityConfig) of 
-					structure -> no_action; 
-					_ -> standing 
-				end,
-	PlayerNum =  case bc_entity:orientation(BcEntity) of
-					 down -> 1;
-					 left -> 2;
-					 up -> 3;
-					 right -> 4;
-					 _ -> 0
-				 end,
+	StateName = 
+		case bc_entity_config:entity_class(BcEntityConfig) of 
+			structure -> no_action; 
+			_ -> standing 
+		end,
+	{PlayerNum, EnemyNum} = 
+		case bc_entity:orientation(BcEntity) of
+			 down -> {1, 3};
+			 left -> {2, 4};
+			 up -> {3, 1};
+			 right -> {4, 2};
+			 _ -> 0
+		end,
 	TimerRef = gen_fsm:send_event_after(5, action_complete),
 	%% properly seed with <<A:32, B:32, C:32>> = crypto:rand_bytes(12),
 	_ = rand:seed(exs1024, {erlang:unique_integer([positive]), 
@@ -81,8 +86,11 @@ init([BcEntity, BcEntities, BcMap]) ->
 						   entity_config = BcEntityConfig, 
 						   entity_event_handler = undefined,
 					   	   entities = BcEntities, 
-						   player_num = PlayerNum,
 					   	   map = BcMap,
+						   player_num = PlayerNum,
+						   enemy_num = EnemyNum,
+						   enemy_base_uuid = undefined,
+						   path = undefined,
 						   timer = TimerRef}}.
 
 no_action(action_complete, State) ->
@@ -168,7 +176,7 @@ sense(#state{entity = BcEntity,
 		EnemyDistEntites when length(EnemyDistEntites) > 0 ->
 			plan_enemy_actions(DistEntities, EnemyDistEntites, State);
 		_ ->
-			move_forward(State)
+			move_enemy_base(State)
 	end.
 
 plan_enemy_actions(DistEntities, EnemyDistEntities, 
@@ -186,7 +194,9 @@ plan_enemy_actions(DistEntities, EnemyDistEntities,
 			attack_entities(InRangeEnemyBcEntities, State);
 		_ ->
 			{_, EnemyBcEntity} = closest_dist_entity(EnemyDistEntities),
-			move_in_range(EnemyBcEntity, Range, DistEntities, State)
+			EnemyBcVertices = bc_entity:vertices(EnemyBcEntity),
+			InRangeBcVertices = bc_map:reaching_neighbors(BcMap, EnemyBcVertices, Range),
+			move_in_range(InRangeBcVertices, DistEntities, State)
 	end.
 
 closest_dist_entity(EnemyDistEntities) ->
@@ -199,10 +209,8 @@ closest_dist_entity(EnemyDistEntities) ->
 					end
 				end, FirstDistEntity, EnemyDistEntities).
 
-move_in_range(EnemyBcEntity, Range, DistEntities, #state{entity = BcEntity, 
-														 map = BcMap} = State) ->
-	EnemyBcVertices = bc_entity:vertices(EnemyBcEntity),
-	InRangeBcVertices = bc_map:reaching_neighbors(BcMap, EnemyBcVertices, Range),
+move_in_range(InRangeBcVertices, DistEntities, #state{entity = BcEntity, 
+													  map = BcMap} = State) ->
 	DistBcVertices = 
 		lists:map(fun(BcVertex) -> 
 					Distance =
@@ -210,6 +218,10 @@ move_in_range(EnemyBcEntity, Range, DistEntities, #state{entity = BcEntity,
 					{Distance, BcVertex} 
 				  end, InRangeBcVertices),
 	PathBcVertices = choose_path(DistBcVertices, DistEntities, State),
+	move_on_path(State#state{path = PathBcVertices}).
+
+move_on_path(#state{entity = BcEntity,
+					path = PathBcVertices} = State) ->
 	MoveBcVertex = lists:nth(1, PathBcVertices),
 	Direction = bc_entity_util:move_direction(BcEntity, MoveBcVertex),
 	move(Direction, State).
@@ -246,8 +258,7 @@ choose_path(DistBcVertices, DistEntities, #state{entity = BcEntity,
 			Path;
 		undefined ->
 			{_, FirstBcVertex} = lists:nth(1, SortedDistBcVertices),
-			Path = compute_path(BcEntity, FirstBcVertex, State),
-			Path
+			compute_path(BcEntity, FirstBcVertex, State)
 	end.
 
 compute_path(BcEntity, BcVertex, #state{map = BcMap} = State) ->
@@ -394,19 +405,27 @@ nearby_entities(#state{entity = BcEntity,
 				bc_entity:set_vertices(QueryBcVertices, QueryBcEntity)
 			end, EntityQueryRes).
 
-move_forward(#state{player_num = PlayerNum} = State) ->
-	%% TODO move toward remaining enemy base.
-	case PlayerNum of
-		1 -> move(down, State);
-		2 -> move(left, State);
-		3 -> move(up, State);
-		4 -> move(right, State)
+move_enemy_base(#state{entity_config = BcEntityConfig,
+					   entities = BcEntities,
+					   map = BcMap,
+					   enemy_num = EnemyNum,
+					   path = Path} = State) ->
+	case Path of
+		CurrentPath when length(CurrentPath) > 0 ->
+			move_on_path(State);
+		undefined ->
+			BaseBcVertices = bc_map:base_vertices(BcMap, EnemyNum),
+			Range = bc_entity_config:range(BcEntityConfig),
+			InRangeBcVertices = bc_map:reaching_neighbors(BcMap, BaseBcVertices, Range),
+			DistEntities = dist_entities(State),
+			move_in_range(InRangeBcVertices, DistEntities, State)
 	end.
 
 move(Direction, #state{entity = BcEntity, 
 					   entity_config = BcEntityConfig,		 
 					   entities = BcEntities,
-					   map = BcMap} = State) ->
+					   map = BcMap,
+					   path = Path} = State) ->
 	OriginalBcCollision = bc_entity:to_collision(BcEntity),
 	UpdatedBcCollision = bc_collision:move(Direction, OriginalBcCollision),
 	UpdatedBcVertices = bc_collision:vertices(UpdatedBcCollision),
@@ -416,12 +435,9 @@ move(Direction, #state{entity = BcEntity,
 				ok ->
 					MovedBcEntity = bc_entity:set_vertices(UpdatedBcVertices, BcEntity),
 					ReorientedBcEntity = reorient_entity(Direction, MovedBcEntity, BcEntities),
-					EntitiesEventPid = bc_entities:event(BcEntities),
-					gen_event:notify(EntitiesEventPid, {entity_moved, ReorientedBcEntity}),
-					MoveSpeed = bc_entity_config:move_speed(BcEntityConfig),
-					TimerRef = send_action_complete(MoveSpeed),
-					{next_state, moving, State#state{entity = ReorientedBcEntity,
-													 timer = TimerRef}};
+					UpdatedPath = update_path(UpdatedBcVertices, Path),
+					on_moved(State#state{entity = ReorientedBcEntity,
+										 path = UpdatedPath});
 				{error, _} ->
 					{next_state, standing, State#state{timer = 
 												gen_fsm:send_event_after(100, action_complete)}}
@@ -430,6 +446,33 @@ move(Direction, #state{entity = BcEntity,
 			{next_state, standing, State#state{timer = 
 												gen_fsm:send_event_after(100, action_complete)}}
 	end.
+
+update_path(_, undefined) ->
+	undefined;
+update_path(_, Path) when length(Path) == 0 ->
+	undefined;
+update_path(UpdatedBcVertices, Path) ->
+	MoveBcVertex = lists:nth(1, Path),
+	case lists:member(MoveBcVertex, UpdatedBcVertices) of
+		true ->
+			case lists:sublist(Path, 2, length(Path)) of
+				UpdatedPath when length(UpdatedPath) > 0 ->
+					UpdatedPath;
+				_ ->
+					undefined
+			end;
+		false ->
+			undefined
+	end.	
+
+on_moved(#state{entity = BcEntity,
+				entity_config = BcEntityConfig,
+				entities = BcEntities} = State) ->
+	EntitiesEventPid = bc_entities:event(BcEntities),
+	gen_event:notify(EntitiesEventPid, {entity_moved, BcEntity}),
+	MoveSpeed = bc_entity_config:move_speed(BcEntityConfig),
+	TimerRef = send_action_complete(MoveSpeed),
+	{next_state, moving, State#state{timer = TimerRef}}.
 
 send_action_complete(Speed) ->
 	DelayFloat = 1000 - (1000 * Speed),

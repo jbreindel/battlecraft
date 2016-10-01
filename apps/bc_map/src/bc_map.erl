@@ -74,6 +74,15 @@ insert_collision(MapGraph, BcCollision) ->
 	Rows = vertex_rows(BcCollision),
 	ets:insert_new(Tab, Rows).
 
+-spec base_vertices(MapGraph :: map_graph(), BaseNum :: integer()) -> [bc_vertex:vertex()].
+base_vertices(MapGraph, BaseNum) ->
+	case BaseNum of
+		 1 -> base1_vertices(MapGraph);
+		 2 -> base2_vertices(MapGraph);
+		 3 -> base3_vertices(MapGraph);
+		 4 -> base4_vertices(MapGraph)
+	end.
+
 -spec base1_vertices(MapGraph :: map_graph()) -> [bc_vertex:vertex()].
 base1_vertices(MapGraph) ->
 	BaseVertices = maps:get(base_vertices, MapGraph),
