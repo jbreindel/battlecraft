@@ -31,7 +31,6 @@
 				entity_event_handler,
 				player_num,
 				enemy_num,
-				enemy_base_uuid,
 				path,
 				timer}).
 
@@ -89,7 +88,6 @@ init([BcEntity, BcEntities, BcMap]) ->
 					   	   map = BcMap,
 						   player_num = PlayerNum,
 						   enemy_num = EnemyNum,
-						   enemy_base_uuid = undefined,
 						   path = undefined,
 						   timer = TimerRef}}.
 
