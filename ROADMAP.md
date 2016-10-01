@@ -18,6 +18,7 @@ v0.2.0 - Innovation
 ------
 
 * Asynchronous AI sensing
+* Entity Specials
 * Games Pagination
 * Upgraded Player Controls
 	* Space bar to center on base
