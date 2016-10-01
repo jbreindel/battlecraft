@@ -134,6 +134,7 @@ code_change(OldVsn, State, Extra) ->
 
 base_num(BaseBcVertices, BcMap) ->
 	BaseBcVertex = lists:nth(1, BaseBcVertices),
+	%% TODO replace this with lists:member/2
 	case lists:any(fun(Base1BcVertex) -> 
 					  bc_vertex:row(Base1BcVertex) =:= bc_vertex:row(BaseBcVertex) andalso
 						  bc_vertex:col(Base1BcVertex) =:= bc_vertex:col(BaseBcVertex)
@@ -179,8 +180,8 @@ player_num(#state{player = BcPlayer,
 				[PlayerBaseBcEntity] ->
 					Uuid = bc_entity:uuid(PlayerBaseBcEntity),
 					QueryResults = bc_map:query_ids(BcMap, Uuid),
-					BcVertices = lists:map(fun(#{vertex := BcVertex}) -> 
-											  BcVertex 
+					BcVertices = lists:map(fun(QueryRes) ->
+											  maps:get(vertex, QueryRes) 
 										   end, QueryResults),
 					Num = base_num(BcVertices, BcMap),
 					{ok, Num, State#state{base_num = Num}}
@@ -280,7 +281,7 @@ spawn_matrix(#state{base_num = BaseNum,
 					map = BcMap} = State) ->
 	case SpawnBcMatrix of
 		undefined ->
-			BcVertices = bc_map:base_vertices(BcMap, BaseNum),
+			BcVertices = bc_map:base_spawn_vertices(BcMap, BaseNum),
 			BcMatrix = bc_matrix:init(BcVertices),
 			{ok, BcMatrix, State#state{spawn_matrix = BcMatrix}};
 		BcMatrix ->

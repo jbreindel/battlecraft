@@ -14,12 +14,13 @@
 		 insert_collision/2,
 		 base_vertices/2,
 		 base1_vertices/1,
-		 base1_spawn_vertices/1,
 		 base2_vertices/1,
-		 base2_spawn_vertices/1,
 		 base3_vertices/1,
-		 base3_spawn_vertices/1,
 		 base4_vertices/1,
+		 base_spawn_vertices/2,
+		 base1_spawn_vertices/1,
+		 base2_spawn_vertices/1,
+		 base3_spawn_vertices/1,
 		 base4_spawn_vertices/1,
 		 query_collisions/2,
 		 query_ids/2,
@@ -89,35 +90,44 @@ base1_vertices(MapGraph) ->
 	BaseVertices = maps:get(base_vertices, MapGraph),
 	maps:get(base1, BaseVertices).
 
--spec base1_spawn_vertices(MapGraph :: map_graph()) -> [bc_vertex:vertex()].
-base1_spawn_vertices(MapGraph) ->
-	SpawnVertices = maps:get(spawn_vertices, MapGraph),
-	maps:get(base1, SpawnVertices).
-
 -spec base2_vertices(MapGraph :: map_graph()) -> [bc_vertex:vertex()].
 base2_vertices(MapGraph) ->
 	BaseVertices = maps:get(base_vertices, MapGraph),
 	maps:get(base2, BaseVertices).
-
--spec base2_spawn_vertices(MapGraph :: map_graph()) -> [bc_vertex:vertex()].
-base2_spawn_vertices(MapGraph) ->
-	SpawnVertices = maps:get(spawn_vertices, MapGraph),
-	maps:get(base2, SpawnVertices).
 
 -spec base3_vertices(MapGraph :: map_graph()) -> [bc_vertex:vertex()].
 base3_vertices(MapGraph) ->
 	BaseVertices = maps:get(base_vertices, MapGraph),
 	maps:get(base3, BaseVertices).
 
--spec base3_spawn_vertices(MapGraph :: map_graph()) -> [bc_vertex:vertex()].
-base3_spawn_vertices(MapGraph) ->
-	SpawnVertices = maps:get(spawn_vertices, MapGraph),
-	maps:get(base3, SpawnVertices).
-
 -spec base4_vertices(MapGraph :: map_graph()) -> [bc_vertex:vertex()].
 base4_vertices(MapGraph) ->
 	BaseVertices = maps:get(base_vertices, MapGraph),
 	maps:get(base4, BaseVertices).
+
+-spec base_spawn_vertices(MapGraph :: map_graph(), BaseNum :: integer()) -> [bc_vertex:vertex()].
+base_spawn_vertices(MapGraph, BaseNum) ->
+	case BaseNum of
+		1 -> base1_spawn_vertices(MapGraph);
+		2 -> base2_spawn_vertices(MapGraph);
+		3 -> base3_spawn_vertices(MapGraph);
+		4 -> base4_spawn_vertices(MapGraph)
+	end.
+
+-spec base1_spawn_vertices(MapGraph :: map_graph()) -> [bc_vertex:vertex()].
+base1_spawn_vertices(MapGraph) ->
+	SpawnVertices = maps:get(spawn_vertices, MapGraph),
+	maps:get(base1, SpawnVertices).
+
+-spec base2_spawn_vertices(MapGraph :: map_graph()) -> [bc_vertex:vertex()].
+base2_spawn_vertices(MapGraph) ->
+	SpawnVertices = maps:get(spawn_vertices, MapGraph),
+	maps:get(base2, SpawnVertices).
+
+-spec base3_spawn_vertices(MapGraph :: map_graph()) -> [bc_vertex:vertex()].
+base3_spawn_vertices(MapGraph) ->
+	SpawnVertices = maps:get(spawn_vertices, MapGraph),
+	maps:get(base3, SpawnVertices).
 
 -spec base4_spawn_vertices(MapGraph :: map_graph()) -> [bc_vertex:vertex()].
 base4_spawn_vertices(MapGraph) ->
