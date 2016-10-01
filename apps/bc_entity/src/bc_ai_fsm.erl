@@ -215,8 +215,14 @@ move_in_range(InRangeBcVertices, DistEntities, #state{entity = BcEntity,
 						bc_entity_util:vertex_distance(BcEntity, BcVertex),
 					{Distance, BcVertex} 
 				  end, InRangeBcVertices),
-	PathBcVertices = choose_path(DistBcVertices, DistEntities, State),
-	move_on_path(State#state{path = PathBcVertices}).
+	case choose_path(DistBcVertices, DistEntities, State) of
+		PathBcVertices when is_list(PathBcVertices) andalso 
+								length(PathBcVertices) > 0 ->
+			move_on_path(State#state{path = PathBcVertices});
+		undefined ->
+			%% TODO move closer to enemy if possible
+			stand(State#state{path = undefined})
+	end.
 
 move_on_path(#state{entity = BcEntity,
 					path = PathBcVertices} = State) ->
@@ -226,37 +232,46 @@ move_on_path(#state{entity = BcEntity,
 	
 choose_path(DistBcVertices, DistEntities, #state{entity = BcEntity,
 												 map = BcMap} = State) ->
+	EntitiesBcVertices = 
+		lists:flatten(
+			lists:map(fun({_, NearbyBcEntity}) -> 
+						bc_entity:vertices(NearbyBcEntity) 
+					  end, DistEntities)
+		),
 	SortedDistBcVertices = 
 		lists:sort(fun({Dist1, _}, 
 					   {Dist2, _}) -> 
 						Dist1 =< Dist2 
 				   end, DistBcVertices),
-	{_, ClosestBcVertex} = lists:nth(1, SortedDistBcVertices),
-	EntitiesBcVertices = lists:flatten(
-		lists:map(fun({_, NearbyBcEntity}) -> 
-					bc_entity:vertices(NearbyBcEntity) 
-				  end, DistEntities)
-	),
-	case lists:foldl(fun({_, BcVertex}, AccPath) -> 
-						case AccPath of
-							Path when is_list(Path) andalso length(Path) > 0 ->
-								Path;
-							undefined ->  
-								PathBcVertices = compute_path(BcEntity, ClosestBcVertex, State),
-								%% TODO there is deffinitly a faster way to do this
-								case lists:any(fun(PathBcVertex) -> 
-												 lists:member(PathBcVertex, EntitiesBcVertices)
-											   end, PathBcVertices) of
-									true -> undefined;
-									false -> PathBcVertices
-								end
-						end 
-					end, undefined, SortedDistBcVertices) of
-		Path when is_list(Path) andalso length(Path) > 0 ->
-			Path;
-		undefined ->
-			{_, FirstBcVertex} = lists:nth(1, SortedDistBcVertices),
-			compute_path(BcEntity, FirstBcVertex, State)
+	case lists:filter(fun({_, BcVertex}) ->
+						not lists:member(BcVertex, EntitiesBcVertices)
+					  end, SortedDistBcVertices) of
+		UnoccupiedSortedDistBcVertices 
+		  when length(UnoccupiedSortedDistBcVertices) > 0 ->			
+			%% TODO fold over UnoccupiedSortedDistBcVertices to find best path
+			{_, ClosestBcVertex} = lists:nth(1, UnoccupiedSortedDistBcVertices),
+			case lists:foldl(fun({_, BcVertex}, AccPath) -> 
+								case AccPath of
+									Path when is_list(Path) andalso length(Path) > 0 ->
+										Path;
+									undefined ->  
+										PathBcVertices = compute_path(BcEntity, ClosestBcVertex, State),
+										%% TODO there is deffinitly a faster way to do this
+										case lists:any(fun(PathBcVertex) -> 
+														 lists:member(PathBcVertex, EntitiesBcVertices)
+													   end, PathBcVertices) of
+											true -> undefined;
+											false -> PathBcVertices
+										end
+								end 
+							end, undefined, SortedDistBcVertices) of
+				Path when is_list(Path) andalso length(Path) > 0 ->
+					Path;
+				undefined ->
+					undefined
+			end;
+		_ ->
+			undefined
 	end.
 
 compute_path(BcEntity, BcVertex, #state{map = BcMap} = State) ->
@@ -437,12 +452,10 @@ move(Direction, #state{entity = BcEntity,
 					on_moved(State#state{entity = ReorientedBcEntity,
 										 path = UpdatedPath});
 				{error, _} ->
-					{next_state, standing, State#state{timer = 
-												gen_fsm:send_event_after(100, action_complete)}}
+					stand(State)
 			end;
 		false ->
-			{next_state, standing, State#state{timer = 
-												gen_fsm:send_event_after(100, action_complete)}}
+			stand(State)
 	end.
 
 update_path(_, undefined) ->
@@ -471,6 +484,10 @@ on_moved(#state{entity = BcEntity,
 	MoveSpeed = bc_entity_config:move_speed(BcEntityConfig),
 	TimerRef = send_action_complete(MoveSpeed),
 	{next_state, moving, State#state{timer = TimerRef}}.
+
+stand(State) ->
+	{next_state, standing, State#state{timer = 
+										gen_fsm:send_event_after(100, action_complete)}}.
 
 send_action_complete(Speed) ->
 	DelayFloat = 1000 - (1000 * Speed),
