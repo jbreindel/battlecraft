@@ -191,6 +191,7 @@ plan_enemy_actions(DistEntities, EnemyDistEntities,
 		InRangeEnemyBcEntities when length(InRangeEnemyBcEntities) > 0 ->
 			attack_entities(InRangeEnemyBcEntities, State);
 		_ ->
+			%% TODO move to the closest in range vertex
 			{_, EnemyBcEntity} = closest_dist_entity(EnemyDistEntities),
 			EnemyBcVertices = bc_entity:vertices(EnemyBcEntity),
 			InRangeBcVertices = bc_map:reaching_neighbors(BcMap, EnemyBcVertices, Range),
