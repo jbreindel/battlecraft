@@ -166,22 +166,23 @@ code_change(OldVsn, StateName, StateData, Extra) ->
 sense(#state{entity = BcEntity,
 			 entity_config = BcEntityConfig,
 			 map = BcMap} = State) ->
-	DistEntities = dist_entities(State),
-	case lists:filter(fun({_, NearbyBcEntity}) -> 
+	NearbyBcEntities = nearby_entities(State),
+	case lists:filter(fun(NearbyBcEntity) -> 
 						bc_entity:team(NearbyBcEntity) /= 
 							bc_entity:team(BcEntity)
-					  end, DistEntities) of
-		EnemyDistEntites when length(EnemyDistEntites) > 0 ->
-			plan_enemy_actions(DistEntities, EnemyDistEntites, State);
+					  end, NearbyBcEntities) of
+		EnemyBcEntites when length(EnemyBcEntites) > 0 ->
+			plan_enemy_actions(EnemyBcEntites, NearbyBcEntities, State);
 		_ ->
 			move_enemy_base(State)
 	end.
 
-plan_enemy_actions(DistEntities, EnemyDistEntities, 
+plan_enemy_actions(EnemyBcEntites, NearbyBcEntities, 
 				   #state{entity = BcEntity, 
 						  entity_config = BcEntityConfig, 
 						  map = BcMap} = State) ->
 	Range = bc_entity_config:range(BcEntityConfig),
+	%% TODO map enemy entities to in range vertices
 	case lists:filtermap(fun({Dist, EnemyBcEntity}) -> 
 							case Dist =< Range of 
 								true -> {true, EnemyBcEntity};
@@ -384,7 +385,7 @@ calculate_damage(BcEntityConfig, EnemyBcEntity, BcEntities) ->
 	RandDamage = rand:uniform(DamageDiff),
 	ModMinDamage + RandDamage.
 
-dist_entities(#state{entity = BcEntity} = State) ->
+dist_entities(BcEntities) ->
 	NearbyBcEntities = nearby_entities(State),
 	lists:map(fun(NearbyBcEntity) ->
 				Distance = bc_entity_util:entity_distance(BcEntity, NearbyBcEntity),
@@ -395,13 +396,14 @@ nearby_entities(#state{entity = BcEntity,
 					   entities = BcEntities, 
 					   map = BcMap} = State) ->
 	EntityBcVertices = bc_entity:vertices(BcEntity),
-	NeighborBcVertices = bc_map:reaching_neighbors(
-						   BcMap, EntityBcVertices, ?SENSE_DIST),
+	NeighborBcVertices = 
+		bc_map:reaching_neighbors(BcMap, EntityBcVertices, ?SENSE_DIST),
 	CollisionQueryRes = bc_map:query_collisions(BcMap, NeighborBcVertices),
-	UuidSet = lists:foldl(fun(QueryMap, AccSet) ->
-							CollUuid = maps:get(uuid, QueryMap),
-						  	sets:add_element(CollUuid, AccSet) 
-						  end, sets:new(), CollisionQueryRes),
+	UuidSet = 
+		lists:foldl(fun(QueryMap, AccSet) ->
+						CollUuid = maps:get(uuid, QueryMap),
+						sets:add_element(CollUuid, AccSet) 
+					end, sets:new(), CollisionQueryRes),
 	UuidList = sets:to_list(UuidSet),
 	EntityQueryRes = bc_entities:query(UuidList, BcEntities),
 	lists:map(fun(QueryBcEntity) ->  
