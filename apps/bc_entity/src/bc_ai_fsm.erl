@@ -215,6 +215,80 @@ in_range_enemies(EnemyInRangeVertices, BcEntity) ->
 			end 
 		end, EnemyInRangeVertices).
 
+attack_entities(InRangeEnemyBcEntities, State) ->
+	case lists:filter(fun(EnemyBcEntity) ->
+						bc_entity:entity_type(EnemyBcEntity) == base
+					  end, InRangeEnemyBcEntities) of
+		InRangeEnemyBaseBcEntity when length(InRangeEnemyBaseBcEntity) > 0 ->
+			EnemyBaseBcEntity = lists:nth(1, InRangeEnemyBaseBcEntity),
+			attack_entity(EnemyBaseBcEntity, State);
+		_ ->
+			InRangeEnemyBcEntity = lists:nth(1, InRangeEnemyBcEntities),
+			EnemyBcEntity = 
+				lists:foldl(
+				    fun(BcEntity, AccBcEntity) ->
+						case bc_entity:health(BcEntity) < 
+								 bc_entity:health(AccBcEntity) of
+							true -> BcEntity;
+							false -> AccBcEntity
+						end 
+					end, InRangeEnemyBcEntity, InRangeEnemyBcEntities),
+			attack_entity(InRangeEnemyBcEntity, State)
+	end.
+
+attack_entity(EnemyBcEntity, #state{entity = BcEntity,
+									entity_config = BcEntityConfig,
+									entities = BcEntities, 
+									entity_event_handler = EventHandler} = State) ->
+	Orientation = determine_orientation(BcEntity, EnemyBcEntity),
+	ReorientedEntity = reorient_entity(Orientation, BcEntity, BcEntities),
+	UpdatedState =
+		case EventHandler of
+			undefined ->
+				EntitiesEventPid = bc_entities:event(BcEntities),
+				gen_event:notify(EntitiesEventPid, {entity_attacking, ReorientedEntity}),
+				EntityUuid = bc_entity:uuid(ReorientedEntity),
+				EnemyUuid = bc_entity:uuid(EnemyBcEntity),
+				EntitiesEventPid = bc_entities:event(BcEntities),
+				Handler = {bc_died_event, EntityUuid},
+				Result = gen_event:add_sup_handler(EntitiesEventPid, 
+												   Handler, 
+												   [EnemyUuid, self()]),
+				State#state{entity = ReorientedEntity,
+							entity_event_handler = Handler};
+			_ ->
+				State
+		end,
+	EnemyBcAiFsm = bc_entity:ai_fsm(EnemyBcEntity),
+	Damage = calculate_damage(BcEntityConfig, EnemyBcEntity, BcEntities),
+	bc_ai_fsm:damage_entity(EnemyBcAiFsm, Damage),
+	AttackSpeed = bc_entity_config:attack_speed(BcEntityConfig),
+	TimerRef = send_action_complete(AttackSpeed),
+	{next_state, attacking, UpdatedState#state{timer = TimerRef}}.
+
+calculate_damage(BcEntityConfig, EnemyBcEntity, BcEntities) ->
+	EnemyEntityType = bc_entity:entity_type(EnemyBcEntity),
+	{ok, EnemyBcEntityConfig} = bc_entities:entity_config(EnemyEntityType, BcEntities),
+	EntityClass = bc_entity_config:entity_class(BcEntityConfig),
+	EnemyEntityClass = bc_entity_config:entity_class(EnemyBcEntityConfig),
+	Modifier = 
+		case {EntityClass, EnemyEntityClass} of
+			{infantry, light_armor} -> 0.8;
+			{infantry, armor} -> 0.65;
+			{anti_infantry, infantry} -> 1.35;
+			{anti_infantry, light_armor} -> 0.75;
+			{anti_infantry, armor} -> 0.7;
+			{armor, structure} -> 1.3;
+			{light_armor, structure} -> 1.2;
+			_ -> 1.0
+		end,
+	{MinDamage, MaxDamage} = bc_entity_config:damage(BcEntityConfig),
+	{ModMinDamage, ModMaxDamage} = {erlang:trunc(MinDamage * Modifier), 
+									erlang:trunc(MaxDamage * Modifier)},
+	DamageDiff = ModMaxDamage - ModMinDamage,
+	RandDamage = rand:uniform(DamageDiff),
+	ModMinDamage + RandDamage.
+
 move_in_range(InRangeBcVertices, NearbyBcEntities, 
 			  #state{entity = BcEntity, map = BcMap} = State) ->
 	case choose_path(InRangeBcVertices, NearbyBcEntities, State) of
@@ -286,56 +360,6 @@ compute_path(BcEntity, BcVertex, #state{map = BcMap} = State) ->
 			[]
 	end.
 
-attack_entities(InRangeEnemyBcEntities, State) ->
-	case lists:filter(fun(EnemyBcEntity) ->
-						bc_entity:entity_type(EnemyBcEntity) == base
-					  end, InRangeEnemyBcEntities) of
-		InRangeEnemyBaseBcEntity when length(InRangeEnemyBaseBcEntity) > 0 ->
-			EnemyBaseBcEntity = lists:nth(1, InRangeEnemyBaseBcEntity),
-			attack_entity(EnemyBaseBcEntity, State);
-		_ ->
-			InRangeEnemyBcEntity = lists:nth(1, InRangeEnemyBcEntities),
-			EnemyBcEntity = 
-				lists:foldl(fun(BcEntity, AccBcEntity) -> 
-								case bc_entity:health(BcEntity) < 
-										 bc_entity:health(AccBcEntity) of 
-									true -> BcEntity; 
-									false -> AccBcEntity 
-								end 
-							end, InRangeEnemyBcEntity, InRangeEnemyBcEntities),
-			attack_entity(InRangeEnemyBcEntity, State)
-	end.
-
-attack_entity(EnemyBcEntity, #state{entity = BcEntity,
-									entity_config = BcEntityConfig,
-									entities = BcEntities, 
-									entity_event_handler = EventHandler} = State) ->
-	Orientation = determine_orientation(BcEntity, EnemyBcEntity),
-	ReorientedEntity = reorient_entity(Orientation, BcEntity, BcEntities),
-	UpdatedState =
-		case EventHandler of
-			undefined ->
-				EntitiesEventPid = bc_entities:event(BcEntities),
-				gen_event:notify(EntitiesEventPid, {entity_attacking, ReorientedEntity}),
-				EntityUuid = bc_entity:uuid(ReorientedEntity),
-				EnemyUuid = bc_entity:uuid(EnemyBcEntity),
-				EntitiesEventPid = bc_entities:event(BcEntities),
-				Handler = {bc_died_event, EntityUuid},
-				Result = gen_event:add_sup_handler(EntitiesEventPid, 
-												   Handler, 
-												   [EnemyUuid, self()]),
-				State#state{entity = ReorientedEntity,
-							entity_event_handler = Handler};
-			_ ->
-				State
-		end,
-	EnemyBcAiFsm = bc_entity:ai_fsm(EnemyBcEntity),
-	Damage = calculate_damage(BcEntityConfig, EnemyBcEntity, BcEntities),
-	bc_ai_fsm:damage_entity(EnemyBcAiFsm, Damage),
-	AttackSpeed = bc_entity_config:attack_speed(BcEntityConfig),
-	TimerRef = send_action_complete(AttackSpeed),
-	{next_state, attacking, UpdatedState#state{timer = TimerRef}}.
-
 determine_orientation(BcEntity, EnemyBcEntity) ->
 	BcVertices = bc_entity:vertices(BcEntity),
 	BcMatrix = bc_matrix:init(BcVertices),
@@ -361,29 +385,6 @@ determine_orientation(BcEntity, EnemyBcEntity) ->
 					right
 			end
 	end.
-
-calculate_damage(BcEntityConfig, EnemyBcEntity, BcEntities) ->
-	EnemyEntityType = bc_entity:entity_type(EnemyBcEntity),
-	{ok, EnemyBcEntityConfig} = bc_entities:entity_config(EnemyEntityType, BcEntities),
-	EntityClass = bc_entity_config:entity_class(BcEntityConfig),
-	EnemyEntityClass = bc_entity_config:entity_class(EnemyBcEntityConfig),
-	Modifier = 
-		case {EntityClass, EnemyEntityClass} of
-			{infantry, light_armor} -> 0.8;
-			{infantry, armor} -> 0.65;
-			{anti_infantry, infantry} -> 1.35;
-			{anti_infantry, light_armor} -> 0.75;
-			{anti_infantry, armor} -> 0.7;
-			{armor, structure} -> 1.3;
-			{light_armor, structure} -> 1.2;
-			_ -> 1.0
-		end,
-	{MinDamage, MaxDamage} = bc_entity_config:damage(BcEntityConfig),
-	{ModMinDamage, ModMaxDamage} = {erlang:trunc(MinDamage * Modifier), 
-									erlang:trunc(MaxDamage * Modifier)},
-	DamageDiff = ModMaxDamage - ModMinDamage,
-	RandDamage = rand:uniform(DamageDiff),
-	ModMinDamage + RandDamage.
 
 nearby_entities(#state{entity = BcEntity, 
 					   entities = BcEntities, 
@@ -454,6 +455,10 @@ move(Direction, #state{entity = BcEntity,
 			stand(State)
 	end.
 
+stand(State) ->
+	{next_state, standing, State#state{timer = 
+										gen_fsm:send_event_after(100, action_complete)}}.
+
 update_path(_, undefined) ->
 	undefined;
 update_path(_, Path) when length(Path) == 0 ->
@@ -481,15 +486,6 @@ on_moved(#state{entity = BcEntity,
 	TimerRef = send_action_complete(MoveSpeed),
 	{next_state, moving, State#state{timer = TimerRef}}.
 
-stand(State) ->
-	{next_state, standing, State#state{timer = 
-										gen_fsm:send_event_after(100, action_complete)}}.
-
-send_action_complete(Speed) ->
-	DelayFloat = 1000 - (1000 * Speed),
-	DelayInt = erlang:trunc(DelayFloat),
-	gen_fsm:send_event_after(DelayInt, action_complete).
-
 reorient_entity(Orientation, BcEntity, BcEntities) ->
 	case bc_entity:orientation(BcEntity) =:= Orientation of
 		true ->
@@ -499,3 +495,9 @@ reorient_entity(Orientation, BcEntity, BcEntities) ->
 			bc_entities:insert(UpdatedBcEntity, BcEntities),
 			UpdatedBcEntity
 	end.
+
+send_action_complete(Speed) ->
+	DelayFloat = 1000 - (1000 * Speed),
+	DelayInt = erlang:trunc(DelayFloat),
+	gen_fsm:send_event_after(DelayInt, action_complete).
+
