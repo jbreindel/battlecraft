@@ -182,35 +182,43 @@ plan_enemy_actions(EnemyBcEntites, NearbyBcEntities,
 						  entity_config = BcEntityConfig, 
 						  map = BcMap} = State) ->
 	Range = bc_entity_config:range(BcEntityConfig),
-	%% TODO map enemy entities to in range vertices
-	case lists:filtermap(fun({Dist, EnemyBcEntity}) -> 
-							case Dist =< Range of 
-								true -> {true, EnemyBcEntity};
-								false -> false 
-							end 
-						end, EnemyDistEntities) of
+	EnemyInRangeVertices = lists:flatten(
+		lists:map(
+			fun(EnemyBcEntity) -> 
+				EnemyBcVertices = bc_entity:vertices(EnemyBcEntity),
+				InRangeBcVertices = 
+					bc_map:reaching_neighbors(BcMap, EnemyBcVertices, Range),
+				{EnemyBcEntity, InRangeBcVertices} 
+			end, EnemyBcEntities)
+	),
+	case in_range_enemies(EnemyInRangeVertices, BcEntity) of
 		InRangeEnemyBcEntities when length(InRangeEnemyBcEntities) > 0 ->
 			attack_entities(InRangeEnemyBcEntities, State);
 		_ ->
-			%% TODO move to the closest in range vertex
-			{_, EnemyBcEntity} = closest_dist_entity(EnemyDistEntities),
-			EnemyBcVertices = bc_entity:vertices(EnemyBcEntity),
-			InRangeBcVertices = bc_map:reaching_neighbors(BcMap, EnemyBcVertices, Range),
-			move_in_range(InRangeBcVertices, DistEntities, State)
+			InRangeBcVertices = 
+				lists:flatmap(
+				  fun({EnemyBcEntity, InRangeBcVertices}) -> 
+					  InRangeBcVertices 
+				  end, EnemyInRangeVertices),
+			move_in_range(InRangeBcVertices, NearbyBcEntities, State)
 	end.
 
-closest_dist_entity(EnemyDistEntities) ->
-	FirstDistEntity = lists:nth(1, EnemyDistEntities),
-	lists:foldl(fun({Dist1, _} = DistEntity,
-					{Dist2, _} = AccDistEntity) -> 
-					case Dist1 < Dist2 of
-						true -> DistEntity;
-						false -> AccDistEntity
-					end
-				end, FirstDistEntity, EnemyDistEntities).
+in_range_enemies(EnemyInRangeVertices, BcEntity) ->
+	BcVertices = bc_entity:vertices(BcEntity),
+	lists:filtermap(
+		fun({EnemyBcEntity, InRangeBcVertices}) -> 
+			case lists:any(
+				fun(BcVertex) -> 
+					lists:member(BcVertex, InRangeBcVertices) 
+				end) of 
+					true -> {true, EnemyBcEntity};
+					false -> false 
+			end 
+		end, EnemyInRangeVertices).
 
-move_in_range(InRangeBcVertices, DistEntities, #state{entity = BcEntity, 
-													  map = BcMap} = State) ->
+move_in_range(InRangeBcVertices, NearbyBcEntities, 
+			  #state{entity = BcEntity, map = BcMap} = State) ->
+	%% TODO reimplment with nearbybcentities.
 	DistBcVertices = 
 		lists:map(fun(BcVertex) -> 
 					Distance =
