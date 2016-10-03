@@ -252,7 +252,7 @@ reaching_neighbors(MapGraph, Vertices, MaxDist, NeighborAcc) ->
 					_ ->
 						false
 				end
-			end, Vertices),
+			end, Vertices)
 		),
 	reaching_neighbors(MapGraph, Neighbors, MaxDist -1, NeighborAcc ++ Neighbors).
 
