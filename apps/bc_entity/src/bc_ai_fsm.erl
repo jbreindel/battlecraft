@@ -177,7 +177,7 @@ sense(#state{entity = BcEntity,
 			move_enemy_base(State)
 	end.
 
-plan_enemy_actions(EnemyBcEntites, NearbyBcEntities, 
+plan_enemy_actions(EnemyBcEntities, NearbyBcEntities, 
 				   #state{entity = BcEntity, 
 						  entity_config = BcEntityConfig, 
 						  map = BcMap} = State) ->
@@ -217,22 +217,9 @@ in_range_enemies(EnemyInRangeVertices, BcEntity) ->
 
 move_in_range(InRangeBcVertices, NearbyBcEntities, 
 			  #state{entity = BcEntity, map = BcMap} = State) ->
-	%% TODO reimplment with nearbybcentities.
-	DistBcVertices = 
-		lists:map(
-			fun(BcVertex) -> 
-				Distance =
-					bc_entity_util:vertex_distance(BcEntity, BcVertex),
-				{Distance, BcVertex} 
-			end, InRangeBcVertices),
-	OccupiedBcVertices =
-		lists:flatmap(
-			fun(NearbyBcEntity) -> 
-				bc_entity:vertices(NearbyBcEntity) 
-			end, NearbyBcEntities),
-	case choose_path(DistBcVertices, OccupiedBcVertices, State) of
-		PathBcVertices when is_list(PathBcVertices) andalso 
-								length(PathBcVertices) > 0 ->
+	case choose_path(InRangeBcVertices, NearbyBcEntities, State) of
+		PathBcVertices when is_list(PathBcVertices) 
+		  andalso length(PathBcVertices) > 0 ->
 			move_on_path(State#state{path = PathBcVertices});
 		undefined ->
 			%% TODO move closer to enemy if possible
@@ -245,43 +232,49 @@ move_on_path(#state{entity = BcEntity,
 	Direction = bc_entity_util:move_direction(BcEntity, MoveBcVertex),
 	move(Direction, State).
 	
-choose_path(DistBcVertices, OccupiedBcVertices, #state{entity = BcEntity,
-													   map = BcMap} = State) ->
-	SortedDistBcVertices = 
-		lists:sort(fun({Dist1, _}, 
-					   {Dist2, _}) -> 
-						Dist1 =< Dist2 
-				   end, DistBcVertices),
-	case lists:filter(fun({_, BcVertex}) ->
-						not lists:member(BcVertex, OccupiedBcVertices)
-					  end, SortedDistBcVertices) of
-		UnoccupiedSortedDistBcVertices 
-		  when length(UnoccupiedSortedDistBcVertices) > 0 ->			
-			%% TODO fold over UnoccupiedSortedDistBcVertices to find best path
-			{_, ClosestBcVertex} = lists:nth(1, UnoccupiedSortedDistBcVertices),
-			case lists:foldl(fun({_, BcVertex}, AccPath) -> 
-								case AccPath of
-									Path when is_list(Path) andalso length(Path) > 0 ->
-										Path;
-									undefined ->  
-										PathBcVertices = compute_path(BcEntity, ClosestBcVertex, State),
-										%% TODO there is deffinitly a faster way to do this
-										case lists:any(fun(PathBcVertex) -> 
-														 lists:member(PathBcVertex, OccupiedBcVertices)
-													   end, PathBcVertices) of
-											true -> undefined;
-											false -> PathBcVertices
-										end
-								end 
-							end, undefined, SortedDistBcVertices) of
-				Path when is_list(Path) andalso length(Path) > 0 ->
-					Path;
-				undefined ->
-					undefined
-			end;
-		_ ->
-			undefined
-	end.
+choose_path(InRangeBcVertices, NearbyBcEntities, 
+			#state{entity = BcEntity, map = BcMap} = State) ->
+	SortedDistBcVertices = sorted_dist_vertices(InRangeBcVertices, State),
+	OccupiedBcVertices = 
+		lists:flatmap(
+			fun(NearbyBcEntity) -> 
+				bc_entity:vertices(NearbyBcEntity) 
+			end, NearbyBcEntities),
+	UnoccupiedSortedDistBcVertices =
+		lists:filter(
+		   fun({_Dist, BcVertex}) ->
+			   not lists:member(BcVertex, OccupiedBcVertices)
+		   end, SortedDistBcVertices),
+	lists:foldl(
+	  fun({_Dist, InRangeBcVertex}, AccPath) -> 
+		  case AccPath of 
+			  Path when is_list(Path) andalso length(Path) > 0 -> 
+				  Path;
+			  undefined -> 
+				  PathBcVertices = compute_path(BcEntity, InRangeBcVertex, State),
+				  %% TODO there is deffinitly a faster way to do this
+				  case lists:any(
+						 fun(PathBcVertex) ->
+							 lists:member(PathBcVertex, OccupiedBcVertices)
+						 end, PathBcVertices) of
+					  true -> undefined;
+					  false -> PathBcVertices
+				  end
+		  end 
+	  end, undefined, UnoccupiedSortedDistBcVertices).
+
+sorted_dist_vertices(InRangeBcVertices, #state{entity = BcEntity} = State) ->
+	DistBcVertices = 
+		lists:map(
+			fun(BcVertex) -> 
+				Distance =
+					bc_entity_util:vertex_distance(BcEntity, BcVertex),
+				{Distance, BcVertex} 
+			end, InRangeBcVertices),
+	lists:sort(fun({Dist1, _}, 
+				   {Dist2, _}) ->
+				 Dist1 =< Dist2
+			   end, DistBcVertices).
 
 compute_path(BcEntity, BcVertex, #state{map = BcMap} = State) ->
 	ClosestEntityBcVertex = 
@@ -289,7 +282,7 @@ compute_path(BcEntity, BcVertex, #state{map = BcMap} = State) ->
 	case bc_map:compute_path(BcMap, ClosestEntityBcVertex, BcVertex) of
 		Path when is_list(Path) andalso length(Path) > 1 ->
 			lists:sublist(Path, 2, length(Path) + 1);
-		EmptyPath ->
+		_EmptyPath ->
 			[]
 	end.
 
@@ -392,13 +385,6 @@ calculate_damage(BcEntityConfig, EnemyBcEntity, BcEntities) ->
 	RandDamage = rand:uniform(DamageDiff),
 	ModMinDamage + RandDamage.
 
-dist_entities(BcEntities) ->
-	NearbyBcEntities = nearby_entities(State),
-	lists:map(fun(NearbyBcEntity) ->
-				Distance = bc_entity_util:entity_distance(BcEntity, NearbyBcEntity),
-				{Distance, NearbyBcEntity}
-			  end, NearbyBcEntities).
-
 nearby_entities(#state{entity = BcEntity, 
 					   entities = BcEntities, 
 					   map = BcMap} = State) ->
@@ -440,8 +426,8 @@ move_enemy_base(#state{entity_config = BcEntityConfig,
 			BaseBcVertices = bc_map:base_vertices(BcMap, EnemyNum),
 			Range = bc_entity_config:range(BcEntityConfig),
 			InRangeBcVertices = bc_map:reaching_neighbors(BcMap, BaseBcVertices, Range),
-			DistEntities = dist_entities(State),
-			move_in_range(InRangeBcVertices, DistEntities, State)
+			NearbyEntities = nearby_entities(State),
+			move_in_range(InRangeBcVertices, NearbyEntities, State)
 	end.
 
 move(Direction, #state{entity = BcEntity, 
