@@ -413,12 +413,17 @@ move_enemy_base(#state{entity_config = BcEntityConfig,
 		CurrentPath when length(CurrentPath) > 0 ->
 			move_on_path(State);
 		undefined ->
-			%% FIXME get updated path
-			BaseBcVertices = bc_map:base_vertices(BcMap, 0),
+			{BaseUuid, State2} = enemy_base_uuid(State),
+			BaseQueryRes = bc_map:query_ids(BcMap, BaseUuid),
+			BaseBcVertices = 
+				lists:map(
+				  fun(QueryRes) -> 
+					  maps:get(vertex, QueryRes)
+				  end, BaseQueryRes),
 			Range = bc_entity_config:range(BcEntityConfig),
 			InRangeBcVertices = bc_map:reaching_neighbors(BcMap, BaseBcVertices, Range),
-			NearbyEntities = nearby_entities(State),
-			move_in_range(InRangeBcVertices, NearbyEntities, State)
+			NearbyEntities = nearby_entities(State2),
+			move_in_range(InRangeBcVertices, NearbyEntities, State2)
 	end.
 
 enemy_base_uuid(#state{entities = BcEntities,
