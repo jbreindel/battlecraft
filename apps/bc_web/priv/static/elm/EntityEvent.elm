@@ -32,6 +32,7 @@ type alias Entity = {
     health : Int,
     maxHealth : Int,
     playerId : Int,
+    playerNum : Int,
     team : Int,
     orientation : String,
     vertices : List Vertex
@@ -45,6 +46,7 @@ entity =
         |: ("health" := int)
         |: ("max_health" := int)
         |: ("player_id" := int)
+        |: ("player_num" := int)
         |: ("team" := int)
         |: ("orientation" := string)
         |: ("vertices" := list vertex)
