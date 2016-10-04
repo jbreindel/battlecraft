@@ -18,7 +18,7 @@
 -record(state, {entity_sup,
 				game,
 				player,
-				base_num,
+				player_num,
 				spawn_matrix,
 				gold,
 				map,
@@ -55,7 +55,7 @@ init([BcEntitySup, BcGame, BcPlayer, BcGoldFsm, BcMap, BcEntities]) ->
 	{ok, #state{entity_sup = BcEntitySup,
 				game = BcGame, 
 				player = BcPlayer,
-				base_num = undefined,
+				player_num = undefined,
 				spawn_matrix = undefined,
 				gold = BcGoldFsm,
 				map = BcMap,
@@ -88,7 +88,7 @@ handle_cast({spawn_entities, EntityTypeStr}, #state{entities = BcEntities} = Sta
 	EntityType = bc_entity_util:iolist_to_entity_type(EntityTypeStr),
 	case bc_entities:entity_config(EntityType, BcEntities) of
 		{ok, BcEntityConfig} ->
-			{ok, BaseNum, State1} = player_num(State),
+			{ok, PlayerNum, State1} = player_num(State),
 			{ok, BcMatrix, State2} = spawn_matrix(State1),
 			Cost = bc_entity_config:cost(BcEntityConfig),
 			case bc_gold_fsm:subtract(State2#state.gold, Cost) of
@@ -165,10 +165,10 @@ base_num(BaseBcVertices, BcMap) ->
 	end.
 
 player_num(#state{player = BcPlayer,
-				  base_num = BaseNum,
+				  player_num = PlayerNum,
 				  map = BcMap, 
 				  entities = BcEntities} = State) ->
-	case BaseNum of
+	case PlayerNum of
 		undefined ->
 			PlayerId = bc_player:id(BcPlayer),
 			BaseBcEntities = bc_entities:query_type(base, BcEntities),
@@ -184,7 +184,7 @@ player_num(#state{player = BcPlayer,
 											  maps:get(vertex, QueryRes) 
 										   end, QueryResults),
 					Num = base_num(BcVertices, BcMap),
-					{ok, Num, State#state{base_num = Num}}
+					{ok, Num, State#state{player_num = Num}}
 			end;
 		Num when is_integer(Num) ->
 			{ok, Num, State}
@@ -215,7 +215,7 @@ spawn_entities(_, SpawnCount, _, _) when SpawnCount =< 0 ->
 spawn_entities({Offset, MaxOffset}, SpawnCount, BcEntityConfig, 
 			   #state{entities = BcEntities,
 					  map = BcMap,
-					  base_num = BaseNum,
+					  player_num = PlayerNum,
 					  spawn_matrix = BcMatrix} = State) ->
 	case spawn_vertices(Offset, State) of
 		{ok, SpawnBcVertices} ->
@@ -236,10 +236,10 @@ do_spawn_entities(BatchCount, Acc, [SpawnBcVertex|SpawnBcVertices],
 									   entities = BcEntities,
 									   player = BcPlayer,
 					  				   map = BcMap,
-					  				   base_num = BaseNum} = State) ->
+					  				   player_num = PlayerNum} = State) ->
 	Uuid = uuid:get_v4(),
 	BcCollision = bc_collision:init(Uuid, SpawnBcVertex),
-	Orientation = entity_orientation(BaseNum),
+	Orientation = bc_entity_util:entity_orientation(PlayerNum),
 	case bc_entity_util:spawn_entity(BcCollision, BcPlayer, BcEntitySup, BcEntityConfig, 
 									 Orientation, BcMap, BcEntities) of
 		{ok, BcEntity} ->
@@ -250,9 +250,9 @@ do_spawn_entities(BatchCount, Acc, [SpawnBcVertex|SpawnBcVertices],
 							  BcEntityConfig, State)
 	end.
 
-spawn_vertices(Offset, #state{base_num = BaseNum,
+spawn_vertices(Offset, #state{player_num = PlayerNum,
 					  		  spawn_matrix = SpawnBcMatrix} = State) ->
-	case BaseNum of
+	case PlayerNum of
 		1 -> 
 			MinRow = bc_matrix:min_row(SpawnBcMatrix),
 			bc_matrix:row(MinRow + Offset, SpawnBcMatrix);
@@ -267,21 +267,12 @@ spawn_vertices(Offset, #state{base_num = BaseNum,
 			bc_matrix:col(MinCol + Offset, SpawnBcMatrix)
 	end.
 
-entity_orientation(BaseNum) ->
-	case BaseNum of
-		1 -> down;
-		2 -> left;
-		3 -> up;
-		4 -> right;
-		_ -> up
-	end.
-
-spawn_matrix(#state{base_num = BaseNum,
+spawn_matrix(#state{player_num = PlayerNum,
 					spawn_matrix = SpawnBcMatrix,
 					map = BcMap} = State) ->
 	case SpawnBcMatrix of
 		undefined ->
-			BcVertices = bc_map:base_spawn_vertices(BcMap, BaseNum),
+			BcVertices = bc_map:base_spawn_vertices(BcMap, PlayerNum),
 			BcMatrix = bc_matrix:init(BcVertices),
 			{ok, BcMatrix, State#state{spawn_matrix = BcMatrix}};
 		BcMatrix ->

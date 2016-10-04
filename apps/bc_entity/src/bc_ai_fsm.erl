@@ -29,8 +29,7 @@
 				entities,
 				map,
 				entity_event_handler,
-				player_num,
-				enemy_num,
+				enemy_base_uuid,
 				path,
 				timer}).
 
@@ -68,14 +67,6 @@ init([BcEntity, BcEntities, BcMap]) ->
 			structure -> no_action; 
 			_ -> standing 
 		end,
-	{PlayerNum, EnemyNum} = 
-		case bc_entity:orientation(BcEntity) of
-			 down -> {1, 3};
-			 left -> {2, 4};
-			 up -> {3, 1};
-			 right -> {4, 2};
-			 _ -> {0, 0}
-		end,
 	TimerRef = gen_fsm:send_event_after(5, action_complete),
 	%% properly seed with <<A:32, B:32, C:32>> = crypto:rand_bytes(12),
 	_ = rand:seed(exs1024, {erlang:unique_integer([positive]), 
@@ -86,8 +77,6 @@ init([BcEntity, BcEntities, BcMap]) ->
 						   entity_event_handler = undefined,
 					   	   entities = BcEntities, 
 					   	   map = BcMap,
-						   player_num = PlayerNum,
-						   enemy_num = EnemyNum,
 						   path = undefined,
 						   timer = TimerRef}}.
 
@@ -418,18 +407,83 @@ nearby_entities(#state{entity = BcEntity,
 move_enemy_base(#state{entity_config = BcEntityConfig,
 					   entities = BcEntities,
 					   map = BcMap,
-					   enemy_num = EnemyNum,
+					   enemy_base_uuid = EnemyBaseUuid,
 					   path = Path} = State) ->
 	case Path of
 		CurrentPath when length(CurrentPath) > 0 ->
 			move_on_path(State);
 		undefined ->
-			BaseBcVertices = bc_map:base_vertices(BcMap, EnemyNum),
+			%% FIXME get updated path
+			BaseBcVertices = bc_map:base_vertices(BcMap, 0),
 			Range = bc_entity_config:range(BcEntityConfig),
 			InRangeBcVertices = bc_map:reaching_neighbors(BcMap, BaseBcVertices, Range),
 			NearbyEntities = nearby_entities(State),
 			move_in_range(InRangeBcVertices, NearbyEntities, State)
 	end.
+
+enemy_base_uuid(#state{entities = BcEntities,
+					   map = BcMap,
+					   enemy_base_uuid = EnemyBaseUuid} = State) ->
+	case EnemyBaseUuid of
+		Uuid when is_binary(Uuid) ->
+			case bc_entities:exists(Uuid, BcEntities) of
+				true ->
+					{Uuid, State};
+				false ->
+					find_enemy_base(State)
+			end;
+		undefined ->
+			find_enemy_base(State)
+	end.
+
+find_enemy_base(#state{entity = BcEntity, 
+					   entities = BcEntities,
+					   map = BcMap,
+					   enemy_base_uuid = EnemyBaseUuid} = State) ->
+	%% FIXME implement with player num on entities
+	undefined.
+%% 	BaseBcEntities = bc_entities:query_type(base, BcEntities),
+%% 	Team = bc_entity:team(BcEntity),
+%% 	case lists:filtermap(
+%% 		   fun(BaseBcEntity) -> 
+%% 			  case bc_entity:team(BaseBcEntity) =:= Team of
+%% 				  true -> false;
+%% 				  false -> {true, bc_entity:uuid(BaseBcEntity)}
+%% 			  end
+%% 		   end, BaseBcEntities) of
+%% 		EnemyBaseUuids when length(EnemyBaseUuids) > 0 ->
+%% 			EnemyNums =
+%% 				case PlayerNum of
+%% 					1 -> [3, 4];
+%% 					2 -> [4, 1];
+%% 					3 -> [1, 2];
+%% 					4 -> [2, 1];
+%% 					_ -> []
+%% 				end,
+%% 			lists:foldl(
+%% 			  fun(EnemyNum, AccUuid) -> 
+%% 				  case AccUuid of 
+%% 					  Uuid when is_bin(Uuid) -> 
+%% 						  Uuid;
+%% 					  undefined -> 
+%% 						  BaseBcVertices = 
+%% 							  bc_map:base_vertices(BcMap, EnemyNum),
+%% 						  case bc_map:query(BcMap, BaseBcVertices) of
+%% 							  QueryRes when length(QueryRes) > 0 ->
+%% 								  Uuids =
+%% 									  lists:map(
+%% 										fun(Res) -> 
+%% 											maps:get(uuid, Res) 
+%% 										end, QueryRes),
+%% 								  lists:nth(1, Uuids);
+%% 							  [] ->
+%% 								  undefined
+%% 						  end
+%% 				  end 
+%% 			  end, undefined, EnemyNums);
+%% 		[] ->
+%% 			undefined
+%% 	end.
 
 move(Direction, #state{entity = BcEntity, 
 					   entity_config = BcEntityConfig,		 

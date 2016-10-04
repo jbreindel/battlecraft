@@ -5,24 +5,25 @@
 		 entity_distance/2,
 		 vertex_distance/2,
 		 closest_entity_vertex/2,
+		 entity_orientation/1,
 		 move_direction/2,
 		 iolist_to_entity_type/1]).
 
 -spec spawn_entity(BcCollision :: bc_collision:collision(), 
-				   BcPlayer :: bc_player:player(), 
+				   BcPlayer :: bc_player:player(),
 				   BcEntitySup :: pid(),
-				   BcEntityConfig :: bc_entity_config:entity_config(), 
-				   Orientation :: atom(), 
+				   BcEntityConfig :: bc_entity_config:entity_config(),
+				   PlayerNum :: integer(), 
 				   BcMap :: bc_map:map_graph(),
 				   BcEntities :: bc_entites:entity()) -> {ok, BcEntity :: bc_entity:entity()} |
 															 {error_entity, Reason :: string()} |
 															 {error_collision, Reason :: string()}.
 spawn_entity(BcCollision, BcPlayer, BcEntitySup, 
-			 BcEntityConfig, Orientation, BcMap, BcEntities) ->
+			 BcEntityConfig, PlayerNum, BcMap, BcEntities) ->
 	case bc_map:insert_collision(BcMap, BcCollision) of
 		true ->
 			BcEntity = create_entity(BcCollision, BcPlayer, BcEntitySup, 
-									 BcEntityConfig, Orientation, BcMap, BcEntities),
+									 BcEntityConfig, PlayerNum, BcMap, BcEntities),
 			case bc_entities:insert_new(BcEntity, BcEntities) of
 				true ->
 					EntitiesEventPid = bc_entities:event(BcEntities),
@@ -111,6 +112,16 @@ closest_entity_vertex(BcEntity, QueryBcVertex) ->
 					end, FirstDistVertex, DistVertices),
 	ClosestBcVertex.
 
+-spec entity_orientation(PlayerNum :: integer()) -> atom().
+entity_orientation(PlayerNum) ->
+	case PlayerNum of
+		1 -> down;
+		2 -> left;
+		3 -> up;
+		4 -> right;
+		_ -> up
+	end.
+
 -spec iolist_to_entity_type(EntityTypeStr :: iolist()) -> atom().
 iolist_to_entity_type(EntityTypeStr) ->
 	case EntityTypeStr of
@@ -122,7 +133,7 @@ iolist_to_entity_type(EntityTypeStr) ->
 	end.
 
 create_entity(BcCollision, BcPlayer, BcEntitySup, 
-			  BcEntityConfig, Orientation, BcMap, BcEntities) ->
+			  BcEntityConfig, PlayerNum, BcMap, BcEntities) ->
 	Uuid = bc_collision:uuid(BcCollision),
 	BcVertices = bc_collision:vertices(BcCollision),
 	BaseUuidStr = uuid:uuid_to_string(Uuid),
@@ -130,7 +141,8 @@ create_entity(BcCollision, BcPlayer, BcEntitySup,
 	Team = bc_player:team(BcPlayer),
 	EntityType = bc_entity_config:entity_type(BcEntityConfig),
 	Health = bc_entity_config:health(BcEntityConfig),
-	BcEntity = bc_entity:init(BaseUuidStr, PlayerId, Team, EntityType, 
+	Orientation = entity_orientation(PlayerNum),
+	BcEntity = bc_entity:init(BaseUuidStr, PlayerId, PlayerNum, Team, EntityType, 
 				   			  Health, Health, Orientation, BcVertices),
 	{ok, BcAiFsm} = supervisor:start_child(BcEntitySup, #{
 		id => Uuid,

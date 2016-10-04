@@ -2,12 +2,14 @@
 -module(bc_entity).
 
 %% API exports
--export([init/8, 
-		 init/9, 
+-export([init/9, 
+		 init/10, 
 		 uuid_str/1,
 		 uuid/1,
 		 player_id/1,
-		 set_player_id/2, 
+		 set_player_id/2,
+		 player_num/1,
+		 set_player_num/2, 
 		 team/1, 
 		 set_team/2,
 		 entity_type/1,
@@ -30,7 +32,8 @@
 %% @doc base entity type for saving and transfering entities.
 %%
 -type entity() :: #{uuid_str => string(), 
-					player_id => integer(), 
+					player_id => integer(),
+					player_num => integer(), 
 					team => integer(), 
 					entity_type => integer(), 
 					health => integer(), 
@@ -48,17 +51,19 @@
 
 -spec init(UuidStr :: string(), 
 		   PlayerId :: integer(), 
+		   PlayerNum :: integer(),
 		   Team :: integer(), 
 		   EntityType :: integer(), 
 		   Health :: integer(),
 		   MaxHealth :: integer(),
 		   Orientation :: atom(),
 		   Vertices :: [bc_vertex:vertex()]) -> entity().
-init(UuidStr, PlayerId, Team, EntityType, Health, MaxHealth, Orientation, Vertices) ->
-	init(UuidStr, PlayerId, Team, EntityType, Health, MaxHealth, Orientation, Vertices, undefined).
+init(UuidStr, PlayerId, PlayerNum, Team, EntityType, Health, MaxHealth, Orientation, Vertices) ->
+	init(UuidStr, PlayerId, PlayerNum, Team, EntityType, Health, MaxHealth, Orientation, Vertices, undefined).
 
 -spec init(UuidStr :: string(), 
 		   PlayerId :: integer(), 
+		   PlayerNum :: integer(),
 		   Team :: integer(), 
 		   EntityType :: integer(), 
 		   Health :: integer(),
@@ -66,9 +71,10 @@ init(UuidStr, PlayerId, Team, EntityType, Health, MaxHealth, Orientation, Vertic
 		   Orientation :: atom(),
 		   Vertices :: [bc_vertex:vertex()],
 		   AIFsm :: pid()) -> entity().
-init(UuidStr, PlayerId, Team, EntityType, Health, MaxHealth, Orientation, Vertices, AIFsm) ->
+init(UuidStr, PlayerId, PlayerNum, Team, EntityType, Health, MaxHealth, Orientation, Vertices, AIFsm) ->
 	#{uuid_str => UuidStr,
 	  player_id => PlayerId,
+	  player_num => PlayerNum,
 	  team => Team,
 	  entity_type => EntityType,
 	  health => Health,
@@ -93,6 +99,14 @@ player_id(BcEntity)->
 -spec set_player_id(PlayerId :: integer(), BcEntity :: entity()) -> entity().
 set_player_id(PlayerId, BcEntity) ->
 	maps:update(player_id, PlayerId, BcEntity).
+
+-spec player_num(BcEntity :: entity()) -> integer().
+player_num(BcEntity) ->
+	maps:get(player_num, BcEntity).
+
+-spec set_player_num(PlayerNum :: integer(), BcEntity :: entity()) -> entity.
+set_player_num(PlayerNum, BcEntity) ->
+	maps:update(player_num, PlayerNum, BcEntity).
 
 -spec team(BcEntity :: entity()) -> integer().
 team(BcEntity) ->
@@ -156,6 +170,7 @@ to_collision(BcEntity) ->
 to_tuple(BcEntity) ->
 	{uuid(BcEntity), 
 	 player_id(BcEntity), 
+	 player_num(BcEntity),
 	 team(BcEntity), 
 	 entity_type(BcEntity), 
 	 health(BcEntity), 
@@ -167,13 +182,14 @@ to_tuple(BcEntity) ->
 from_tuple(
 	{Uuid, 
 	 PlayerId, 
+	 PlayerNum,
 	 Team, 
 	 EntityType, 
 	 Health, 
 	 MaxHealth,
 	 Orientation,
 	 AiFsm}) ->
-	init(uuid:uuid_to_string(Uuid), PlayerId, Team, EntityType, 
+	init(uuid:uuid_to_string(Uuid), PlayerId, PlayerNum, Team, EntityType, 
 		Health, MaxHealth, Orientation, undefined, AiFsm).
 
 -spec serialize(BcEntity :: entity()) -> map().

@@ -16,6 +16,7 @@
 		 insert/2, 
 		 query/2, 
 		 query_type/2,
+		 exists/2,
 		 delete/2]).
 
 %%
@@ -82,7 +83,16 @@ query(Uuids, #{entities_tab := Tab}) when is_list(Uuids) ->
 query_type(EntityType, #{entities_tab := Tab}) ->
 	qlc:eval(qlc:q([bc_entity:from_tuple(BcEntityTuple) ||
 					  BcEntityTuple <- ets:table(Tab),
-					  element(4, BcEntityTuple) =:= EntityType])).
+					  element(5, BcEntityTuple) =:= EntityType])).
+
+-spec exists(Uuid :: uuid:uuid(), BcEntities :: entities()) -> boolean().
+exists(Uuid, BcEntities) ->
+	case query(Uuid, BcEntities) of
+		QueryRes when length(QueryRes) > 0 ->
+			true;
+		[] ->
+			false
+	end.
 
 -spec delete(Uuid :: uuid:uuid(),
 			 BcEntities :: entities()) -> true.
