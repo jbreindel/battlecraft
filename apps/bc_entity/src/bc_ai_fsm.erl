@@ -208,7 +208,7 @@ in_range_enemies(EnemyInRangeVertices, BcEntity) ->
 		fun({EnemyBcEntity, InRangeBcVertices}) -> 
 			case lists:any(
 				fun(BcVertex) -> 
-					lists:member(BcVertex, InRangeBcVertices) 
+					lists:member(BcVertex, BcVertices) 
 				end, InRangeBcVertices) of 
 					true -> {true, EnemyBcEntity};
 					false -> false 
