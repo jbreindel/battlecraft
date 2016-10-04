@@ -430,60 +430,57 @@ enemy_base_uuid(#state{entities = BcEntities,
 				true ->
 					{Uuid, State};
 				false ->
-					find_enemy_base(State)
+					BaseUuid = find_enemy_base(State),
+					{BaseUuid, State#state{enemy_base_uuid = BaseUuid}}
 			end;
 		undefined ->
-			find_enemy_base(State)
+			BaseUuid = find_enemy_base(State),
+			{BaseUuid, State#state{enemy_base_uuid = BaseUuid}}
 	end.
 
 find_enemy_base(#state{entity = BcEntity, 
 					   entities = BcEntities,
 					   map = BcMap,
 					   enemy_base_uuid = EnemyBaseUuid} = State) ->
-	%% FIXME implement with player num on entities
-	undefined.
-%% 	BaseBcEntities = bc_entities:query_type(base, BcEntities),
-%% 	Team = bc_entity:team(BcEntity),
-%% 	case lists:filtermap(
-%% 		   fun(BaseBcEntity) -> 
-%% 			  case bc_entity:team(BaseBcEntity) =:= Team of
-%% 				  true -> false;
-%% 				  false -> {true, bc_entity:uuid(BaseBcEntity)}
-%% 			  end
-%% 		   end, BaseBcEntities) of
-%% 		EnemyBaseUuids when length(EnemyBaseUuids) > 0 ->
-%% 			EnemyNums =
-%% 				case PlayerNum of
-%% 					1 -> [3, 4];
-%% 					2 -> [4, 1];
-%% 					3 -> [1, 2];
-%% 					4 -> [2, 1];
-%% 					_ -> []
-%% 				end,
-%% 			lists:foldl(
-%% 			  fun(EnemyNum, AccUuid) -> 
-%% 				  case AccUuid of 
-%% 					  Uuid when is_bin(Uuid) -> 
-%% 						  Uuid;
-%% 					  undefined -> 
-%% 						  BaseBcVertices = 
-%% 							  bc_map:base_vertices(BcMap, EnemyNum),
-%% 						  case bc_map:query(BcMap, BaseBcVertices) of
-%% 							  QueryRes when length(QueryRes) > 0 ->
-%% 								  Uuids =
-%% 									  lists:map(
-%% 										fun(Res) -> 
-%% 											maps:get(uuid, Res) 
-%% 										end, QueryRes),
-%% 								  lists:nth(1, Uuids);
-%% 							  [] ->
-%% 								  undefined
-%% 						  end
-%% 				  end 
-%% 			  end, undefined, EnemyNums);
-%% 		[] ->
-%% 			undefined
-%% 	end.
+	PlayerNum = bc_entity:player_num(BcEntity),
+	EnemyNums = 				
+		case PlayerNum of
+			1 -> [3, 4];
+			2 -> [4, 1];
+			3 -> [1, 2];
+			4 -> [2, 1];
+			_ -> []
+		end,
+	BaseBcEntities = bc_entities:query_type(base, BcEntities),
+	case lists:map(
+		   fun(BaseBcEntity) -> 
+			  BasePlayerNum = bc_entity:player_num(BaseBcEntity),
+			  BaseUuid = bc_entity:uuid(BaseBcEntity),
+			  {BasePlayerNum, BaseUuid}
+		   end, BaseBcEntities) of
+		BasePlayerNumUuids when length(BasePlayerNumUuids) > 0 ->
+			EnemyBaseUuids =
+				lists:map(
+				  fun(EnemyNum) ->
+					  case lists:keyfind(EnemyNum, 1, BasePlayerNumUuids) of
+						  {BasePlayerNum, BaseUuid} ->
+							  BaseUuid;
+						  false -> 
+							  undefined
+					  end 
+				  end, EnemyNums),
+			lists:foldl(
+			  fun(BaseUuid, AccUuid) -> 
+				  case AccUuid of 
+					  Uuid when is_binary(Uuid) -> 
+						  Uuid; 
+					  undefined -> 
+						  BaseUuid 
+				  end 
+			  end, undefined, EnemyBaseUuids);
+		[] ->
+			undefined
+	end.
 
 move(Direction, #state{entity = BcEntity, 
 					   entity_config = BcEntityConfig,		 
