@@ -104,16 +104,16 @@ handle_call({spawn_player_bases, BcPlayers}, _From,
 	BaseBcCollisions = 
 		case SortedBcPlayers of
 			Players when length(Players) == 2 ->
-				[bc_collision:init(uuid:get_v4(), bc_map:base1_vertices(BcMap)),
-			 	 bc_collision:init(uuid:get_v4(), bc_map:base3_vertices(BcMap))];
+				[{1, bc_collision:init(uuid:get_v4(), bc_map:base1_vertices(BcMap))},
+			 	 {3, bc_collision:init(uuid:get_v4(), bc_map:base3_vertices(BcMap))}];
 			Players when length(Players) == 4 ->
-				[bc_collision:init(uuid:get_v4(), bc_map:base1_vertices(BcMap)),
-			 	 bc_collision:init(uuid:get_v4(), bc_map:base2_vertices(BcMap)),
-			 	 bc_collision:init(uuid:get_v4(), bc_map:base3_vertices(BcMap)),
-			 	 bc_collision:init(uuid:get_v4(), bc_map:base4_vertices(BcMap))]
+				[{1, bc_collision:init(uuid:get_v4(), bc_map:base1_vertices(BcMap))},
+			 	 {2, bc_collision:init(uuid:get_v4(), bc_map:base2_vertices(BcMap))},
+			 	 {3, bc_collision:init(uuid:get_v4(), bc_map:base3_vertices(BcMap))},
+			 	 {4, bc_collision:init(uuid:get_v4(), bc_map:base4_vertices(BcMap))}]
 		end,
 	lists:foldl(fun(BcPlayer, Num) -> 
-					BaseBcCollision = lists:nth(Num, BaseBcCollisions),
+					{_, BaseBcCollision} = lists:nth(Num, BaseBcCollisions),
 					BaseUuid = bc_collision:uuid(BaseBcCollision),
 					gen_event:add_handler(EntitiesEventPid, 
 										  bc_base_event, 
@@ -144,63 +144,21 @@ start_gold_fsm(BcPlayerSup, BcGame, BcPlayer) ->
 	gen_event:add_handler(EventPid, bc_gold_event, {gold_fsm, BcGoldFsm}),
 	BcGoldFsm.
 
-create_base_entity(BaseBcCollision, BcPlayer, BcEntities) ->
-	BaseUuid = bc_collision:uuid(BaseBcCollision),
-	BaseBcVertices = bc_collision:vertices(BaseBcCollision),
-	{ok, BaseBcEntityConfig} = bc_entities:entity_config(base, BcEntities),
-	BaseUuidStr = uuid:uuid_to_string(BaseUuid),
-	PlayerId = bc_player:id(BcPlayer),
-	Team = bc_player:team(BcPlayer),
-	Health = bc_entity_config:health(BaseBcEntityConfig),
-	bc_entity:init(BaseUuidStr, PlayerId, Team, base, 
-				   Health, Health, undefined, BaseBcVertices).
-
-spawn_base_ai(BaseBcEntity, #state{entity_sups = BcEntitySupDict,
-								   map = BcMap,
-								   entities = BcEntities} = State) ->
-	PlayerId = bc_entity:player_id(BaseBcEntity),
-	case dict:find(PlayerId, BcEntitySupDict) of
-		{ok, BcEntitySup} ->
-			BaseUuid = bc_entity:uuid(BaseBcEntity),
-			{ok, BaseBcAiFsm} = supervisor:start_child(BcEntitySup, #{
-				id => BaseUuid,
-				start => {bc_ai_fsm, start_link, [BaseBcEntity, BcEntities, BcMap]},
-				restart => transient,
-				type => worker,
-				modules => [bc_ai_fsm]
-			}),
-			UpdatedBaseBcEntity = bc_entity:set_ai_fsm(BaseBcAiFsm, BaseBcEntity),
-			{ok, UpdatedBaseBcEntity};
-		error ->
-			{error, "Can't find entity supervisor."}
-	end.
-
-insert_base_entity(BaseBcEntity, BcEntities) ->
-	case bc_entities:insert_new(BaseBcEntity, BcEntities) of
-		true ->
-			EntitiesEventPid = bc_entities:event(BcEntities),
-			gen_event:notify(EntitiesEventPid, {entity_spawned, BaseBcEntity}),
-			true;
-		false ->
-			false
-	end.
-
 spawn_player_bases([], _, _) ->
 	ok;
-spawn_player_bases([BcPlayer|BcPlayers], [BaseBcCollision|BaseBcCollisions], 
+spawn_player_bases([BcPlayer|BcPlayers], [{PlayerNum, BaseBcCollision}|BaseBcCollisions], 
 				   #state{input_sup = BcInputSup,
 						  map = BcMap, 
-						  entities = BcEntities} = State) ->
-	case bc_map:insert_collision(BcMap, BaseBcCollision) of
-		true ->
-			BaseBcEntity = create_base_entity(BaseBcCollision, BcPlayer, BcEntities),
-			case spawn_base_ai(BaseBcEntity, State) of
-				{ok, UpdatedBaseBcEntity} ->
-					insert_base_entity(UpdatedBaseBcEntity, BcEntities),
-					spawn_player_bases(BcPlayers, BaseBcCollisions, State);
-				{error, Reason} = Error ->
-					Error
-			end;
-		false ->
-			{error, "Could not spawn base for player " ++ bc_player:id(BcPlayer)}
+						  entities = BcEntities,
+						  entity_sups = BcEntitySupDict} = State) ->
+	PlayerId = bc_player:id(BcPlayer),
+	{ok, BaseBcEntityConfig} = bc_entities:entity_config(base, BcEntities),
+	case dict:find(PlayerId, BcEntitySupDict) of
+		{ok, BcEntitySup} ->
+			bc_entity_util:spawn_entity(BaseBcCollision, BcPlayer, 
+										BcEntitySup, BaseBcEntityConfig, 
+										PlayerNum, BcMap, BcEntities),
+			spawn_player_bases(BcPlayers, BaseBcCollisions, State);
+		error ->
+			{error, "Can't find entity supervisor."}
 	end.
