@@ -239,9 +239,8 @@ do_spawn_entities(BatchCount, Acc, [SpawnBcVertex|SpawnBcVertices],
 					  				   player_num = PlayerNum} = State) ->
 	Uuid = uuid:get_v4(),
 	BcCollision = bc_collision:init(Uuid, SpawnBcVertex),
-	Orientation = bc_entity_util:entity_orientation(PlayerNum),
 	case bc_entity_util:spawn_entity(BcCollision, BcPlayer, BcEntitySup, BcEntityConfig, 
-									 Orientation, BcMap, BcEntities) of
+									 PlayerNum, BcMap, BcEntities) of
 		{ok, BcEntity} ->
 			do_spawn_entities(BatchCount - 1, Acc + 1, SpawnBcVertices, 
 							  BcEntityConfig, State);
