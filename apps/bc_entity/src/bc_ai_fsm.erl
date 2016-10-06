@@ -454,6 +454,7 @@ move_enemy_base(#state{entity_config = BcEntityConfig,
 			move_on_path(State);
 		false ->
 			{BaseBcEntity, UpdatedState} = enemy_base_entity(State),
+			%% TODO do nothing when BaseBcEntity is undefined
 			BaseUuid = bc_entity:uuid(BaseBcEntity),
 			BaseQueryRes = bc_map:query_ids(BcMap, BaseUuid),
 			BaseBcVertices = 
