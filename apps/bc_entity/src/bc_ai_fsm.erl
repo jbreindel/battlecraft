@@ -452,19 +452,19 @@ move_enemy_base(#state{entity_config = BcEntityConfig,
 		true ->
 			move_on_path(State);
 		false ->
-			{BaseBcEntity, State2} = enemy_base_entity(State),
+			{BaseBcEntity, UpdatedState} = enemy_base_entity(State),
 			BaseUuid = bc_entity:uuid(BaseBcEntity),
 			BaseQueryRes = bc_map:query_ids(BcMap, BaseUuid),
 			BaseBcVertices = 
 				lists:map(
-				  fun(QueryRes) -> 
-					  BcVertex = maps:get(vertex, QueryRes),
-					  {BcVertex, BaseUuid}
+				  fun(QueryRes) ->
+					maps:get(vertex, QueryRes)
 				  end, BaseQueryRes),
-			Range = bc_entity_config:range(BcEntityConfig),
-			InRangeBcVertices = bc_map:reaching_neighbors(BcMap, BaseBcVertices, Range),
-			NearbyEntities = nearby_entities(State2),
-			move_in_range(InRangeBcVertices, NearbyEntities, State2)
+			UpdatedBaseBcEntity = 
+				bc_entity:set_vertices(BaseBcVertices, BaseBcEntity),
+			InRangeEnemyBcEntityDict = inrange_entity_dict([UpdatedBaseBcEntity], UpdatedState),
+			NearbyEntities = nearby_entities(UpdatedState),
+			move_in_range(InRangeEnemyBcEntityDict, NearbyEntities, UpdatedState)
 	end.
 
 enemy_base_entity(#state{entities = BcEntities,
