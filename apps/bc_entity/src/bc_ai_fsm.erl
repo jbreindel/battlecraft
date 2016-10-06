@@ -311,7 +311,8 @@ move_in_range(InRangeEnemyBcEntityDict, NearbyBcEntities,
 									 targets = Targets});
 		undefined ->
 			%% TODO move closer to enemy if possible
-			stand(State#state{path = undefined})
+			stand(State#state{path = undefined,
+							  targets = []})
 	end.
 
 move_on_path(#state{entity = BcEntity,
@@ -540,9 +541,15 @@ move(Direction, #state{entity = BcEntity,
 				ok ->
 					MovedBcEntity = bc_entity:set_vertices(UpdatedBcVertices, BcEntity),
 					ReorientedBcEntity = reorient_entity(Direction, MovedBcEntity, BcEntities),
-					UpdatedPath = update_path(UpdatedBcVertices, Path),
-					on_moved(State#state{entity = ReorientedBcEntity,
-										 path = UpdatedPath});
+					case update_path(UpdatedBcVertices, Path) of
+						undefined ->							
+							on_moved(State#state{entity = ReorientedBcEntity,
+												 path = undefined,
+												 targets = []});
+						UpdatedPath ->
+							on_moved(State#state{entity = ReorientedBcEntity,
+												 path = UpdatedPath})
+					end;
 				{error, _} ->
 					stand(State)
 			end;
