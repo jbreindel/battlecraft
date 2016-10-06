@@ -29,8 +29,8 @@
 				entities,
 				map,
 				entity_event_handler,
-				enemy_base_uuid,
 				path,
+				targets,
 				timer}).
 
 %% ====================================================================
@@ -78,6 +78,7 @@ init([BcEntity, BcEntities, BcMap]) ->
 					   	   entities = BcEntities, 
 					   	   map = BcMap,
 						   path = undefined,
+						   targets = [],
 						   timer = TimerRef}}.
 
 no_action(action_complete, State) ->
@@ -101,10 +102,14 @@ handle_event({entity_died, EnemyBcEntity}, StateName, #state{timer = TimerRef} =
 		attacking ->
 			gen_fsm:cancel_timer(TimerRef),
 			sense(State#state{entity_event_handler = undefined,
+							  path = undefined,
+							  targets = [],
 							  timer = undefined});
 		_ ->
     		{next_state, StateName, 
-			 State#state{entity_event_handler = undefined}}
+			 State#state{entity_event_handler = undefined,
+						 path = undefined,
+						 targets = []}}
 	end;
 handle_event({entity_damaged, Damage}, StateName, #state{entity = BcEntity,
 														 entities = BcEntities,
@@ -167,42 +172,50 @@ sense(#state{entity = BcEntity,
 	end.
 
 plan_enemy_actions(EnemyBcEntities, NearbyBcEntities, 
-				   #state{entity = BcEntity, 
-						  entity_config = BcEntityConfig, 
-						  map = BcMap} = State) ->
-	Range = bc_entity_config:range(BcEntityConfig),
-	EnemyInRangeVertices = 
-		lists:map(
-			fun(EnemyBcEntity) -> 
-				EnemyBcVertices = bc_entity:vertices(EnemyBcEntity),
-				InRangeBcVertices = 
-					bc_map:reaching_neighbors(BcMap, EnemyBcVertices, Range),
-				{EnemyBcEntity, InRangeBcVertices} 
-			end, EnemyBcEntities),
-	case in_range_enemies(EnemyInRangeVertices, BcEntity) of
+				   #state{entity = BcEntity} = State) ->
+	InRangeEnemyBcEntityDict = inrange_entity_dict(EnemyBcEntities, State),
+	case in_range_enemies(InRangeEnemyBcEntityDict, BcEntity) of
 		InRangeEnemyBcEntities when length(InRangeEnemyBcEntities) > 0 ->
 			attack_entities(InRangeEnemyBcEntities, State);
 		_ ->
-			InRangeBcVertices = 
-				lists:flatmap(
-				  fun({EnemyBcEntity, InRangeBcVertices}) -> 
-					  InRangeBcVertices 
-				  end, EnemyInRangeVertices),
-			move_in_range(InRangeBcVertices, NearbyBcEntities, State)
+			move_in_range(InRangeEnemyBcEntityDict, NearbyBcEntities, State)
 	end.
 
-in_range_enemies(EnemyInRangeVertices, BcEntity) ->
+inrange_entity_dict(EnemyBcEntities, #state{entity = BcEntity,
+											entity_config = BcEntityConfig,
+											map = BcMap} = State) ->
+	Range = bc_entity_config:range(BcEntityConfig),
+	lists:foldl(
+	  fun(EnemyBcEntity, AccEnemyBcVertexDict) ->
+		  EnemyBcVertices = bc_entity:vertices(EnemyBcEntity),
+		  InRangeBcVertices = 
+			  bc_map:reaching_neighbors(BcMap, EnemyBcVertices, Range),
+		  lists:foldl(
+			fun(InRangeBcVertex, AccAccEnemyBcVertexDict) -> 
+				EnemyBcEntitySet =					
+					case dict:find(InRangeBcVertex, AccAccEnemyBcVertexDict) of
+						{ok, BcEntitySet} ->
+							BcEntitySet;
+						error ->
+							sets:new()
+					end,
+				UpdatedSet = sets:add_element(EnemyBcEntity, EnemyBcEntitySet),
+				dict:store(InRangeBcVertex, UpdatedSet, AccAccEnemyBcVertexDict)
+			end, AccEnemyBcVertexDict, InRangeBcVertices)
+	  end, dict:new(), EnemyBcEntities).
+
+in_range_enemies(InRangeEnemyBcEntityDict, BcEntity) ->
 	BcVertices = bc_entity:vertices(BcEntity),
-	lists:filtermap(
-		fun({EnemyBcEntity, InRangeBcVertices}) -> 
-			case lists:any(
-				fun(BcVertex) -> 
-					lists:member(BcVertex, BcVertices) 
-				end, InRangeBcVertices) of 
-					true -> {true, EnemyBcEntity};
-					false -> false 
-			end 
-		end, EnemyInRangeVertices).
+	lists:foldl(
+	  fun(BcVertex, AccEnemyBcEntities) -> 
+		  case dict:find(BcVertex, InRangeEnemyBcEntityDict) of 
+			  {ok, EnemyBcEntitySet} ->
+				  EnemyBcEntities = sets:to_list(EnemyBcEntitySet),
+				  lists:append(AccEnemyBcEntities, EnemyBcEntities);
+			  error ->
+				  AccEnemyBcEntities
+		  end
+	  end, [], BcVertices).
 
 attack_entities(InRangeEnemyBcEntities, State) ->
 	case lists:filter(fun(EnemyBcEntity) ->
@@ -230,30 +243,32 @@ attack_entity(EnemyBcEntity, #state{entity = BcEntity,
 									entities = BcEntities, 
 									entity_event_handler = EventHandler} = State) ->
 	Orientation = determine_orientation(BcEntity, EnemyBcEntity),
-	ReorientedEntity = reorient_entity(Orientation, BcEntity, BcEntities),
-	UpdatedState =
+	ReorientedBcEntity = reorient_entity(Orientation, BcEntity, BcEntities),
+	EnemyUuid = bc_entity:uuid(EnemyBcEntity),
+	UpdatedEventHandler =
 		case EventHandler of
 			undefined ->
 				EntitiesEventPid = bc_entities:event(BcEntities),
-				gen_event:notify(EntitiesEventPid, {entity_attacking, ReorientedEntity}),
-				EntityUuid = bc_entity:uuid(ReorientedEntity),
-				EnemyUuid = bc_entity:uuid(EnemyBcEntity),
+				gen_event:notify(EntitiesEventPid, {entity_attacking, ReorientedBcEntity}),
+				EntityUuid = bc_entity:uuid(ReorientedBcEntity),
 				EntitiesEventPid = bc_entities:event(BcEntities),
 				Handler = {bc_died_event, EntityUuid},
 				Result = gen_event:add_sup_handler(EntitiesEventPid, 
 												   Handler, 
 												   [EnemyUuid, self()]),
-				State#state{entity = ReorientedEntity,
-							entity_event_handler = Handler};
+				Handler;
 			_ ->
-				State
+				EventHandler
 		end,
 	EnemyBcAiFsm = bc_entity:ai_fsm(EnemyBcEntity),
 	Damage = calculate_damage(BcEntityConfig, EnemyBcEntity, BcEntities),
 	bc_ai_fsm:damage_entity(EnemyBcAiFsm, Damage),
 	AttackSpeed = bc_entity_config:attack_speed(BcEntityConfig),
 	TimerRef = send_action_complete(AttackSpeed),
-	{next_state, attacking, UpdatedState#state{timer = TimerRef}}.
+	{next_state, attacking, State#state{entity = ReorientedBcEntity,
+										entity_event_handler = UpdatedEventHandler,
+										targets = [EnemyBcEntity],
+										timer = TimerRef}}.
 
 calculate_damage(BcEntityConfig, EnemyBcEntity, BcEntities) ->
 	EnemyEntityType = bc_entity:entity_type(EnemyBcEntity),
@@ -278,22 +293,44 @@ calculate_damage(BcEntityConfig, EnemyBcEntity, BcEntities) ->
 	RandDamage = rand:uniform(DamageDiff),
 	ModMinDamage + RandDamage.
 
-move_in_range(InRangeBcVertices, NearbyBcEntities, 
+move_in_range(InRangeEnemyBcEntityDict, NearbyBcEntities, 
 			  #state{entity = BcEntity, map = BcMap} = State) ->
+	InRangeBcVertices = dict:fetch_keys(InRangeEnemyBcEntityDict),
 	case choose_path(InRangeBcVertices, NearbyBcEntities, State) of
 		PathBcVertices when is_list(PathBcVertices) 
 		  andalso length(PathBcVertices) > 0 ->
-			move_on_path(State#state{path = PathBcVertices});
+			DestinationBcVertex = lists:last(PathBcVertices),
+			Targets =
+				case dict:find(DestinationBcVertex, InRangeEnemyBcEntityDict) of
+					{ok, EnemyBcEntitiesSet} ->
+						sets:to_list(EnemyBcEntitiesSet);
+					error ->
+						[]
+				end,
+			move_on_path(State#state{path = PathBcVertices,
+									 targets = Targets});
 		undefined ->
 			%% TODO move closer to enemy if possible
 			stand(State#state{path = undefined})
 	end.
 
 move_on_path(#state{entity = BcEntity,
-					path = PathBcVertices} = State) ->
-	MoveBcVertex = lists:nth(1, PathBcVertices),
-	Direction = bc_entity_util:move_direction(BcEntity, MoveBcVertex),
-	move(Direction, State).
+					entities = BcEntities,
+					path = PathBcVertices,
+					targets = Targets} = State) ->
+	case lists:any(
+		   fun(EnemyBcEntity) -> 
+			   Uuid = bc_entity:uuid(EnemyBcEntity),
+			   bc_entities:exists(Uuid, BcEntities)
+		   end, Targets) of
+		true ->			
+			MoveBcVertex = lists:nth(1, PathBcVertices),
+			Direction = bc_entity_util:move_direction(BcEntity, MoveBcVertex),
+			move(Direction, State);
+		false ->
+			sense(State#state{path = undefined,
+							  targets = []})
+	end.
 	
 choose_path(InRangeBcVertices, NearbyBcEntities, 
 			#state{entity = BcEntity, map = BcMap} = State) ->
@@ -407,18 +444,22 @@ nearby_entities(#state{entity = BcEntity,
 move_enemy_base(#state{entity_config = BcEntityConfig,
 					   entities = BcEntities,
 					   map = BcMap,
-					   enemy_base_uuid = EnemyBaseUuid,
-					   path = Path} = State) ->
-	case Path of
-		CurrentPath when length(CurrentPath) > 0 ->
+					   targets = Targets} = State) ->
+	case lists:any(
+		   fun(TargetBcEntity) -> 
+			   bc_entity:entity_type(TargetBcEntity) == base 
+		   end, Targets) of
+		true ->
 			move_on_path(State);
-		undefined ->
-			{BaseUuid, State2} = enemy_base_uuid(State),
+		false ->
+			{BaseBcEntity, State2} = enemy_base_entity(State),
+			BaseUuid = bc_entity:uuid(BaseBcEntity),
 			BaseQueryRes = bc_map:query_ids(BcMap, BaseUuid),
 			BaseBcVertices = 
 				lists:map(
 				  fun(QueryRes) -> 
-					  maps:get(vertex, QueryRes)
+					  BcVertex = maps:get(vertex, QueryRes),
+					  {BcVertex, BaseUuid}
 				  end, BaseQueryRes),
 			Range = bc_entity_config:range(BcEntityConfig),
 			InRangeBcVertices = bc_map:reaching_neighbors(BcMap, BaseBcVertices, Range),
@@ -426,27 +467,26 @@ move_enemy_base(#state{entity_config = BcEntityConfig,
 			move_in_range(InRangeBcVertices, NearbyEntities, State2)
 	end.
 
-enemy_base_uuid(#state{entities = BcEntities,
-					   map = BcMap,
-					   enemy_base_uuid = EnemyBaseUuid} = State) ->
-	case EnemyBaseUuid of
-		Uuid when is_binary(Uuid) ->
-			case bc_entities:exists(Uuid, BcEntities) of
-				true ->
-					{Uuid, State};
-				false ->
-					BaseUuid = find_enemy_base(State),
-					{BaseUuid, State#state{enemy_base_uuid = BaseUuid}}
-			end;
-		undefined ->
-			BaseUuid = find_enemy_base(State),
-			{BaseUuid, State#state{enemy_base_uuid = BaseUuid}}
+enemy_base_entity(#state{entities = BcEntities,
+						 targets = Targets} = State) ->
+	case lists:filter(
+		   fun(TargetBcEntity) ->
+			   Uuid = bc_entity:uuid(TargetBcEntity),
+			   EntityType = bc_entity:entity_type(TargetBcEntity),
+			   EntityType == base andalso
+				   bc_entities:exists(Uuid, BcEntities)
+		   end, Targets) of
+		BaseBcEntities when length(BaseBcEntities) > 0 ->
+			BaseBcEntity = lists:nth(1, BaseBcEntities),
+			{BaseBcEntity, State};
+		_ ->
+			BaseBcEntity = find_enemy_base(State),
+			{BaseBcEntity, State#state{targets = [BaseBcEntity]}}
 	end.
 
 find_enemy_base(#state{entity = BcEntity, 
 					   entities = BcEntities,
-					   map = BcMap,
-					   enemy_base_uuid = EnemyBaseUuid} = State) ->
+					   map = BcMap} = State) ->
 	PlayerNum = bc_entity:player_num(BcEntity),
 	EnemyNums = 				
 		case PlayerNum of
@@ -460,29 +500,28 @@ find_enemy_base(#state{entity = BcEntity,
 	case lists:map(
 		   fun(BaseBcEntity) -> 
 			  BasePlayerNum = bc_entity:player_num(BaseBcEntity),
-			  BaseUuid = bc_entity:uuid(BaseBcEntity),
-			  {BasePlayerNum, BaseUuid}
+			  {BasePlayerNum, BaseBcEntity}
 		   end, BaseBcEntities) of
-		BasePlayerNumUuids when length(BasePlayerNumUuids) > 0 ->
-			EnemyBaseUuids =
+		PlayerNumBaseBcEntities when length(PlayerNumBaseBcEntities) > 0 ->
+			EnemyBaseBcEntities =
 				lists:map(
 				  fun(EnemyNum) ->
-					  case lists:keyfind(EnemyNum, 1, BasePlayerNumUuids) of
-						  {BasePlayerNum, BaseUuid} ->
-							  BaseUuid;
+					  case lists:keyfind(EnemyNum, 1, PlayerNumBaseBcEntities) of
+						  {BasePlayerNum, BaseBcEntity} ->
+							  BaseBcEntity;
 						  false -> 
 							  undefined
 					  end 
 				  end, EnemyNums),
 			lists:foldl(
-			  fun(BaseUuid, AccUuid) -> 
-				  case AccUuid of 
-					  Uuid when is_binary(Uuid) -> 
-						  Uuid; 
+			  fun(BaseBcEntity, AccBaseBcEntity) -> 
+				  case AccBaseBcEntity of 
 					  undefined -> 
-						  BaseUuid 
+						  BaseBcEntity;
+					  AccBaseBcEntity ->
+						  AccBaseBcEntity
 				  end 
-			  end, undefined, EnemyBaseUuids);
+			  end, undefined, EnemyBaseBcEntities);
 		[] ->
 			undefined
 	end.
