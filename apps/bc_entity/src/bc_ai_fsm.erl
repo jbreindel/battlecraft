@@ -421,26 +421,26 @@ nearby_entities(#state{entity = BcEntity,
 		bc_map:reaching_neighbors(BcMap, EntityBcVertices, ?SENSE_DIST),
 	CollisionQueryRes = bc_map:query_collisions(BcMap, NeighborBcVertices),
 	UuidSet = 
-		lists:foldl(fun(QueryMap, AccSet) ->
-						CollUuid = maps:get(uuid, QueryMap),
-						sets:add_element(CollUuid, AccSet) 
-					end, sets:new(), CollisionQueryRes),
+		lists:foldl(
+			fun(QueryMap, AccSet) ->
+				CollUuid = maps:get(uuid, QueryMap),
+				sets:add_element(CollUuid, AccSet) 
+			end, sets:new(), CollisionQueryRes),
 	UuidList = sets:to_list(UuidSet),
 	EntityQueryRes = bc_entities:query(UuidList, BcEntities),
-	lists:map(fun(QueryBcEntity) ->  
-			 	QueryBcVertices = lists:filtermap(
-					fun(QueryResult) ->
-						QueryUuid = maps:get(uuid, QueryResult),
-						QueryBcVertex = maps:get(vertex, QueryResult),
-						case QueryUuid =:= bc_entity:uuid(QueryBcEntity) of
-							true ->
-								{true, QueryBcVertex};
-							false ->
-								false
-						end
-					end, CollisionQueryRes),
-				bc_entity:set_vertices(QueryBcVertices, QueryBcEntity)
-			end, EntityQueryRes).
+	lists:map(
+		fun(QueryBcEntity) ->  
+			QueryBcVertices = lists:filtermap(
+				fun(QueryResult) ->
+					QueryUuid = maps:get(uuid, QueryResult),
+					QueryBcVertex = maps:get(vertex, QueryResult),
+					case QueryUuid =:= bc_entity:uuid(QueryBcEntity) of
+						true -> {true, QueryBcVertex};
+						false -> false
+					end
+				end, CollisionQueryRes),
+			bc_entity:set_vertices(QueryBcVertices, QueryBcEntity)
+		end, EntityQueryRes).
 
 move_enemy_base(#state{entity_config = BcEntityConfig,
 					   entities = BcEntities,
