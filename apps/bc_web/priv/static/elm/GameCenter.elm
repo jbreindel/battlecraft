@@ -11,6 +11,7 @@ import Effects exposing (Effects)
 
 -- Local imports
 
+import GameState exposing (GameState, Started)
 import GameEvent exposing (GameEvent)
 
 -- Actions
@@ -69,9 +70,16 @@ onReceiveGameEvent gameEvent model =
                     Effects.init {model |
                         players = updatedPlayers
                     } [PerformCmd cmd]
+                    
+            GameStartedEv gameStartedEvent ->
+                Effects.init model [
+                    PerformCmd cmd,
+                    UpdateGameState Started
+                ]
                 
             _ ->
                 Effects.init model [PerformCmd cmd]
+            
 
 onAddTimedGameEvent : (Time, GameEvent) -> Model -> Effects Model Effect
 onAddTimedGameEvent timeGameEvent model =
