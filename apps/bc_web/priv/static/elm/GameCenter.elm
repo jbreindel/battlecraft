@@ -7,12 +7,13 @@ module GameCenter exposing (Effect(..),
 
 import Dict exposing (Dict)
 import Time exposing (Time)
+import Task exposing (Task)
 import Effects exposing (Effects)
 
 -- Local imports
 
-import GameState exposing (GameState, Started)
-import GameEvent exposing (GameEvent)
+import GameState exposing (GameState)
+import GameEvent exposing (GameEvent, Player, PlayerEvent)
 
 -- Actions
 
@@ -20,13 +21,13 @@ type Effect =
     UpdateGameState GameState |
     PerformCmd (Cmd Msg)
 
-type Msg = 
+type Msg =
     ReceiveGameEv GameEvent |
     AddTimedGameEv (Time, GameEvent) |
-    NoOp
+    NoOp String
 
 -- Model
-    
+
 type alias Model = {
     players : Dict Int Player,
     timedGameEvents : List (Time, GameEvent)
@@ -44,47 +45,50 @@ init =
 update : Msg -> Model -> Effects Model Effect
 update msg model =
     case msg of
-    
+
         ReceiveGameEv gameEvent ->
             onReceiveGameEvent gameEvent model
-            
+
         AddTimedGameEv timedGameEvent ->
             onAddTimedGameEvent timedGameEvent model
-            
+
+        _ ->
+            Effects.return model
+
 onReceiveGameEvent : GameEvent -> Model -> Effects Model Effect
 onReceiveGameEvent gameEvent model =
     let
        cmd =  gameEventCmd gameEvent
     in
         case gameEvent of
-    
-            PlayerEv playerEvent ->
+
+            GameEvent.PlayerEv playerEvent ->
                 let
                     id = updatedPlayer.id
-                
+
                     updatedPlayer = playerEvent.player
-                
-                    updatedPlayers = 
+
+                    updatedPlayers =
                         Dict.insert id updatedPlayer model.players
                 in
                     Effects.init {model |
                         players = updatedPlayers
                     } [PerformCmd cmd]
-                    
-            GameStartedEv gameStartedEvent ->
+
+            GameEvent.GameStartedEv gameStartedEvent ->
                 Effects.init model [
                     PerformCmd cmd,
-                    UpdateGameState Started
+                    UpdateGameState GameState.Started
                 ]
-                
+
             _ ->
                 Effects.init model [PerformCmd cmd]
-            
+
 
 onAddTimedGameEvent : (Time, GameEvent) -> Model -> Effects Model Effect
-onAddTimedGameEvent timeGameEvent model =
+onAddTimedGameEvent timedGameEvent model =
     let
-        updatedTimedGameEvents = 
+        updatedTimedGameEvents =
             model.timedGameEvents ++ [timedGameEvent]
     in
         Effects.return {model |
@@ -94,8 +98,7 @@ onAddTimedGameEvent timeGameEvent model =
 gameEventCmd : GameEvent -> Cmd Msg
 gameEventCmd gameEvent =
     Time.now `Task.andThen` (
-        \time -> 
-            Task.succeed (time, playerEvent)
+        \time ->
+            Task.succeed (time, gameEvent)
     )
-    |> Task.perform NoOp AddGameEv
-    
+    |> Task.perform NoOp AddTimedGameEv
