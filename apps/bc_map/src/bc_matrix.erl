@@ -98,9 +98,10 @@ col(Col, BcMatrix) ->
 			   BcMatrix :: dict:dict()) -> boolean().
 contains(BcVertex, BcMatrix) ->
 	Row = bc_vertex:row(BcVertex),
-	case row(Row, BcMatrix) of
-		{ok, RowBcVertexSet} ->
-			sets:is_element(BcVertex, RowBcVertexSet);
+	case dict:find(Row, BcMatrix) of
+		{ok, ColSet} ->
+			Col = bc_vertex:col(BcVertex),
+			sets:is_element(Col, ColSet);
 		error ->
 			false
 	end.
