@@ -170,13 +170,14 @@ unobstructed_path(MapGraph, BcVertex1, BcVertex2, OccupiedBcVertices) ->
 	OccupiedBcMatrix = bc_matrix:init(OccupiedBcVertices),
 	case bc_matrix:contains(BcVertex2, OccupiedBcMatrix) of
 		false ->
+			Graph = maps:get(graph, MapGraph),
 			SearchGraph = digraph:new([cyclic]),
 			digraph:add_vertex(SearchGraph, BcVertex1),
 			Queue = queue:new(),
 			NeighborQueue = 
-				queue_out_neighbors(MapGraph, OccupiedBcMatrix, BcVertex1, Queue),
+				queue_out_neighbors(Graph, OccupiedBcMatrix, BcVertex1, Queue),
 			PathBcVertices = 
-				shortest_path(MapGraph, OccupiedBcMatrix, NeighborQueue, BcVertex2, SearchGraph),
+				shortest_path(Graph, OccupiedBcMatrix, NeighborQueue, BcVertex2, SearchGraph),
 			digraph:delete(SearchGraph),
 			PathBcVertices;
 		true ->
@@ -280,10 +281,15 @@ reaching_neighbors(MapGraph, Vertices, MaxDist, NeighborAcc) ->
 
 queue_out_neighbors(MapGraph, OccupiedBcMatrix, BcVertex, Queue) ->
 	lists:foldl(
-	  fun({_E, V1, V2, _Label} = Edge, AccQueue) ->
-		  case bc_matrix:contains(V2, OccupiedBcMatrix) of
-			  true -> AccQueue;
-			  false -> queue:in(Edge, AccQueue)
+	  fun(Edge, AccQueue) ->
+		  case Edge of
+			  {_E, V1, V2, _Label} ->
+				  case bc_matrix:contains(V2, OccupiedBcMatrix) of
+					  true -> AccQueue;
+					  false -> queue:in(Edge, AccQueue)
+				  end;
+			  _ ->
+				  AccQueue
 		  end
 	  end, Queue, digraph:out_edges(MapGraph, BcVertex)).
 
