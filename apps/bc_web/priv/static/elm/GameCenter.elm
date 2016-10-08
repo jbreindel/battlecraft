@@ -3,8 +3,13 @@ module GameCenter exposing (Effect(..),
                             Msg(..),
                             Model,
                             init,
-                            update)
+                            update,
+                            view)
 
+import Html exposing (Html, div, button, h5, p, text)
+import Html.Attributes exposing (class, src)
+import Html.Events exposing (onClick)
+import Html.Lazy exposing (lazy)
 import Dict exposing (Dict)
 import Time exposing (Time)
 import Task exposing (Task)
@@ -24,20 +29,23 @@ type Effect =
 type Msg =
     ReceiveGameEv GameEvent |
     AddTimedGameEv (Time, GameEvent) |
+    Minimize |
     NoOp String
 
 -- Model
 
 type alias Model = {
     players : Dict Int Player,
-    timedGameEvents : List (Time, GameEvent)
+    timedGameEvents : List (Time, GameEvent),
+    minimized : Bool
 }
 
 init : Effects Model Effect
 init =
     Effects.return {
         players = Dict.empty,
-        timedGameEvents = []
+        timedGameEvents = [],
+        minimized = False
     }
 
 -- Update
@@ -102,3 +110,30 @@ gameEventCmd gameEvent =
             Task.succeed (time, gameEvent)
     )
     |> Task.perform NoOp AddTimedGameEv
+
+-- View
+
+view : Model -> Html Msg
+view model =
+    lazy gameCenterContent model
+
+gameCenterContent : Model -> Html Msg
+gameCenterContent model =
+    div [class "is-overlay game-center-content"] [
+        div [class "notification"] [
+            button [class "delete", onClick Minimize] [],
+
+            -- Heading
+            div [class "columns"] [
+                gameCenterTitleColumn model
+            ]
+        ]
+    ]
+
+gameCenterTitleColumn : Model -> Html Msg
+gameCenterTitleColumn model =
+    div [class "column is-flex is-vcentered"] [
+        h5 [class "title is-5"] [
+            text "Game Center"
+        ]
+    ]

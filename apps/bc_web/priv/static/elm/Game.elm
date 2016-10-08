@@ -17,6 +17,7 @@ import Window
 import Join
 import Map
 import Spawn
+import GameCenter
 import GameState exposing (GameState)
 import Message exposing (..)
 
@@ -30,6 +31,7 @@ type Msg =
     JoinMsg Join.Msg |
     MapMsg Map.Msg |
     SpawnMsg Spawn.Msg |
+    GameCenterMsg GameCenter.Msg |
     PerformCmd (Cmd Msg) |
     WsReceiveMsg String |
     WsSendMsg String
@@ -46,7 +48,8 @@ type alias Model = {
     keyboardModel : Keyboard.Model,
     joinModel : Join.Model,
     mapModel : Map.Model,
-    spawnModel : Spawn.Model
+    spawnModel : Spawn.Model,
+    gameCenterModel : GameCenter.Model
 }
 
 init : Flags -> Effects Model (Cmd Msg)
@@ -57,6 +60,8 @@ init flags =
         (mapModel, mapEffects) = Map.init
 
         (spawnModel, spawnEffects) = Spawn.init
+
+        (gameCenterModel, gameCenterEffects) = GameCenter.init
 
         (keyboardModel, keyboardCmd) = Keyboard.init
 
@@ -75,11 +80,13 @@ init flags =
             keyboardModel = keyboardModel,
             joinModel = joinModel,
             mapModel = mapModel,
-            spawnModel = spawnModel
+            spawnModel = spawnModel,
+            gameCenterModel = gameCenterModel
         } [cmdBatch]
         `Effects.andThen` Effects.handle handleJoinEffect joinEffects
         `Effects.andThen` Effects.handle handleMapEffect mapEffects
         `Effects.andThen` Effects.handle handleSpawnEffect spawnEffects
+        `Effects.andThen` Effects.handle handleGameCenterEffect gameCenterEffects
 
 -- Update
 
@@ -107,6 +114,9 @@ update msg model =
 
         SpawnMsg spawnMsg ->
             onSpawnMsg spawnMsg model
+
+        GameCenterMsg gameCenterMsg ->
+            onGameCenterMsg gameCenterMsg model
 
         PerformCmd cmd ->
             Effects.init model [cmd]
@@ -174,6 +184,15 @@ onSpawnMsg spawnMsg model =
         Effects.return {model | spawnModel = updateSpawnModel}
             `Effects.andThen` Effects.handle handleSpawnEffect spawnEffects
 
+onGameCenterMsg : GameCenter.Msg -> Model -> Effects Model (Cmd Msg)
+onGameCenterMsg gameCenterMsg model =
+    let
+        (updateGameCenterModel, gameCenterEffects) =
+            GameCenter.update gameCenterMsg model.gameCenterModel
+    in
+        Effects.return {model | gameCenterModel = updateGameCenterModel}
+            `Effects.andThen` Effects.handle handleGameCenterEffect gameCenterEffects
+
 onWsReceiveMsg : String -> Model -> Effects Model (Cmd Msg)
 onWsReceiveMsg str model =
     case decodeString message str of
@@ -239,6 +258,19 @@ handleSpawnEffect effect model =
         Spawn.WsSendMsg str ->
             update (WsSendMsg str) model
 
+handleGameCenterEffect : Effects.Handler GameCenter.Effect Model (Cmd Msg)
+handleGameCenterEffect effect model =
+    case effect of
+
+        GameCenter.UpdateGameState state ->
+            update (UpdateGameState state) model
+
+        GameCenter.PerformCmd gameCenterCmdMsg ->
+            let
+                cmdMsg = Cmd.map GameCenterMsg gameCenterCmdMsg
+            in
+                update (PerformCmd cmdMsg) model
+
 -- Subscriptions
 
 subscriptions : Model -> Sub Msg
@@ -277,12 +309,17 @@ view model =
         spawnContent =
             Spawn.view model.spawnModel
                 |> App.map SpawnMsg
+
+        gameCenterContent =
+            GameCenter.view model.gameCenterModel
+                |> App.map GameCenterMsg
     in
         div [] [
             div [class "game-content"] [
                 body
             ],
-            spawnContent
+            spawnContent,
+            gameCenterContent
         ]
 
 -- Main
