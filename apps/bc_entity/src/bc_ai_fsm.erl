@@ -354,7 +354,8 @@ choose_path(InRangeBcVertices, NearbyBcEntities,
 			  Path when is_list(Path) andalso length(Path) > 0 -> 
 				  Path;
 			  undefined ->
-				  case compute_path(BcEntity, InRangeBcVertex, OccupiedBcVertices, State) of
+				  case compute_path(BcEntity, InRangeBcVertex, 
+									OccupiedBcVertices, State) of
 					  undefined ->
 						  undefined;
 					  PathBcVertices ->
