@@ -6,11 +6,12 @@ module GameCenter exposing (Effect(..),
                             update,
                             view)
 
-import Html exposing (Html, div, button, h5, p, text)
+import Html exposing (Html, div, button, h5, p, table, tbody, tr, td, text)
 import Html.Attributes exposing (class, src)
 import Html.Events exposing (onClick)
 import Html.Lazy exposing (lazy)
 import Dict exposing (Dict)
+import List.Extra as ListExtra
 import Time exposing (Time)
 import Task exposing (Task)
 import Effects exposing (Effects)
@@ -126,6 +127,11 @@ gameCenterContent model =
             -- Heading
             div [class "columns"] [
                 gameCenterTitleColumn model
+            ],
+
+            -- Players
+            div [class "columns"] [
+                playersTableColumn model
             ]
         ]
     ]
@@ -137,3 +143,32 @@ gameCenterTitleColumn model =
             text "Game Center"
         ]
     ]
+
+playersTableColumn : Model -> Html Msg
+playersTableColumn model =
+    let
+        tableRows =
+            model.players
+                |> Dict.values
+                |> ListExtra.groupsOf 2
+                |> List.map (
+                    \players ->
+                        List.map (
+                            \player ->
+                                td [] [
+                                    text player.handle
+                                ]
+                        ) players
+                )
+                |> List.foldl (
+                    \playerCells playerRows ->
+                        playerRows ++ [
+                            tr [] playerCells
+                        ]
+                ) []
+    in
+        div [class "column"] [
+            table [class "table is-bordered"] [
+                tbody [] tableRows
+            ]
+        ]
