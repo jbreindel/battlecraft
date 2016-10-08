@@ -280,48 +280,46 @@ reaching_neighbors(MapGraph, Vertices, MaxDist, NeighborAcc) ->
 	reaching_neighbors(MapGraph, Neighbors, MaxDist -1, NeighborAcc ++ Neighbors).
 
 queue_out_neighbors(MapGraph, OccupiedBcMatrix, BcVertex, Queue) ->
+	OutNeighbors = digraph:out_neighbours(MapGraph, BcVertex),
 	lists:foldl(
-	  fun(Edge, AccQueue) ->
-		  case Edge of
-			  {_E, V1, V2, _Label} ->
-				  case bc_matrix:contains(V2, OccupiedBcMatrix) of
+	  fun(NeighborBcVertex, AccQueue) ->
+		  case NeighborBcVertex of
+			  NeighborBcVertex when is_map(NeighborBcVertex) ->
+				  case bc_matrix:contains(NeighborBcVertex, OccupiedBcMatrix) of
 					  true -> AccQueue;
-					  false -> queue:in(Edge, AccQueue)
+					  false -> queue:in({BcVertex, NeighborBcVertex}, AccQueue)
 				  end;
 			  _ ->
 				  AccQueue
 		  end
-	  end, Queue, digraph:out_edges(MapGraph, BcVertex)).
+	  end, Queue, OutNeighbors).
 
 shortest_path(MapGraph, OccupiedBcMatrix, NeighborQueue, SinkBcVertex, SearchGraph) ->
 	case queue:out(NeighborQueue) of
-		{{value, Edge}, PoppedQueue} ->
-			case digraph:edge(MapGraph, Edge) of
-				{_E, V1, V2, _L} when V2 =:= SinkBcVertex ->
-					follow_path(SearchGraph, V1, [V2]);
-				{_E, V1, V2, _L} ->
-					case digraph:vertex(SearchGraph, V2) of
-						false ->
-					    	digraph:add_vertex(SearchGraph, V2),
-					    	digraph:add_edge(SearchGraph, V2, V1),
-					    	UpdatedNeighborQueue = 
-								queue_out_neighbors(MapGraph, 
-													OccupiedBcMatrix, 
-													V2, 
-													PoppedQueue),
-					    	shortest_path(MapGraph, 
-										  OccupiedBcMatrix, 
-										  UpdatedNeighborQueue, 
-										  SinkBcVertex, 
-										  SearchGraph);
-						_V ->
-					    	shortest_path(MapGraph, 
-										  OccupiedBcMatrix, 
-										  PoppedQueue, 
-										  SinkBcVertex, 
-										  SearchGraph)
-				    end
-			end;
+		{{value, {V1, V2}}, _} when V2 =:= SinkBcVertex ->
+			follow_path(SearchGraph, V1, [V2]);
+		{{value, {V1, V2}}, PoppedQueue} ->
+			case digraph:vertex(SearchGraph, V2) of
+				false ->
+			    	digraph:add_vertex(SearchGraph, V2),
+			    	digraph:add_edge(SearchGraph, V2, V1),
+			    	UpdatedNeighborQueue = 
+						queue_out_neighbors(MapGraph, 
+											OccupiedBcMatrix, 
+											V2, 
+											PoppedQueue),
+			    	shortest_path(MapGraph, 
+								  OccupiedBcMatrix, 
+								  UpdatedNeighborQueue, 
+								  SinkBcVertex, 
+								  SearchGraph);
+				_V ->
+			    	shortest_path(MapGraph, 
+								  OccupiedBcMatrix, 
+								  PoppedQueue, 
+								  SinkBcVertex, 
+								  SearchGraph)
+		    end;
 		{empty, _PoppedQueue} ->
 	    	false
 	end.
