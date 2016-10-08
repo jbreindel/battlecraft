@@ -52,8 +52,9 @@ move(Direction, BcCollision) ->
 
 -spec difference_vertices(BcCollision1 :: collision(), 
 						  BcCollision :: collision()) -> [bc_vertex:vertex()].
-difference_vertices(#{vertices := Vertices1} = BcCollision1,
-				    #{vertices := Vertices2} = BcCollision2) ->
+difference_vertices(BcCollision1, BcCollision2) ->
+	Vertices1 = vertices(BcCollision1),
+	Vertices2 = vertices(BcCollision2),
 	Set1 = sets:from_list(Vertices1),
 	Set2 = sets:from_list(Vertices2),
 	DiffSet = sets:subtract(Set1, Set2),

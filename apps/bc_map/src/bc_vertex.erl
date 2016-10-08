@@ -43,7 +43,9 @@ set_col(Col, BcVertex) ->
 	maps:update(col, Col, BcVertex).
 
 -spec to_tuple(BcVertex :: vertex()) -> tuple().
-to_tuple(#{row := Row, col := Col}) ->
+to_tuple(BcVertex) ->
+	Row = row(BcVertex),
+	Col = col(BcVertex),
 	{Row, Col}.
 
 -spec move(Direction :: atom(), 
