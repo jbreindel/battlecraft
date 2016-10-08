@@ -311,8 +311,10 @@ move_in_range(InRangeEnemyBcEntityDict, NearbyBcEntities,
 									 targets = Targets});
 		undefined ->
 			%% TODO move closer to enemy if possible
-			stand(State#state{path = undefined,
-							  targets = []})
+			%% stand(State#state{path = undefined,
+			%%				  targets = []})
+			move_enemy_base(State#state{path = undefined,
+										targets = []})
 	end.
 
 move_on_path(#state{entity = BcEntity,
