@@ -353,15 +353,12 @@ choose_path(InRangeBcVertices, NearbyBcEntities,
 		  case AccPath of 
 			  Path when is_list(Path) andalso length(Path) > 0 -> 
 				  Path;
-			  undefined -> 
-				  PathBcVertices = compute_path(BcEntity, InRangeBcVertex, State),
-				  %% TODO there is deffinitly a faster way to do this
-				  case lists:any(
-						 fun(PathBcVertex) ->
-							 lists:member(PathBcVertex, OccupiedBcVertices)
-						 end, PathBcVertices) of
-					  true -> undefined;
-					  false -> PathBcVertices
+			  undefined ->
+				  case compute_path(BcEntity, InRangeBcVertex, OccupiedBcVertices, State) of
+					  undefined ->
+						  undefined;
+					  PathBcVertices ->
+						  PathBcVertices
 				  end
 		  end 
 	  end, undefined, UnoccupiedSortedDistBcVertices).
@@ -379,14 +376,15 @@ sorted_dist_vertices(InRangeBcVertices, #state{entity = BcEntity} = State) ->
 				 Dist1 =< Dist2
 			   end, DistBcVertices).
 
-compute_path(BcEntity, BcVertex, #state{map = BcMap} = State) ->
+compute_path(BcEntity, BcVertex, OccupiedBcVertices, #state{map = BcMap} = State) ->
 	ClosestEntityBcVertex = 
 		bc_entity_util:closest_entity_vertex(BcEntity, BcVertex),
-	case bc_map:compute_path(BcMap, ClosestEntityBcVertex, BcVertex) of
+	case bc_map:unobstructed_path(BcMap, ClosestEntityBcVertex, 
+								  BcVertex, OccupiedBcVertices) of
 		Path when is_list(Path) andalso length(Path) > 1 ->
 			lists:sublist(Path, 2, length(Path) + 1);
 		_EmptyPath ->
-			[]
+			undefined
 	end.
 
 determine_orientation(BcEntity, EnemyBcEntity) ->
