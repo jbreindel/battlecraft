@@ -216,8 +216,10 @@ onWsReceiveMessage message model =
                 update (JoinMsg joinMsg) model
 
         GameEv gameEv ->
-            -- TODO handle game event
-            Effects.return model
+            let
+                gameCenterMsg = GameCenter.ReceiveGameEv gameEv
+            in
+                update (GameCenterMsg gameCenterMsg) model
 
         EntityEv entityEv ->
             let

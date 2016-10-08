@@ -85,10 +85,22 @@ onReceiveGameEvent gameEvent model =
                     } [PerformCmd cmd]
 
             GameEvent.GameStartedEv gameStartedEvent ->
-                Effects.init model [
-                    PerformCmd cmd,
-                    UpdateGameState GameState.Started
-                ]
+                let
+                    players = gameStartedEvent.players
+
+                    playerDict =
+                        gameStartedEvent.players
+                            |> List.map (
+                                \player ->
+                                    (player.id, player)
+                            )
+                            |> Dict.fromList
+                in
+                    Effects.init {model |
+                                    players = playerDict} [
+                        PerformCmd cmd,
+                        UpdateGameState GameState.Started
+                    ]
 
             _ ->
                 Effects.init model [PerformCmd cmd]
