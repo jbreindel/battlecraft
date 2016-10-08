@@ -10,6 +10,7 @@
 		 min_col/1,
 		 cols/1,
 		 col/2,
+		 contains/2,
 		 dimensions/1,
 		 to_vertices/1]).
 
@@ -91,6 +92,17 @@ col(Col, BcMatrix) ->
 			{ok, Cols};
 		Cols when length(Cols) == 0 ->
 			error
+	end.
+
+-spec contains(BcVertex :: bc_vertex:vertex(), 
+			   BcMatrix :: dict:dict()) -> boolean().
+contains(BcVertex, BcMatrix) ->
+	Row = bc_vertex:row(BcVertex),
+	case row(Row, BcMatrix) of
+		{ok, RowBcVertexSet} ->
+			sets:is_element(BcVertex, RowBcVertexSet);
+		error ->
+			false
 	end.
 
 -spec dimensions(BcMatrix :: dict:dict()) -> {integer(), integer()} | 

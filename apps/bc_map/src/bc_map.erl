@@ -25,6 +25,7 @@
 		 query_collisions/2,
 		 query_ids/2,
 		 compute_path/3,
+		 unobstructed_path/4,
 		 are_vertices/2,
 		 are_neighbors/3,
 		 reaching_neighbors/3,
@@ -161,6 +162,27 @@ compute_path(MapGraph, Vertex1, Vertex2) ->
 	Graph = maps:get(graph, MapGraph),
 	digraph:get_short_path(Graph, Vertex1, Vertex2).
 
+-spec unobstructed_path(MapGraph :: map_graph(),
+						BcVertex1 :: bc_vertex:vertex(),
+						BcVertex2 :: bc_vertex:vertex(),
+						OccupiedBcVertices :: [bc_vertex:vertex()]) -> [bc_vertex:vertex()] | false.
+unobstructed_path(MapGraph, BcVertex1, BcVertex2, OccupiedBcVertices) ->
+	OccupiedBcMatrix = bc_matrix:init(OccupiedBcVertices),
+	case bc_matrix:contains(BcVertex2, OccupiedBcMatrix) of
+		false ->
+			SearchGraph = digraph:new([cyclic]),
+			digraph:add_vertex(SearchGraph, BcVertex1),
+			Queue = queue:new(),
+			NeighborQueue = 
+				queue_out_neighbors(MapGraph, OccupiedBcMatrix, BcVertex1, Queue),
+			PathBcVertices = 
+				shortest_path(MapGraph, OccupiedBcMatrix, NeighborQueue, BcVertex2, SearchGraph),
+			digraph:delete(SearchGraph),
+			PathBcVertices;
+		true ->
+			false
+	end.
+
 -spec are_vertices(MapGraph :: map_graph(),
 				   BcVertices :: [bc_vertex:vertex()]) -> boolean().
 are_vertices(MapGraph, BcVertices) ->
@@ -255,6 +277,57 @@ reaching_neighbors(MapGraph, Vertices, MaxDist, NeighborAcc) ->
 			end, Vertices)
 		),
 	reaching_neighbors(MapGraph, Neighbors, MaxDist -1, NeighborAcc ++ Neighbors).
+
+queue_out_neighbors(MapGraph, OccupiedBcMatrix, BcVertex, Queue) ->
+	lists:foldl(
+	  fun({_E, V1, V2, _Label} = Edge, AccQueue) ->
+		  case bc_matrix:contains(V2, OccupiedBcMatrix) of
+			  true -> AccQueue;
+			  false -> queue:in(Edge, AccQueue)
+		  end
+	  end, Queue, digraph:out_edges(MapGraph, BcVertex)).
+
+shortest_path(MapGraph, OccupiedBcMatrix, NeighborQueue, SinkBcVertex, SearchGraph) ->
+	case queue:out(NeighborQueue) of
+		{{value, Edge}, PoppedQueue} ->
+			case digraph:edge(MapGraph, Edge) of
+				{_E, V1, V2, _L} when V2 =:= SinkBcVertex ->
+					follow_path(SearchGraph, V1, [V2]);
+				{_E, V1, V2, _L} ->
+					case digraph:vertex(SearchGraph, V2) of
+						false ->
+					    	digraph:add_vertex(SearchGraph, V2),
+					    	digraph:add_edge(SearchGraph, V2, V1),
+					    	UpdatedNeighborQueue = 
+								queue_out_neighbors(MapGraph, 
+													OccupiedBcMatrix, 
+													V2, 
+													PoppedQueue),
+					    	shortest_path(MapGraph, 
+										  OccupiedBcMatrix, 
+										  UpdatedNeighborQueue, 
+										  SinkBcVertex, 
+										  SearchGraph);
+						_V ->
+					    	shortest_path(MapGraph, 
+										  OccupiedBcMatrix, 
+										  PoppedQueue, 
+										  SinkBcVertex, 
+										  SearchGraph)
+				    end
+			end;
+		{empty, _PoppedQueue} ->
+	    	false
+	end.
+
+follow_path(SearchGraph, BcVertex1, BcVertices) ->
+	UpdatedBcVertices = [BcVertex1 | BcVertices],
+	case digraph:out_neighbours(SearchGraph, BcVertex1) of
+		[Neighbors] ->
+			follow_path(SearchGraph, Neighbors, UpdatedBcVertices);
+		[] ->
+			UpdatedBcVertices
+	end.
 
 vertex_rows(BcCollision) when erlang:is_map(BcCollision) ->
 	Uuid = bc_collision:uuid(BcCollision),
