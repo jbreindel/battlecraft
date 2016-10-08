@@ -6,7 +6,8 @@ module GameCenter exposing (Effect(..),
                             update,
                             view)
 
-import Html exposing (Html, div, button, h5, p, table, tbody, tr, td, text)
+import Html exposing (Html, div, button, h5, p,
+                        table, tbody, tr, td, small, text)
 import Html.Attributes exposing (class, src)
 import Html.Events exposing (onClick)
 import Html.Lazy exposing (lazy)
@@ -261,11 +262,10 @@ logColumn model =
             model.timedGameEvents
                 |> List.map (
                     \(time, logMessage) ->
-                        time ++ " - " ++ logMessage
-                )
-                |> List.map (
-                    \message ->
-                        p [] [text message]
+                        p [] [
+                            small [] [text time],
+                            text (" - " ++ logMessage)
+                        ]
                 )
     in
         div [class "column box log"] logMessages
