@@ -1,11 +1,14 @@
 
 module GameEvent exposing (Player,
                            PlayerEvent,
+                           GamePlayerEvent(..),
                            GameStartedEvent,
                            GameErrorEvent,
                            GameEvent(..),
                            gameEvent,
-                           player)
+                           playerEvent,
+                           player,
+                           gamePlayerEventPlayer)
 
 import Json.Decode exposing (..)
 import Json.Decode.Extra exposing (..)
@@ -25,7 +28,7 @@ player =
         |: ("handle" := string)
         |: ("team" := int)
 
--- GameEvent Types
+-- GamePlayerEvent Types
 
 type alias PlayerEvent = {
     eventType : String,
@@ -37,6 +40,34 @@ playerEvent =
     at ["game_event"] <| succeed PlayerEvent
         |: ("event_type" := string)
         |: ("player" := player)
+
+type GamePlayerEvent =
+    PlayerJoinedEv PlayerEvent |
+    PlayerQuitEv PlayerEvent |
+    PlayerOutEv PlayerEvent
+
+gamePlayerEventInfo : String -> Decoder GamePlayerEvent
+gamePlayerEventInfo eventType =
+    case eventType of
+
+        "player_join" ->
+            object1 PlayerJoinedEv playerEvent
+
+        "player_quit" ->
+            object1 PlayerQuitEv playerEvent
+
+        "player_out" ->
+            object1 PlayerOutEv playerEvent
+
+        _ ->
+            object1 PlayerOutEv playerEvent
+
+gamePlayerEvent : Decoder GamePlayerEvent
+gamePlayerEvent =
+    at ["game_event", "event_type"] string
+        `andThen` gamePlayerEventInfo
+
+-- GameEvent Types
 
 type alias GameStartedEvent = {
     eventType : String,
@@ -63,7 +94,7 @@ gameErrorEvent =
 -- Aggregate Types
 
 type GameEvent =
-    PlayerEv PlayerEvent |
+    GamePlayerEv GamePlayerEvent |
     GameStartedEv GameStartedEvent |
     GameErrorEv GameErrorEvent
 
@@ -78,8 +109,24 @@ gameEventInfo eventType =
             object1 GameErrorEv gameErrorEvent
 
         _ ->
-            object1 PlayerEv playerEvent
+            object1 GamePlayerEv gamePlayerEvent
 
 gameEvent : Decoder GameEvent
 gameEvent =
-    at ["game_event", "event_type"] string `andThen` gameEventInfo
+    at ["game_event", "event_type"] string
+        `andThen` gameEventInfo
+
+-- Helper Funs
+
+gamePlayerEventPlayer : GamePlayerEvent -> Player
+gamePlayerEventPlayer gamePlayerEvent =
+    case gamePlayerEvent of
+
+        PlayerJoinedEv playerJoinedEvent ->
+            playerJoinedEvent.player
+
+        PlayerQuitEv playerQuitEvent ->
+            playerQuitEvent.player
+
+        PlayerOutEv playerOutEvent ->
+            playerOutEvent.player

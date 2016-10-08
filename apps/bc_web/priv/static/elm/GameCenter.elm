@@ -19,7 +19,10 @@ import Effects exposing (Effects)
 -- Local imports
 
 import GameState exposing (GameState)
-import GameEvent exposing (GameEvent, Player, PlayerEvent)
+import GameEvent exposing (GameEvent,
+                           Player,
+                           PlayerEvent,
+                           gamePlayerEventPlayer)
 
 -- Actions
 
@@ -37,7 +40,7 @@ type Msg =
 
 type alias Model = {
     players : Dict Int Player,
-    timedGameEvents : List (Time, GameEvent),
+    timedGameEvents : List (String, String),
     minimized : Bool
 }
 
@@ -61,6 +64,9 @@ update msg model =
         AddTimedGameEv timedGameEvent ->
             onAddTimedGameEvent timedGameEvent model
 
+        Minimize ->
+            onMinimize model
+
         _ ->
             Effects.return model
 
@@ -71,11 +77,12 @@ onReceiveGameEvent gameEvent model =
     in
         case gameEvent of
 
-            GameEvent.PlayerEv playerEvent ->
+            GameEvent.GamePlayerEv gamePlayerEvent ->
                 let
                     id = updatedPlayer.id
 
-                    updatedPlayer = playerEvent.player
+                    updatedPlayer =
+                        gamePlayerEventPlayer gamePlayerEvent
 
                     updatedPlayers =
                         Dict.insert id updatedPlayer model.players
@@ -107,14 +114,29 @@ onReceiveGameEvent gameEvent model =
 
 
 onAddTimedGameEvent : (Time, GameEvent) -> Model -> Effects Model Effect
-onAddTimedGameEvent timedGameEvent model =
+onAddTimedGameEvent (time, gameEvent) model =
     let
+        timeMessage = timestampLogMessage time
+
+        logMessage = gameEventLogMessage gameEvent
+
         updatedTimedGameEvents =
-            model.timedGameEvents ++ [timedGameEvent]
+            model.timedGameEvents ++ [(timeMessage, logMessage)]
     in
         Effects.return {model |
             timedGameEvents = updatedTimedGameEvents
         }
+
+onMinimize : Model -> Effects Model Effect
+onMinimize model =
+    let
+        minimized =
+            if model.minimized then
+                False
+            else
+                True
+    in
+        Effects.return {model | minimized = minimized}
 
 gameEventCmd : GameEvent -> Cmd Msg
 gameEventCmd gameEvent =
@@ -124,6 +146,41 @@ gameEventCmd gameEvent =
     )
     |> Task.perform NoOp AddTimedGameEv
 
+timestampLogMessage : Time -> String
+timestampLogMessage time =
+    toString time
+
+gameEventLogMessage : GameEvent -> String
+gameEventLogMessage gameEvent =
+    case gameEvent of
+
+        GameEvent.GameStartedEv gameStartedEvent ->
+            "Game has started"
+
+        GameEvent.GameErrorEv gameErrorEvent ->
+            "A game error has occured"
+
+        GameEvent.GamePlayerEv gamePlayerEvent ->
+            gamePlayerEventLogMessage gamePlayerEvent
+
+gamePlayerEventLogMessage : GameEvent.GamePlayerEvent -> String
+gamePlayerEventLogMessage gamePlayerEvent =
+    let
+        player = gamePlayerEventPlayer gamePlayerEvent
+
+        handle = player.handle
+    in
+        case gamePlayerEvent of
+
+            GameEvent.PlayerJoinedEv playerJoinedEvent ->
+                handle ++ " has joined the game"
+
+            GameEvent.PlayerQuitEv playerQuitEvent ->
+                handle ++ " has quit the game"
+
+            GameEvent.PlayerOutEv playerOutEvent ->
+                handle ++ " has been knocked out"
+
 -- View
 
 view : Model -> Html Msg
@@ -132,21 +189,33 @@ view model =
 
 gameCenterContent : Model -> Html Msg
 gameCenterContent model =
-    div [class "is-overlay game-center-content"] [
-        div [class "notification"] [
-            button [class "delete", onClick Minimize] [],
+    let
+        minimizedColumnClass =
+            if model.minimized then
+                "columns is-hidden"
+            else
+                "columns"
+    in
+        div [class "is-overlay game-center-content"] [
+            div [class "notification"] [
+                button [class "delete", onClick Minimize] [],
 
-            -- Heading
-            div [class "columns"] [
-                gameCenterTitleColumn model
-            ],
+                -- Heading
+                div [class "columns"] [
+                    gameCenterTitleColumn model
+                ],
 
-            -- Players
-            div [class "columns"] [
-                playersTableColumn model
+                -- Players
+                div [class minimizedColumnClass] [
+                    playersTableColumn model
+                ],
+
+                -- Log
+                div [class minimizedColumnClass] [
+                    logColumn model
+                ]
             ]
         ]
-    ]
 
 gameCenterTitleColumn : Model -> Html Msg
 gameCenterTitleColumn model =
@@ -184,3 +253,19 @@ playersTableColumn model =
                 tbody [] tableRows
             ]
         ]
+
+logColumn : Model -> Html Msg
+logColumn model =
+    let
+        logMessages =
+            model.timedGameEvents
+                |> List.map (
+                    \(time, logMessage) ->
+                        time ++ " - " ++ logMessage
+                )
+                |> List.map (
+                    \message ->
+                        p [] [text message]
+                )
+    in
+        div [class "column box log"] logMessages
