@@ -11,6 +11,7 @@ import Html exposing (Html, div, button, h5, p,
 import Html.Attributes exposing (class, src)
 import Html.Events exposing (onClick)
 import Html.Lazy exposing (lazy)
+import String as String
 import Dict exposing (Dict)
 import List.Extra as ListExtra
 import Time exposing (Time)
@@ -174,7 +175,17 @@ gameEventLogMessage gameEvent =
             "A game error has occured"
 
         GameEvent.GameWonEv gameWonEvent ->
-            "Game has been won"
+            let
+                winners =
+                    gameWonEvent.winners
+                        |> List.map (
+                            \player ->
+                                player.handle
+                        )
+                        |> List.intersperse ", "
+                        |> String.concat
+            in
+                winners ++ " has been won the game"
 
         GameEvent.GamePlayerEv gamePlayerEvent ->
             gamePlayerEventLogMessage gamePlayerEvent
