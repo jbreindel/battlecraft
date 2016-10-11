@@ -103,7 +103,6 @@ pending({player_join, #{player_pid := PlayerPid,
 				{ok, pending} ->
 					{reply, {ok, PlayerId, Team, BcPlayerServ}, pending, UpdatedState};
 				{error, Reason} = Error ->
-					io:format("Error: ~p~n", [Error]),
 					gen_event:notify(GameEventPid, {game_error, Reason}),
 					gen_event:stop(GameEventPid),
 					{stop, Error, Error, UpdatedState};
@@ -111,7 +110,6 @@ pending({player_join, #{player_pid := PlayerPid,
 					{stop, illegal_state, {error, illegal_state}, UpdatedState}
 			end;
 		{error, Reason} = Error ->
-			io:format("Error: ~p~n", [Error]),
 			{reply, Error, pending, State}
 	end.
 
