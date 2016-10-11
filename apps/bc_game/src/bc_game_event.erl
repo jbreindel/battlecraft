@@ -53,7 +53,7 @@ handle_event({game_won, WinnerBcPlayers},
 	PlayerPid = bc_player:pid(BcPlayer),
 	PlayerPid ! #{type => game_event,
 				  game_event => #{event_type => game_won,
-								  winners => WinnerBcPlayers}};
+								  winners => lists:map(fun bc_player:serialize/1, WinnerBcPlayers)}};
 handle_event({PlayerEventType, JoinBcPlayer}, 
 			 #state{player = BcPlayer} = State) ->
 	PlayerPid = bc_player:pid(BcPlayer),

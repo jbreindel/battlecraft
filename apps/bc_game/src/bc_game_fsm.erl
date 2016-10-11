@@ -163,7 +163,7 @@ started({_, OutPlayerId},
 				InBcPlayers when length(InBcPlayers) =< WinThreashold ->
 					FirstBcPlayer = lists:nth(1, InBcPlayers),
 					WinningTeam = bc_player:team(FirstBcPlayer),
-					case bc_game_model:win(GameId, WinningTeam) of
+					case bc_game_model:win(GameId, WinningTeam, ?WON) of
 						{ok, won} ->
 							gen_event:notify(GameEventPid, {game_won, InBcPlayers}),
 							gen_event:stop(GameEventPid),
