@@ -454,20 +454,25 @@ move_enemy_base(#state{entity_config = BcEntityConfig,
 		true ->
 			move_on_path(State);
 		false ->
-			{BaseBcEntity, UpdatedState} = enemy_base_entity(State),
-			%% TODO do nothing when BaseBcEntity is undefined
-			BaseUuid = bc_entity:uuid(BaseBcEntity),
-			BaseQueryRes = bc_map:query_ids(BcMap, BaseUuid),
-			BaseBcVertices = 
-				lists:map(
-				  fun(QueryRes) ->
-					maps:get(vertex, QueryRes)
-				  end, BaseQueryRes),
-			UpdatedBaseBcEntity = 
-				bc_entity:set_vertices(BaseBcVertices, BaseBcEntity),
-			InRangeEnemyBcEntityDict = inrange_entity_dict([UpdatedBaseBcEntity], UpdatedState),
-			NearbyEntities = nearby_entities(UpdatedState),
-			move_in_range(InRangeEnemyBcEntityDict, NearbyEntities, UpdatedState)
+			case enemy_base_entity(State) of
+				{BaseBcEntity, UpdatedState} when is_map(BaseBcEntity) ->
+					BaseUuid = bc_entity:uuid(BaseBcEntity),
+					BaseQueryRes = bc_map:query_ids(BcMap, BaseUuid),
+					BaseBcVertices = 
+						lists:map(
+						  fun(QueryRes) ->
+							maps:get(vertex, QueryRes)
+						  end, BaseQueryRes),
+					UpdatedBaseBcEntity = 
+						bc_entity:set_vertices(BaseBcVertices, BaseBcEntity),
+					InRangeEnemyBcEntityDict = 
+						inrange_entity_dict([UpdatedBaseBcEntity], UpdatedState),
+					NearbyEntities = nearby_entities(UpdatedState),
+					move_in_range(InRangeEnemyBcEntityDict, NearbyEntities, UpdatedState);
+				{undefined, UpdatedState} ->
+					%% TODO terminate normally
+					stand(UpdatedState)
+			end
 	end.
 
 enemy_base_entity(#state{entities = BcEntities,
