@@ -50,7 +50,7 @@ gamePlayerEventInfo : String -> Decoder GamePlayerEvent
 gamePlayerEventInfo eventType =
     case eventType of
 
-        "player_join" ->
+        "player_joined" ->
             object1 PlayerJoinedEv playerEvent
 
         "player_quit" ->
@@ -91,12 +91,24 @@ gameErrorEvent =
         |: ("event_type" := string)
         |: ("reason" := string)
 
+type alias GameWonEvent = {
+    eventType : String,
+    winners : List Player
+}
+
+gameWonEvent : Decoder GameWonEvent
+gameWonEvent =
+    at ["game_event"] <| succeed GameWonEvent
+        |: ("event_type" := string)
+        |: ("winners" := list player)
+
 -- Aggregate Types
 
 type GameEvent =
     GamePlayerEv GamePlayerEvent |
     GameStartedEv GameStartedEvent |
-    GameErrorEv GameErrorEvent
+    GameErrorEv GameErrorEvent |
+    GameWonEv GameWonEvent
 
 gameEventInfo : String -> Decoder GameEvent
 gameEventInfo eventType =
@@ -107,6 +119,9 @@ gameEventInfo eventType =
 
         "game_error" ->
             object1 GameErrorEv gameErrorEvent
+
+        "game_won" ->
+            object1 GameWonEv gameWonEvent
 
         _ ->
             object1 GamePlayerEv gamePlayerEvent

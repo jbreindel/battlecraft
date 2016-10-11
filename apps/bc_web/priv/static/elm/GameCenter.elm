@@ -94,20 +94,23 @@ onReceiveGameEvent gameEvent model =
 
             GameEvent.GameStartedEv gameStartedEvent ->
                 let
-                    players = gameStartedEvent.players
-
-                    playerDict =
-                        gameStartedEvent.players
-                            |> List.map (
-                                \player ->
-                                    (player.id, player)
-                            )
-                            |> Dict.fromList
+                    updatedPlayerDict = playerDict gameStartedEvent.players
                 in
                     Effects.init {model |
-                                    players = playerDict} [
+                                    players = updatedPlayerDict} [
                         PerformCmd cmd,
                         UpdateGameState GameState.Started
+                    ]
+
+            GameEvent.GameWonEv gameWonEvent ->
+                -- TODO more with winners
+                let
+                    updatedPlayerDict = playerDict gameWonEvent.winners
+                in
+                    Effects.init {model |
+                                    players = updatedPlayerDict} [
+                        PerformCmd cmd,
+                        UpdateGameState GameState.Won
                     ]
 
             _ ->
@@ -147,6 +150,15 @@ gameEventCmd gameEvent =
     )
     |> Task.perform NoOp AddTimedGameEv
 
+playerDict : List Player -> Dict Int Player
+playerDict players =
+    players
+        |> List.map (
+            \player ->
+                (player.id, player)
+        )
+        |> Dict.fromList
+
 timestampLogMessage : Time -> String
 timestampLogMessage time =
     toString time
@@ -160,6 +172,9 @@ gameEventLogMessage gameEvent =
 
         GameEvent.GameErrorEv gameErrorEvent ->
             "A game error has occured"
+
+        GameEvent.GameWonEv gameWonEvent ->
+            "Game has been won"
 
         GameEvent.GamePlayerEv gamePlayerEvent ->
             gamePlayerEventLogMessage gamePlayerEvent
