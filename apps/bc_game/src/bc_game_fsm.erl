@@ -155,17 +155,17 @@ started({_, OutPlayerId},
 		ok ->
 			GameEventPid = bc_game:event(BcGame),
 			#{player := BcPlayer} = dict:fetch(OutPlayerId, Players),
-			gen_event:notify(GameEventPid,
-							 {player_out, BcPlayer}),
+			gen_event:notify(GameEventPid, {player_out, BcPlayer}),
 			GameId = bc_game:id(BcGame),
 			InPlayerIds = bc_player_model:in_player_ids(GameId),
-			case length(InPlayerIds) of
-				Length when Length =:= 1 ->
-					[InPlayerId] = InPlayerIds,
-					case bc_game_model:win(GameId, InPlayerId) of
+			WinThreashold = ?MAX_PLAYERS / 2,
+			case find_players(InPlayerIds, Players) of
+				InBcPlayers when length(InBcPlayers) =< WinThreashold ->
+					FirstBcPlayer = lists:nth(1, InBcPlayers),
+					WinningTeam = bc_player:team(FirstBcPlayer),
+					case bc_game_model:win(GameId, WinningTeam) of
 						{ok, won} ->
-							gen_event:notify(GameEventPid,
-											{game_won, BcPlayer}),
+							gen_event:notify(GameEventPid, {game_won, InBcPlayers}),
 							gen_event:stop(GameEventPid),
 							{stop, won, State};
 						{error, Reason} = Error ->
@@ -174,6 +174,7 @@ started({_, OutPlayerId},
 							{stop, Error, State}
 					end;
 				_ ->
+					%% TODO quit game?
 					{next_state, started, State}
 			end;
 		{error, Reason} = Error ->
@@ -237,3 +238,15 @@ find_player_id(PlayerPid, Players) ->
 	List = dict:to_list(Players),
 	[{Id, Pid}] = lists:filter(fun({_, Pid} = Tuple) when Pid =:= PlayerPid -> Tuple end, List),
 	Id.
+
+find_players(PlayerIds, PlayerDict) ->
+	lists:filtermap(
+		fun(PlayerId) -> 
+			case dict:find(PlayerId, PlayerDict) of 
+				{ok, PlayerMap} -> 
+					BcPlayer = maps:get(player, PlayerMap),
+					{true, BcPlayer};
+				error -> 
+					false 
+			end 
+		end, PlayerIds).

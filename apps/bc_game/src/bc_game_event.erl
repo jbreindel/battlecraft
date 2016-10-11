@@ -48,12 +48,18 @@ handle_event({game_error, Reason},
 				  game_event => #{event_type => game_error,
 							 	  reason => Reason}},
 	{ok, State};
+handle_event({game_won, WinnerBcPlayers},
+			 #state{player = BcPlayer} = State) ->
+	PlayerPid = bc_player:pid(BcPlayer),
+	PlayerPid ! #{type => game_event,
+				  game_event => #{event_type => game_won,
+								  winners => WinnerBcPlayers}};
 handle_event({PlayerEventType, JoinBcPlayer}, 
 			 #state{player = BcPlayer} = State) ->
 	PlayerPid = bc_player:pid(BcPlayer),
-%% 	PlayerPid ! #{type => game_event,
-%% 				  game_event => #{event_type => PlayerEventType,
-%% 							 	  player => bc_player:serialize(JoinBcPlayer)}},
+	PlayerPid ! #{type => game_event,
+				  game_event => #{event_type => PlayerEventType,
+							 	  player => bc_player:serialize(JoinBcPlayer)}},
 	{ok, State};
 handle_event(_, State) ->
 	{ok, State}.
