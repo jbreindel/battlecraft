@@ -62,9 +62,12 @@ handle_call({create_game, Privacy}, _From,
 			   start => {bc_game_fsm, start_link, [GameId, GameEventPid, BcGameSup]},
 			   modules => [bc_game_fsm]
 			}),
+			Ref = erlang:monitor(process, BcGameFsm),
+			BcGame = bc_game:create(GameId, GameEventPid, BcGameFsm),
+			GameMap = #{game => BcGame, sup => BcGameSup, monitor => Ref},
  			{reply, {ok, GameId, BcGameFsm}, 
 			 	State#state{games = 
-								dict:store(GameId, BcGameFsm, GameDict)}};
+								dict:store(GameId, GameMap, GameDict)}};
 		{error, Reason} ->
 			{reply, {error, Reason}, State}
 	end;
@@ -72,7 +75,9 @@ handle_call({create_game, Privacy}, _From,
 handle_call({get_game, GameId}, _From, State) ->
 	GameDict = State#state.games,
 	case dict:find(GameId, GameDict) of
-		{ok, BcGameFsm} ->
+		{ok, GameMap} ->
+			BcGame = maps:get(game, GameMap),
+			BcGameFsm = bc_game:fsm(BcGame),
 			{reply, {ok, BcGameFsm}, State};
 		error ->
 			{reply, {error, not_found}, State}
@@ -82,3 +87,20 @@ handle_cast({remove_game, GameId}, _From, State) ->
 	GameDict = State#state.games,
 	{noreply, State#state{games = dict:erase(GameId, GameDict)}}.
 
+handle_info({'DOWN', Ref, process, _Pid, _Reason}, 
+				#state{games = GameDict} = State) ->
+	Games = dict:to_list(GameDict),
+	case lists:filter(
+			fun(GameMap) -> 
+				Ref =:= maps:get(monitor, GameMap)
+			end, Games) of
+		[FoundGameMap] ->
+			%% TODO don't kill sup if exit in error
+			BcGameSup = maps:get(sup, FoundGameMap),
+			exit(BcGameSup, kill),
+			BcGameFsm = maps:get(game, FoundGameMap),
+			GameId = bc_game:id(BcGameFsm),
+			{noreply, State#state{games = dict:erase(GameId, GameDict)}};
+		_ ->
+			{noreply, State}
+	end.
