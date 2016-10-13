@@ -241,7 +241,7 @@ input_serv(#state{game = BcGame,
 				start => {bc_input_serv, start_link, [BcInputSup, BcGame]},
 				modules => [bc_input_serv]
 			}),
-			{BcInputServ, State#state{input_serv = StartedBcInputServ}};
+			{StartedBcInputServ, State#state{input_serv = StartedBcInputServ}};
 		_ ->
 			{BcInputServ, State}
 	end.
