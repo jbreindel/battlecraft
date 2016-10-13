@@ -3,7 +3,7 @@
 -behavior(gen_server).
 
 %% api functions
--export([start_link/3,
+-export([start_link/2,
 		 create_player_serv/2,
 		 spawn_player_bases/2]).
 
@@ -24,10 +24,9 @@
 %%====================================================================
 
 -spec start_link(BcInputSup :: pid(), 
-				 BcGame :: bc_game:game(),
-				 BcEntities :: bc_entities:entities()) -> gen:start_ret().
-start_link(BcInputSup, BcGame, BcEntities) ->
-	gen_server:start_link(?MODULE, [BcInputSup, BcGame, BcEntities], []).
+				 BcGame :: bc_game:game()) -> gen:start_ret().
+start_link(BcInputSup, BcGame) ->
+	gen_server:start_link(?MODULE, [BcInputSup, BcGame], []).
 
 -spec create_player_serv(BcInputServ :: pid(), 
 						 BcPlayer :: bc_player:player()) -> {ok, Pid :: pid()} | 
@@ -45,20 +44,20 @@ spawn_player_bases(BcInputServ, BcPlayers) ->
 %% Gen_server callbacks
 %%====================================================================
 
-init([BcInputSup, BcGame, BcEntities]) ->
+init([BcInputSup, BcGame]) ->
 	BcMap = bc_map:init(BcInputSup),
 	{ok, #state{input_sup = BcInputSup,
 				entity_sups = dict:new(),
 		   		game = BcGame,
 				map = BcMap,
-				entities = BcEntities}}.
+				entities = undefined}}.
 
 handle_call({create_player_serv, BcPlayer}, _From, 
 	#state{input_sup = BcInputSup,
 		   entity_sups = BcEntitySupDict,
 		   game = BcGame,
-		   map = BcMap,
-		   entities = BcEntities} = State) ->
+		   map = BcMap} = State) ->
+	{BcEntities, UpdatedState} = entities(State),
 	PlayerId = bc_player:id(BcPlayer),
 	{ok, BcPlayerSup} = supervisor:start_child(BcInputSup, #{
 		id => PlayerId,
@@ -82,17 +81,16 @@ handle_call({create_player_serv, BcPlayer}, _From,
 											   BcGoldFsm, BcMap, BcEntities]},
 		modules => [bc_player_serv]
 	}),
-	{reply, {ok, BcPlayerServ}, State#state{entity_sups = 
-												dict:store(PlayerId, 
-														   BcEntitySup, 
-														   BcEntitySupDict)}};
+	{reply, {ok, BcPlayerServ}, 
+	 	UpdatedState#state{entity_sups = 
+							   dict:store(PlayerId, BcEntitySup, BcEntitySupDict)}};
 
 handle_call({spawn_player_bases, BcPlayers}, _From,
 	#state{input_sup = BcInputSup,
 		   entity_sups = BcEntitySupDict,
 		   game = BcGame,
-		   map = BcMap,
-		   entities = BcEntities} = State) ->
+		   map = BcMap} = State) ->
+	{BcEntities, UpdatedState} = entities(State),
 	EntitiesEventPid = bc_entities:event(BcEntities),
 	lists:foreach(fun(BcPlayer) -> 
 					gen_event:add_handler(EntitiesEventPid, bc_entity_event, [BcPlayer]) 
@@ -120,10 +118,12 @@ handle_call({spawn_player_bases, BcPlayers}, _From,
 										  [BaseUuid, BcGame, BcPlayer]), 
 					Num + 1 
 				end, 1, SortedBcPlayers),
-	{reply, spawn_player_bases(SortedBcPlayers, BaseBcCollisions, State), State}.
+	Reply = spawn_player_bases(SortedBcPlayers, BaseBcCollisions, UpdatedState),
+	{reply, Reply, UpdatedState}.
 
 terminate(Reason, State) ->
-	io:format("BcGameFsm terminates with ~p~n", [Reason]).
+	io:format("BcGameFsm terminates with ~p~n", [Reason]),
+	ok.
 
 %%====================================================================
 %% Internal functions
@@ -143,6 +143,16 @@ start_gold_fsm(BcPlayerSup, BcGame, BcPlayer) ->
 	EventPid = bc_game:event(BcGame),
 	gen_event:add_handler(EventPid, bc_gold_event, {gold_fsm, BcGoldFsm}),
 	BcGoldFsm.
+
+entities(#state{input_sup = BcInputSup,
+				entities = BcEntities} = State) ->
+	case BcEntities of
+		undefined ->
+			CreatedBcEntities = bc_entities:init(BcInputSup),
+			{CreatedBcEntities, State#state{entities = CreatedBcEntities}};
+		_ ->
+			{BcEntities, State}
+	end.
 
 spawn_player_bases([], _, _) ->
 	ok;

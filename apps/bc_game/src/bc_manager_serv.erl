@@ -52,25 +52,19 @@ handle_call({create_game, Privacy}, _From,
 				 type => supervisor,
 				 modules => [bc_game_sup]
 			}),
-			{ok, BcInputSup} = supervisor:start_child(BcGameSup, #{
-				id => bc_input_sup,
-				start => {bc_input_sup, start_link, []},
-				modules => [bc_input_sup]
-			}),
 			{ok, GameEventPid} = supervisor:start_child(BcGameSup, #{
 				id => bc_game_event,
 				start => {gen_event, start_link, []},
 				modules => [gen_event]
 			}),
-			BcEntities = bc_entities:init(BcInputSup),
 			{ok, BcGameFsm} = supervisor:start_child(BcGameSup, #{
 			   id => bc_game_fsm,
-			   start => {bc_game_fsm, start_link, [GameId, GameEventPid, BcInputSup, BcEntities]},
+			   start => {bc_game_fsm, start_link, [GameId, BcGameSup, GameEventPid]},
 			   modules => [bc_game_fsm]
 			}),
- 			{reply, 
-			 {ok, GameId, BcGameFsm}, 
-			 State#state{games = dict:store(GameId, BcGameFsm, GameDict)}};
+ 			{reply, {ok, GameId, BcGameFsm}, 
+			 	State#state{games = 
+								dict:store(GameId, BcGameFsm, GameDict)}};
 		{error, Reason} ->
 			{reply, {error, Reason}, State}
 	end;

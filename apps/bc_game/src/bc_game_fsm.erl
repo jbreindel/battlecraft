@@ -7,7 +7,7 @@
 -define(MAX_PLAYERS, 2).
 
 %% exported funcs
--export([start_link/4, 
+-export([start_link/3, 
 		 player_join/3, 
 		 player_quit/2, 
 		 player_out/2]).
@@ -20,8 +20,9 @@
 		 handle_info/3]).
 
 %% state rec
--record(state, {input_serv,
-				game,
+-record(state, {game,
+				game_sup,
+				input_serv,
 				team,
 				players}).
 
@@ -31,10 +32,9 @@
 
 -spec start_link(GameId :: integer(), 
 				 GameEventPid :: pid(), 
-				 BcInputSup :: pid(), 
-				 BcEntities :: bc_entities:entities()) -> gen:start_ret().
-start_link(GameId, GameEventPid, BcInputSup, BcEntities) ->
-	gen_fsm:start_link(?MODULE, [GameId, GameEventPid, BcInputSup, BcEntities], []).
+				 BcGameSup :: pid()) -> gen:start_ret().
+start_link(GameId, GameEventPid, BcGameSup) ->
+	gen_fsm:start_link(?MODULE, [GameId, GameEventPid, BcGameSup], []).
 
 -spec player_join(BcGameFsm :: pid(), 
 				  PlayerPid :: pid(), 
@@ -61,22 +61,17 @@ player_out(BcGameFsm, PlayerId) ->
 %% Gen_fsm callbacks 
 %%====================================================================
 
-init([GameId, GameEventPid, BcInputSup, BcEntities]) ->
+init([GameId, GameEventPid, BcGameSup]) ->
 	BcGame = bc_game:create(GameId, GameEventPid, self()),
-	{ok, BcInputServ} = supervisor:start_child(BcInputSup, #{
-		id => bc_input_serv,
-		start => {bc_input_serv, start_link, [BcInputSup, BcGame, BcEntities]},
-		modules => [bc_input_serv]
-	}),
-	{ok, pending, #state{input_serv = BcInputServ,
-						 game = BcGame,
+	{ok, pending, #state{game = BcGame,
+						 game_sup = BcGameSup,
+						 input_serv = undefined,
 						 team = 1,
 						 players = dict:new()}}.
 
 pending({player_join, #{player_pid := PlayerPid, 
 						handle := Handle}},
-			_From, #state{input_serv = BcInputServ,
-				   		  game = BcGame,
+			_From, #state{game = BcGame,
 						  team = Team,
 				   		  players = Players} = State) ->
 	GameId = bc_game:id(BcGame),
@@ -87,10 +82,12 @@ pending({player_join, #{player_pid := PlayerPid,
 			gen_event:notify(GameEventPid, {player_joined, BcPlayer}),
 			gen_event:add_handler(GameEventPid, {bc_game_event, PlayerId},
 								  				{player, BcPlayer}),
-			UpdatedPlayers = dict:store(PlayerId, #{player => BcPlayer,
-										  			monitor => erlang:monitor(process, PlayerPid)}, Players),
+			UpdatedPlayers = 
+				dict:store(PlayerId, #{player => BcPlayer,
+									   monitor => erlang:monitor(process, PlayerPid)}, Players),
 			UpdateTeam = toggle_team(Team),
-			UpdatedState = State#state{team = UpdateTeam, players = UpdatedPlayers},
+			{BcInputServ, UpdatedState} = 
+				input_serv(State#state{team = UpdateTeam, players = UpdatedPlayers}),
 			{ok, BcPlayerServ} = bc_input_serv:create_player_serv(BcInputServ, BcPlayer),
 			case pending_players_changed(GameId, UpdatedPlayers) of
 				{ok, started} ->
@@ -114,8 +111,7 @@ pending({player_join, #{player_pid := PlayerPid,
 	end.
 
 pending({player_quit, PlayerId},
-			#state{input_serv = BcInputServ,
-				   game = BcGame,
+			#state{game = BcGame,
 				   team = Team,
 				   players = Players} = State) ->
 	GameId = bc_game:id(BcGame),
@@ -146,8 +142,7 @@ pending({player_quit, PlayerId},
 	end.
 
 started({_, OutPlayerId}, 
-			#state{input_serv = BcInputServ,
-				   game = BcGame,
+			#state{game = BcGame,
 				   players = Players} = State) ->
 	case bc_player_model:update_out(OutPlayerId, true) of
 		ok ->
@@ -180,8 +175,7 @@ started({_, OutPlayerId},
 	end.
 
 handle_info({'DOWN', Ref, process, Pid, _}, StateName,
-		#state{input_serv = BcInputServ,
-			   game = BcGame,
+		#state{game = BcGame,
 			   players = Players} = State) ->
 	case lists:filter(fun({K, #{monitor := Monitor}}) -> 
 					  	Monitor =:= Ref
@@ -230,6 +224,26 @@ quit_game(GameId) ->
 			{ok, quit};
 		{error, Reason} = Error ->
 			Error
+	end.
+
+input_serv(#state{game = BcGame,
+				  game_sup = BcGameSup, 
+				  input_serv = BcInputServ} = State) ->
+	case BcInputServ of
+		undefined ->
+			{ok, BcInputSup} = supervisor:start_child(BcGameSup, #{
+				id => bc_input_sup,
+				start => {bc_input_sup, start_link, []},
+				modules => [bc_input_sup]
+			}),	
+			{ok, BcInputServ} = supervisor:start_child(BcInputSup, #{
+				id => bc_input_serv,
+				start => {bc_input_serv, start_link, [BcInputSup, BcGame]},
+				modules => [bc_input_serv]
+			}),
+			{BcInputServ, State#state{input_serv = BcInputServ}};
+		_ ->
+			{BcInputServ, State}
 	end.
 
 find_player_id(PlayerPid, Players) ->
