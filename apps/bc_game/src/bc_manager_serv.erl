@@ -59,7 +59,7 @@ handle_call({create_game, Privacy}, _From,
 			}),
 			{ok, BcGameFsm} = supervisor:start_child(BcGameSup, #{
 			   id => bc_game_fsm,
-			   start => {bc_game_fsm, start_link, [GameId, BcGameSup, GameEventPid]},
+			   start => {bc_game_fsm, start_link, [GameId, GameEventPid, BcGameSup]},
 			   modules => [bc_game_fsm]
 			}),
  			{reply, {ok, GameId, BcGameFsm}, 
