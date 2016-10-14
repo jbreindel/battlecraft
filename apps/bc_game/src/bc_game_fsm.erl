@@ -160,7 +160,7 @@ started({_, OutPlayerId},
 						{ok, won} ->
 							gen_event:notify(GameEventPid, {game_won, InBcPlayers}),
 							gen_event:stop(GameEventPid),
-							{stop, won, State};
+							{stop, normal, State};
 						{error, Reason} = Error ->
 							gen_event:notify(GameEventPid, {game_error, Reason}),
 							gen_event:stop(GameEventPid),
