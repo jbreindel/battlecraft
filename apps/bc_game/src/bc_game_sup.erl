@@ -26,5 +26,5 @@ start_link() ->
 %% Child :: {Id,StartFunc,Restart,Shutdown,Type,Modules}
 init([]) ->
 	{ok, {#{strategy => one_for_all, 
-			intensity => 0, 
+			intensity => 1, 
 			period => 1}, []}}.
