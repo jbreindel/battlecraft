@@ -128,7 +128,7 @@ handle_call({get_game, GameId}, _From, State) ->
 			| {stop, Reason :: term(), NewState},
 	NewState :: term(),
 	Timeout :: non_neg_integer() | infinity.
-handle_cast({remove_game, GameId}, _From, State) ->
+handle_cast({remove_game, GameId}, State) ->
 	GameDict = State#state.games,
 	{noreply, State#state{games = dict:erase(GameId, GameDict)}}.
 
@@ -143,15 +143,14 @@ handle_info({'DOWN', Ref, process, _Pid, _Reason},
 				#state{games = GameDict} = State) ->
 	Games = dict:to_list(GameDict),
 	case lists:filter(
-			fun(GameMap) -> 
+			fun({_, GameMap}) -> 
 				Ref =:= maps:get(monitor, GameMap)
 			end, Games) of
-		[FoundGameMap] ->
+		[{GameId, FoundGameMap}] ->
 			%% TODO don't kill sup if exit in error
 			BcGameSup = maps:get(sup, FoundGameMap),
 			exit(BcGameSup, kill),
 			BcGameFsm = maps:get(game, FoundGameMap),
-			GameId = bc_game:id(BcGameFsm),
 			{noreply, State#state{games = dict:erase(GameId, GameDict)}};
 		_ ->
 			{noreply, State}
