@@ -150,7 +150,6 @@ handle_info({'DOWN', Ref, process, _Pid, _Reason},
 			%% TODO don't kill sup if exit in error
 			BcGameSup = maps:get(sup, FoundGameMap),
 			exit(BcGameSup, kill),
-			BcGameFsm = maps:get(game, FoundGameMap),
 			{noreply, State#state{games = dict:erase(GameId, GameDict)}};
 		_ ->
 			{noreply, State}
