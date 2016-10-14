@@ -11,6 +11,7 @@ v0.1.0 - Precedent
 	* Better path finding and minimize standing
 	* Attack 'in' players
 * Fix Supervisor `childspecs` to restart appropriately
+* Appropriate Supervisor termination on game stop
 * Message Center
 * Marketing Site Content
 
