@@ -19,7 +19,7 @@
     "tests"
   ],
   "dependencies": {
-    "bulma": "^0.0.28",
+    "bulma": "^0.2.1",
     "font-awesome": "^4.6.3"
   }
 }
