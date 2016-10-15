@@ -5,6 +5,7 @@
 
 %% number of players to start game
 -define(MAX_PLAYERS, 2).
+-define(TIMEOUT, 30000).
 
 %% exported funcs
 -export([start_link/3, 
@@ -67,8 +68,16 @@ init([GameId, GameEventPid, BcGameSup]) ->
 						 game_sup = BcGameSup,
 						 input_serv = undefined,
 						 team = 1,
-						 players = dict:new()}}.
+						 players = dict:new()}, ?TIMEOUT}.
 
+pending(timeout, #state{game = BcGame} = State) ->
+	GameId = bc_game:id(BcGame),
+	case quit_game(GameId) of
+		{ok, quit} ->
+			{stop, normal, State};
+		{error, Reason} = Error ->
+			{stop, Error, State}
+	end;
 pending({player_join, #{player_pid := PlayerPid, 
 						handle := Handle}},
 			_From, #state{game = BcGame,
@@ -102,7 +111,7 @@ pending({player_join, #{player_pid := PlayerPid,
 				{error, Reason} = Error ->
 					gen_event:notify(GameEventPid, {game_error, Reason}),
 					gen_event:stop(GameEventPid),
-					{stop, Error, Error, UpdatedState};
+					{stop, Error, UpdatedState};
 				_ ->
 					{stop, illegal_state, {error, illegal_state}, UpdatedState}
 			end;
