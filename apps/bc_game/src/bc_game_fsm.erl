@@ -233,12 +233,17 @@ input_serv(#state{game = BcGame,
 		undefined ->
 			{ok, BcInputSup} = supervisor:start_child(BcGameSup, #{
 				id => bc_input_sup,
+				type => supervisor,
 				start => {bc_input_sup, start_link, []},
+				restart => transient,
+				shutdown => 1000,
 				modules => [bc_input_sup]
 			}),	
 			{ok, StartedBcInputServ} = supervisor:start_child(BcInputSup, #{
 				id => bc_input_serv,
 				start => {bc_input_serv, start_link, [BcInputSup, BcGame]},
+				restart => transient,
+				shutdown => 1000,
 				modules => [bc_input_serv]
 			}),
 			{StartedBcInputServ, State#state{input_serv = StartedBcInputServ}};

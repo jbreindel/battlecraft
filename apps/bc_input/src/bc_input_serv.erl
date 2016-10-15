@@ -79,6 +79,8 @@ handle_call({create_player_serv, BcPlayer}, _From,
 		id => player_serv,
 		start => {bc_player_serv, start_link, [BcEntitySup, BcGame, BcPlayer, 
 											   BcGoldFsm, BcMap, BcEntities]},
+		restart => transient,
+		shutdown => 1000,
 		modules => [bc_player_serv]
 	}),
 	{reply, {ok, BcPlayerServ}, 
@@ -132,12 +134,17 @@ terminate(Reason, State) ->
 start_gold_fsm(BcPlayerSup, BcGame, BcPlayer) ->
 	{ok, BcGoldSup} = supervisor:start_child(BcPlayerSup, #{
 		id => gold_sup,
+		type => supervisor,
 		start => {bc_gold_sup, start_link, []},
+		restart => transient,
+		shutdown => 100,
 		modules => [bc_gold_sup]
 	}),
 	{ok, BcGoldFsm} = supervisor:start_child(BcGoldSup, #{
 		id => gold_fsm,
 		start => {bc_gold_fsm, start_link, [BcPlayer]},
+		restart => transient,
+		shutdown => 100,
 		modules => [bc_gold_fsm]
 	}),
 	EventPid = bc_game:event(BcGame),
