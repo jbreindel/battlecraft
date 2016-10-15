@@ -70,14 +70,6 @@ init([GameId, GameEventPid, BcGameSup]) ->
 						 team = 1,
 						 players = dict:new()}, ?TIMEOUT}.
 
-pending(timeout, #state{game = BcGame} = State) ->
-	GameId = bc_game:id(BcGame),
-	case quit_game(GameId) of
-		{ok, quit} ->
-			{stop, normal, State};
-		{error, Reason} = Error ->
-			{stop, Error, State}
-	end;
 pending({player_join, #{player_pid := PlayerPid, 
 						handle := Handle}},
 			_From, #state{game = BcGame,
@@ -119,6 +111,14 @@ pending({player_join, #{player_pid := PlayerPid,
 			{reply, Error, pending, State}
 	end.
 
+pending(timeout, #state{game = BcGame} = State) ->
+	GameId = bc_game:id(BcGame),
+	case quit_game(GameId) of
+		{ok, quit} ->
+			{stop, normal, State};
+		{error, Reason} = Error ->
+			{stop, Error, State}
+	end;
 pending({player_quit, PlayerId},
 			#state{game = BcGame,
 				   team = Team,
