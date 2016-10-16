@@ -8,7 +8,8 @@
     stdlib,
     cowboy,
     bc_game,
-    lager
+    lager,
+    erlydtl
    ]},
   {env,[]},
   {modules, []},
