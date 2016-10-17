@@ -7,9 +7,10 @@
    [kernel,
     stdlib,
     cowboy,
-    bc_game,
     lager,
-    erlydtl
+    erlydtl,
+    bc_game,
+    bc_model
    ]},
   {env,[]},
   {modules, []},
