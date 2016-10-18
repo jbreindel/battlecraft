@@ -6,8 +6,8 @@
   {applications,
    [kernel,
     stdlib,
-    mnesia,
-    bc_model
+    bc_model,
+    bc_input
    ]},
   {env,[]},
   {modules, []},
