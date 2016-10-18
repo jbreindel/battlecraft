@@ -15,6 +15,7 @@
 %%====================================================================
 
 start(_StartType, _StartArgs) ->
+	bc_model:init_model(),
 	RoutesFile = bc_web_files:routes_file(),
 	{ok, Routes} = file:consult(RoutesFile),
 	Dispatch = cowboy_router:compile(Routes),
