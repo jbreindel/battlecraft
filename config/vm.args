@@ -1,0 +1,5 @@
+## Name of the node
+-name ${NODE_NAME}
+
+## mnesia directory location
+-mnesia dir '"./db/${NODE_NAME}"'
