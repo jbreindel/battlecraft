@@ -27,14 +27,14 @@ init() ->
 	init([node()]).
 
 init(Nodes) ->
-	mnesia:create_schema(Nodes),
-	mnesia:start(),
-	create_tables(Nodes, [#{name => '_ids_',
-							attributes => record_info(fields, '_ids_')}]).
+ 	mnesia:create_schema(Nodes),
+	mnesia:start().
 
 init_model() ->
 	bc_model:init(),
-	Tables = [#{name => player,
+	Tables = [#{name => '_ids_',
+				attributes => record_info(fields, '_ids_')},
+			  #{name => player,
 				attributes => record_info(fields, player)},
 			  #{name => game,
 				attributes => record_info(fields, game)},
@@ -48,9 +48,12 @@ gen_id(Tab) ->
 create_tables(_, []) ->
 	ok;
 create_tables(Nodes, [Table|Tables]) ->
-	mnesia:create_table(maps:get(name, Table),
-		[{ disc_copies, Nodes },
-		 { attributes, maps:get(attributes, Table) }]),
+	Name = maps:get(name, Table),
+	Attributes = maps:get(attributes, Table),
+	mnesia:create_table(Name, [
+		{disc_copies, Nodes},
+		{attributes, Attributes}
+	]),
 	create_tables(Nodes, Tables).
 
 migrate() ->
