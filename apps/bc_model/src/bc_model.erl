@@ -27,6 +27,8 @@ init() ->
 	init([node()]).
 
 init(Nodes) ->
+	%% TODO make this smarter check schema existence and make sure its on disc
+	mnesia:stop(),
  	mnesia:create_schema(Nodes),
 	mnesia:start().
 
