@@ -6,7 +6,8 @@
    [kernel,
     stdlib,
     uuid,
-    lager
+    lager,
+    bc_map
    ]},
   {env,[]},
   {modules, []},
