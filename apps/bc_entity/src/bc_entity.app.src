@@ -5,6 +5,8 @@
   {applications,
    [kernel,
     stdlib,
+    uuid,
+    lager,
     bc_game
    ]},
   {env,[]},

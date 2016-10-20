@@ -9,6 +9,7 @@
     cowboy,
     lager,
     erlydtl,
+    jsx,
     bc_game,
     bc_model
    ]},
