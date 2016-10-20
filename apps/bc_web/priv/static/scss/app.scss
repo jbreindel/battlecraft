@@ -103,6 +103,7 @@ body, html {
 
 // vertically center the items
 .is-flex.is-vcentered {
+    @extend .is-flex;
 	align-items: center;
 }
 // horizontally center
