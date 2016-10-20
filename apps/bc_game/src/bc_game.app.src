@@ -7,7 +7,8 @@
    [kernel,
     stdlib,
     bc_model,
-    bc_input
+    bc_map,
+    bc_entity
    ]},
   {env,[]},
   {modules, []},
