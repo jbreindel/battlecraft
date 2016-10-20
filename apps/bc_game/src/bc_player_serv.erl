@@ -88,15 +88,25 @@ handle_cast({spawn_entities, EntityTypeStr}, #state{entities = BcEntities} = Sta
 	EntityType = bc_entity_util:iolist_to_entity_type(EntityTypeStr),
 	case bc_entities:entity_config(EntityType, BcEntities) of
 		{ok, BcEntityConfig} ->
-			{ok, PlayerNum, State1} = player_num(State),
-			{ok, BcMatrix, State2} = spawn_matrix(State1),
-			Cost = bc_entity_config:cost(BcEntityConfig),
-			case bc_gold_fsm:subtract(State2#state.gold, Cost) of
-				{ok, _} ->					
-					spawn_entity_batch(BcEntityConfig, State2),
-					{noreply, State2};
-				{error, _} ->
-					{noreply, State2}
+			case player_num(State) of
+				{ok, undefined, _} ->
+					{noreply, State};
+				{ok, PlayerNum, State1} ->
+					case spawn_matrix(State1) of
+						{ok, undefined, _} ->
+							{noreply, State1};
+						{ok, BcMatrix, State2} ->							
+							Cost = bc_entity_config:cost(BcEntityConfig),
+							case bc_gold_fsm:subtract(State2#state.gold, Cost) of
+								{ok, _} ->					
+									spawn_entity_batch(BcEntityConfig, State2),
+									{noreply, State2};
+								{error, _} ->
+									{noreply, State2}
+							end
+					end;
+				_ ->
+					{noreply, State}
 			end;
 		error ->
 			{noreply, State}

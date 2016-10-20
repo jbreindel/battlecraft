@@ -112,7 +112,8 @@ base_spawn_vertices(MapGraph, BaseNum) ->
 		1 -> base1_spawn_vertices(MapGraph);
 		2 -> base2_spawn_vertices(MapGraph);
 		3 -> base3_spawn_vertices(MapGraph);
-		4 -> base4_spawn_vertices(MapGraph)
+		4 -> base4_spawn_vertices(MapGraph);
+		_ -> undefined
 	end.
 
 -spec base1_spawn_vertices(MapGraph :: map_graph()) -> [bc_vertex:vertex()].
