@@ -10,7 +10,7 @@
         <div id="game" class="is-full-width"></div>
         <script src="/static/js/game.js"></script>
         <script>
-            var address = 'ws://localhost:8080/ws/game/{{ game_id }}/';
+            var address = 'ws://' + window.location.host + '/ws/game/{{ game_id }}/';
 
             var node = document.getElementById('game');
             var app = Elm.Game.embed(node, {address: address});
