@@ -14,13 +14,14 @@
 %% API
 %%====================================================================
 
-start(_StartType, _StartArgs) ->
+start(_StartType, StartArgs) ->
 	bc_model:init_model(),
 	RoutesFile = bc_web_files:routes_file(),
 	{ok, Routes} = file:consult(RoutesFile),
 	Dispatch = cowboy_router:compile(Routes),
+	{ok, Port} = application:get_env(http_port),
 	cowboy:start_http(http, 100,
-					  [{port, 8080}],
+					  [{port, Port}],
 					  [{env, [{dispatch, Dispatch}]}]),
     bc_web_sup:start_link().
 
