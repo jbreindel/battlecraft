@@ -18,6 +18,8 @@ v0.1.0 - Precedent
 v0.2.0 - Innovation
 ------
 
+* 4v4 support
+* Entity bug fixes
 * Asynchronous AI sensing
 * Entity Specials
 * Games Pagination
