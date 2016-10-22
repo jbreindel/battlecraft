@@ -92,9 +92,11 @@ pending({player_join, #{player_pid := PlayerPid,
 			{ok, BcPlayerServ} = bc_input_serv:create_player_serv(BcInputServ, BcPlayer),
 			case pending_players_changed(GameId, UpdatedPlayers) of
 				{ok, started} ->
-					BcPlayers = lists:map(fun({_, V}) -> 
-											maps:get(player, V) 
-										  end, dict:to_list(UpdatedPlayers)),
+					BcPlayers = 
+						lists:map(
+							fun({_, V}) -> 
+								maps:get(player, V) 
+							end, dict:to_list(UpdatedPlayers)),
 					bc_input_serv:spawn_player_bases(BcInputServ, BcPlayers),
 					gen_event:notify(GameEventPid, {game_started, BcPlayers}),
 					{reply, {ok, PlayerId, Team, BcPlayerServ}, started, UpdatedState};
@@ -186,11 +188,19 @@ started({_, OutPlayerId},
 handle_info({'DOWN', Ref, process, Pid, _}, StateName,
 		#state{game = BcGame,
 			   players = Players} = State) ->
-	case lists:filter(fun({K, #{monitor := Monitor}}) -> 
-					  	Monitor =:= Ref
-				 	  end, dict:to_list(Players)) of
+	case lists:filter(
+		 	fun({K, #{monitor := Monitor}}) -> 
+				Monitor =:= Ref
+			end, dict:to_list(Players)) of
 		[{PlayerId, _}] ->
-			started({player_quit, PlayerId}, State);
+			case StateName of
+				started ->
+					started({player_quit, PlayerId}, State);
+				pending ->
+					pending({player_quit, PlayerId}, State);
+				_ ->
+					{stop, {error, "Incompatible State", State}}
+			end;
 		_ ->
 			ok
 	end.
@@ -262,7 +272,12 @@ input_serv(#state{game = BcGame,
 
 find_player_id(PlayerPid, Players) ->
 	List = dict:to_list(Players),
-	[{Id, Pid}] = lists:filter(fun({_, Pid} = Tuple) when Pid =:= PlayerPid -> Tuple end, List),
+	[{Id, Pid}] = 
+		lists:filter(
+			fun({_, Pid} = Tuple) 
+				 when Pid =:= PlayerPid -> 
+				Tuple 
+			end, List),
 	Id.
 
 find_players(PlayerIds, PlayerDict) ->
