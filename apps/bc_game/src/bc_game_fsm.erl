@@ -4,7 +4,6 @@
 -include("../include/bc_game_state.hrl").
 
 %% number of players to start game
--define(MAX_PLAYERS, 2).
 -define(TIMEOUT, 30000).
 
 %% exported funcs
@@ -37,7 +36,8 @@
 				 GameEventPid :: pid(), 
 				 BcGameSup :: pid()) -> gen:start_ret().
 start_link(GameId, Privacy, MaxPlayers, GameEventPid, BcGameSup) ->
-	gen_fsm:start_link(?MODULE, [GameId, Privacy, MaxPlayers, GameEventPid, BcGameSup], []).
+	gen_fsm:start_link(?MODULE, [GameId, Privacy, MaxPlayers, 
+								 GameEventPid, BcGameSup], []).
 
 -spec player_join(BcGameFsm :: pid(), 
 				  PlayerPid :: pid(), 
@@ -92,7 +92,7 @@ pending({player_join, #{player_pid := PlayerPid,
 			{BcInputServ, UpdatedState} = 
 				input_serv(State#state{team = UpdateTeam, players = UpdatedPlayers}),
 			{ok, BcPlayerServ} = bc_input_serv:create_player_serv(BcInputServ, BcPlayer),
-			case pending_players_changed(GameId, UpdatedPlayers) of
+			case pending_players_changed(BcGame, UpdatedPlayers) of
 				{ok, started} ->
 					BcPlayers = 
 						lists:map(
@@ -137,7 +137,7 @@ pending({player_quit, PlayerId},
 			erlang:demonitor(Monitor),
 			UpdatedPlayers = dict:erase(PlayerId, Players),
 			UpdatedState = State#state{team = toggle_team(Team), players = UpdatedPlayers},
-			case pending_players_changed(GameId, UpdatedPlayers) of
+			case pending_players_changed(BcGame, UpdatedPlayers) of
 				{ok, quit} ->
 					gen_event:stop(GameEventPid),
 					{stop, quit, UpdatedState};
@@ -221,9 +221,10 @@ toggle_team(Team) ->
 		2 -> 1
 	end.
 
-pending_players_changed(GameId, Players) ->
+pending_players_changed(BcGame, Players) ->
+	MaxPlayers = bc_game:max_players(BcGame),
 	case dict:size(Players) of
-		Length when Length =:= ?MAX_PLAYERS ->
+		Length when Length =:= MaxPlayers ->
 			start_game(GameId);
 		Length when Length =:= 0 ->
 			quit_game(GameId);
