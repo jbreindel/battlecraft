@@ -4,7 +4,7 @@
 -include("bc_model.hrl").
 
 -export([get_games/3,
-		 save/2, 
+		 save/3, 
 		 win/3, 
 		 update_state/2]).
 		
@@ -27,6 +27,7 @@ get_games(QueryState, Offset, Limit) ->
 										   players => Players,
 										   winner_id => GameRec#game.winner_id,
 										   is_private => GameRec#game.is_private,
+										   num_players => GameRec#game.num_players,
 										   created => GameRec#game.created,
 										   modified => GameRec#game.modified} || GameRec <- Records, 
 																				 {GameId, Players} <- dict:to_list(PlayerDict),
@@ -38,15 +39,18 @@ get_games(QueryState, Offset, Limit) ->
 			GameError
 	end.
 	
--spec save(Privacy :: integer(), State :: integer()) -> 
-		  {ok, GameId :: integer()} | {error, Reason :: string()}.
-save(Privacy, State) ->
+-spec save(Privacy :: integer(), 
+		   MaxPlayers :: integer(), 
+		   State :: integer()) -> {ok, GameId :: integer()} | 
+									  {error, Reason :: string()}.
+save(Privacy, MaxPlayers, State) ->
 	Now = erlang:system_time(seconds),
 	GameId = bc_model:gen_id(game),
 	Game = #game{id = GameId,
 				 state = State,
 				 winner_id = 0,
 				 is_private = Privacy,
+				 max_players = MaxPlayers,
 				 created = Now,
 				 modified = Now},
 	case mnesia:sync_transaction(fun() -> mnesia:write(Game) end) of

@@ -28,6 +28,8 @@
 			winner_id,
 			%% privacy field
 			is_private,
+			%% max number of players
+			max_players,
 			%% timestamp for created
 			created,
 			%% timestamp for last modified
