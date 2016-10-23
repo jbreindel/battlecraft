@@ -42,15 +42,25 @@ handle_post(Req) ->
 			%% TODO populate flashbag
 			{shutdown, cowboy_req:reply(500, [], <<"Form invalid">>, Req2), no_state};
 		IsPrivateStr ->
-			BcManagerServ = whereis(bc_manager_serv),
-			IsPrivate = case IsPrivateStr of <<"true">> -> true; <<"false">> -> false end,
-			case bc_manager_serv:create_game(BcManagerServ, IsPrivate) of
-				{ok, GameId, _} ->
-					Location = string:concat("/game/", integer_to_list(GameId)),
-					Reply = cowboy_req:reply(303, [{<<"location">>, list_to_binary(Location)}], Req2),
-					{ok, Reply, no_state};
-				{error, Reason} ->
+			case proplists:get_value(<<"max_players">>, FormVals) of
+				undefined ->
 					%% TODO populate flashbag
-					{ok, cowboy_req:reply(303, [{<<"Location">>, <<"/games/">>}], Req2), no_state}
+					{shutdown, cowboy_req:reply(500, [], <<"Form invalid">>, Req2), no_state};
+				MaxPlayerStr ->
+					IsPrivate = case IsPrivateStr of <<"true">> -> true; <<"false">> -> false end,
+					MaxPlayers = case MaxPlayersStr of <<"2">> -> 2; <<"4">> -> 4 end,
+					create_game(IsPrivate, MaxPlayers, Req2)
 			end
+	end.
+
+create_game(IsPrivate, MaxPlayers, Req) ->
+	BcManagerServ = whereis(bc_manager_serv),
+	case bc_manager_serv:create_game(BcManagerServ, IsPrivate, MaxPlayers) of
+		{ok, GameId, _} ->
+			Location = string:concat("/game/", integer_to_list(GameId)),
+			Reply = cowboy_req:reply(303, [{<<"location">>, list_to_binary(Location)}], Req),
+			{ok, Reply, no_state};
+		{error, Reason} ->
+			%% TODO populate flashbag
+			{ok, cowboy_req:reply(303, [{<<"Location">>, <<"/games/">>}], Req), no_state}
 	end.

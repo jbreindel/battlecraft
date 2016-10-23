@@ -30,10 +30,11 @@ start_link() ->
 	gen_server:start_link({local, bc_manager_serv}, ?MODULE, [], []).
 
 -spec create_game(BcManagerServ :: pid(), 
-				  Privacy :: integer()) -> {ok, GameId :: integer(), BcGameFsm :: pid()} | 
-											   {error, Reason :: string()}.
-create_game(BcManagerServ, Privacy) ->
-	gen_server:call(BcManagerServ, {create_game, Privacy}).
+				  Privacy :: integer(),
+				  MaxPlayers :: integer()) -> {ok, GameId :: integer(), BcGameFsm :: pid()} | 
+											  	{error, Reason :: string()}.
+create_game(BcManagerServ, Privacy, MaxPlayers) ->
+	gen_server:call(BcManagerServ, {create_game, Privacy, MaxPlayers}).
 
 -spec get_game(BcManagerServ :: pid(), 
 			   GameId :: integer()) -> {ok, BcGameFsm :: pid()} | 
