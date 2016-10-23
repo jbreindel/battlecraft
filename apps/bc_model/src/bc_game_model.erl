@@ -27,7 +27,7 @@ get_games(QueryState, Offset, Limit) ->
 										   players => Players,
 										   winner_id => GameRec#game.winner_id,
 										   is_private => GameRec#game.is_private,
-										   num_players => GameRec#game.num_players,
+										   max_players => GameRec#game.max_players,
 										   created => GameRec#game.created,
 										   modified => GameRec#game.modified} || GameRec <- Records, 
 																				 {GameId, Players} <- dict:to_list(PlayerDict),

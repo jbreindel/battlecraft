@@ -1,7 +1,7 @@
 
 -module(bc_game).
 
--export([init/3,
+-export([init/5,
 		 id/1,
 		 privacy/1,
 		 max_players/1,

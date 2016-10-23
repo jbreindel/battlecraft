@@ -7,7 +7,7 @@
 -define(TIMEOUT, 30000).
 
 %% exported funcs
--export([start_link/3, 
+-export([start_link/5, 
 		 player_join/3, 
 		 player_quit/2, 
 		 player_out/2]).
@@ -164,7 +164,7 @@ started({_, OutPlayerId},
 			gen_event:notify(GameEventPid, {player_out, BcPlayer}),
 			GameId = bc_game:id(BcGame),
 			InPlayerIds = bc_player_model:in_player_ids(GameId),
-			WinThreashold = ?MAX_PLAYERS / 2,
+			WinThreashold = bc_game:max_players(BcGame) / 2,
 			case find_players(InPlayerIds, Players) of
 				InBcPlayers when length(InBcPlayers) =< WinThreashold ->
 					FirstBcPlayer = lists:nth(1, InBcPlayers),
@@ -222,6 +222,7 @@ toggle_team(Team) ->
 	end.
 
 pending_players_changed(BcGame, Players) ->
+	GameId = bc_game:id(BcGame),
 	MaxPlayers = bc_game:max_players(BcGame),
 	case dict:size(Players) of
 		Length when Length =:= MaxPlayers ->

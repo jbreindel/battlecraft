@@ -5,7 +5,7 @@
 
 %% api functions
 -export([start_link/0,
-		 create_game/2,
+		 create_game/3,
 		 get_game/2,
 		 remove_game/2]).
 
