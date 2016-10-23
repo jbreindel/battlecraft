@@ -9,26 +9,66 @@
                 </div>
             </div>
             <div class="column">
-                <form action="/games" method="post">
-                    <input type="hidden" name="is_private" value="true" />
-                    <button class="button" type="submit">
-                        <span>Create Private Game</span>
-                        <span class="icon">
-                            <i class="fa fa-lock"></i>
-                        </span>
-                    </button>
-                </form>
+                <div class="columns">
+                    <div class="column">
+                        <h5 class="is-5">2v2<h5>
+                    </div>
+                    <div class="column">
+                        <form action="/games" method="post">
+                            <input type="hidden" name="is_private" value="true" />
+                            <input type="hidden" name="max_players" value="2" />
+                            <button class="button" type="submit">
+                                <span>Create Private Game</span>
+                                <span class="icon">
+                                    <i class="fa fa-lock"></i>
+                                </span>
+                            </button>
+                        </form>
+                    </div>
+                    <div class="column">
+                        <form action="/games" method="post">
+                            <input type="hidden" name="is_private" value="false" />
+                            <input type="hidden" name="max_players" value="2" />
+                            <button class="button" type="submit">
+                                <span>Create Public Game</span>
+                                <span class="icon">
+                                    <i class="fa fa-unlock"></i>
+                                </span>
+                            </button>
+                        </form>
+                    </div>
+                </div>
             </div>
             <div class="column">
-                <form action="/games" method="post">
-                    <input type="hidden" name="is_private" value="false" />
-                    <button class="button is-primary" type="submit">
-                        <span>Create Public Game</span>
-                        <span class="icon">
-                            <i class="fa fa-unlock"></i>
-                        </span>
-                    </button>
-                </form>
+                <div class="columns">
+                    <div class="column">
+                        <h5 class="is-5">4v4<h5>
+                    </div>
+                    <div class="column">
+                        <form action="/games" method="post">
+                            <input type="hidden" name="is_private" value="true" />
+                            <input type="hidden" name="max_players" value="4" />
+                            <button class="button is-primary" type="submit">
+                                <span>Create Private Game</span>
+                                <span class="icon">
+                                    <i class="fa fa-lock"></i>
+                                </span>
+                            </button>
+                        </form>
+                    </div>
+                    <div class="column">
+                        <form action="/games" method="post">
+                            <input type="hidden" name="is_private" value="false" />
+                            <input type="hidden" name="max_players" value="4" />
+                            <button class="button is-primary" type="submit">
+                                <span>Create Public Game</span>
+                                <span class="icon">
+                                    <i class="fa fa-unlock"></i>
+                                </span>
+                            </button>
+                        </form>
+                    </div>
+                </div>
             </div>
         </div>
 		<div class="game-table">
