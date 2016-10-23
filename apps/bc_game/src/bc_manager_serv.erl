@@ -104,7 +104,7 @@ handle_call({create_game, Privacy, MaxPlayers}, _From,
 				modules => [bc_game_fsm]
 			}),
 			Ref = erlang:monitor(process, BcGameFsm),
-			BcGame = bc_game:create(GameId, GameEventPid, BcGameFsm),
+			BcGame = bc_game:init(GameId, Privacy, MaxPlayers, GameEventPid, BcGameFsm),
 			GameMap = #{game => BcGame, sup => BcGameSup, monitor => Ref},
  			{reply, {ok, GameId, BcGameFsm}, 
 			 	State#state{games = 
