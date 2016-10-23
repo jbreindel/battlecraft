@@ -46,7 +46,7 @@ handle_post(Req) ->
 				undefined ->
 					%% TODO populate flashbag
 					{shutdown, cowboy_req:reply(500, [], <<"Form invalid">>, Req2), no_state};
-				MaxPlayerStr ->
+				MaxPlayersStr ->
 					IsPrivate = case IsPrivateStr of <<"true">> -> true; <<"false">> -> false end,
 					MaxPlayers = case MaxPlayersStr of <<"2">> -> 2; <<"4">> -> 4 end,
 					create_game(IsPrivate, MaxPlayers, Req2)
