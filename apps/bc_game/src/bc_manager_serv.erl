@@ -75,9 +75,9 @@ init([]) ->
 	NewState :: term(),
 	Timeout :: non_neg_integer() | infinity,
 	Reason :: term().
-handle_call({create_game, Privacy}, _From, 
+handle_call({create_game, Privacy, MaxPlayers}, _From, 
 	#state{manager_sup = BcManagerSup, games = GameDict} = State) ->
-	case bc_game_model:save(Privacy, ?PENDING) of
+	case bc_game_model:save(Privacy, MaxPlayers, ?PENDING) of
 		{ok, GameId} ->
 			{ok, BcGameSup} = supervisor:start_child(BcManagerSup, #{
 				id => GameId,
@@ -96,7 +96,8 @@ handle_call({create_game, Privacy}, _From,
 			}),
 			{ok, BcGameFsm} = supervisor:start_child(BcGameSup, #{
 				id => bc_game_fsm,
-				start => {bc_game_fsm, start_link, [GameId, GameEventPid, BcGameSup]},
+				start => {bc_game_fsm, start_link, [GameId, Privacy, MaxPlayers, 
+													GameEventPid, BcGameSup]},
 				restart => transient,
 				shutdown => 10000,
 				modules => [bc_game_fsm]

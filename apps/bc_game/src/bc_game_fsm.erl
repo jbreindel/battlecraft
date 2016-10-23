@@ -32,10 +32,12 @@
 %%====================================================================
 
 -spec start_link(GameId :: integer(), 
+				 Privacy :: integer(),
+				 MaxPlayers :: integer(),
 				 GameEventPid :: pid(), 
 				 BcGameSup :: pid()) -> gen:start_ret().
-start_link(GameId, GameEventPid, BcGameSup) ->
-	gen_fsm:start_link(?MODULE, [GameId, GameEventPid, BcGameSup], []).
+start_link(GameId, Privacy, MaxPlayers, GameEventPid, BcGameSup) ->
+	gen_fsm:start_link(?MODULE, [GameId, Privacy, MaxPlayers, GameEventPid, BcGameSup], []).
 
 -spec player_join(BcGameFsm :: pid(), 
 				  PlayerPid :: pid(), 
@@ -62,8 +64,8 @@ player_out(BcGameFsm, PlayerId) ->
 %% Gen_fsm callbacks 
 %%====================================================================
 
-init([GameId, GameEventPid, BcGameSup]) ->
-	BcGame = bc_game:create(GameId, GameEventPid, self()),
+init([GameId, Privacy, MaxPlayers, GameEventPid, BcGameSup]) ->
+	BcGame = bc_game:init(GameId, Privacy, MaxPlayers, GameEventPid, self()),
 	{ok, pending, #state{game = BcGame,
 						 game_sup = BcGameSup,
 						 input_serv = undefined,
