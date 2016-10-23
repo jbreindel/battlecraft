@@ -15,10 +15,16 @@ v0.1.0 - Precedent
 * Message Center
 * Marketing Site Content
 
-v0.2.0 - Innovation
+v0.1.1
 ------
 
 * 4v4 support
+* Game center bug fixes: players table, game won event
+
+
+v0.2.0 - Innovation
+------
+
 * Entity bug fixes
 * Asynchronous AI sensing
 * Entity Specials
