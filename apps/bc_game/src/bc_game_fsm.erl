@@ -130,7 +130,7 @@ pending({player_quit, PlayerId},
 	GameId = bc_game:id(BcGame),
 	case bc_player_model:delete(GameId, PlayerId) of
 		ok ->
-			GameEventPid = bc_game:pid(BcGame),
+			GameEventPid = bc_game:event(BcGame),
 			gen_event:delete_handler(GameEventPid, {bc_game_event, PlayerId}, []),
 			#{player := BcPlayer, monitor := Monitor} = dict:fetch(PlayerId, Players),
 			gen_event:notify(GameEventPid, {player_quit, BcPlayer}),
