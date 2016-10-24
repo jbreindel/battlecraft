@@ -101,13 +101,16 @@ update_out(PlayerId, IsOut) ->
 			 PlayerId :: integer()) -> ok | {error, Reason :: string()}.
 delete(GameId, PlayerId) ->
 	case mnesia:sync_transaction(fun() ->
-									case qlc:eval(qlc:q([GpAssoc#gp_assoc.id || 
+									case qlc:eval(qlc:q([GpAssoc || 
 														 GpAssoc <- mnesia:table(gp_assoc),
-														 GpAssoc#gp_assoc.game_id =:= GameId,
-														 GpAssoc#gp_assoc.player_id =:= PlayerId])) of
-										{[Id], 1} ->
-											mnesia:delete(gp_assoc, Id, write);
+														 GpAssoc#gp_assoc.game_id == GameId,
+														 GpAssoc#gp_assoc.player_id == PlayerId])) of
+										{[GpAssoc]} ->
+											GpId = GpAssoc#gp_assoc.id,
+											mnesia:delete(gp_assoc, GpId, write);
 										'$end_of_table' ->
+											ok;
+										_ ->
 											ok
 									end,
 									mnesia:delete(player, PlayerId, write)
