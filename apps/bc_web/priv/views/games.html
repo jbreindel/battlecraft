@@ -85,9 +85,7 @@
 					<th>Id</th>
 					<th>state</th>
 					<th>Players</th>
-					{% if game.state == 3 %}
-						<th>Winner</th>
-					{% endif %}
+                    <th>Max Players</th>
 					<th>Created</th>
 					<th>Actions</th>
 				</thead>
@@ -112,6 +110,7 @@
 									{% endfor %}
 								</ul>
 							</td>
+                            <td>{{ game.max_players }}</td>
 							<td>{{ game.created }}</td>
 							<td>
 								<a class="button is-primary" href="/game/{{ game.id }}">Join</a>
