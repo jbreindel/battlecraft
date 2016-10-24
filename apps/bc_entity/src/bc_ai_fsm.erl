@@ -488,8 +488,12 @@ enemy_base_entity(#state{entities = BcEntities,
 			BaseBcEntity = lists:nth(1, BaseBcEntities),
 			{BaseBcEntity, State};
 		_ ->
-			BaseBcEntity = find_enemy_base(State),
-			{BaseBcEntity, State#state{targets = [BaseBcEntity]}}
+			case find_enemy_base(State) of
+				BaseBcEntity when is_map(BaseBcEntity) ->
+					{BaseBcEntity, State#state{targets = [BaseBcEntity]}};
+				undefined ->
+					{undefined, State#state{targets = []}}
+			end
 	end.
 
 find_enemy_base(#state{entity = BcEntity, 

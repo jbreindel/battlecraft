@@ -118,7 +118,7 @@ handle_call({spawn_player_bases, BcPlayers}, _From,
 					gen_event:add_handler(EntitiesEventPid, 
 										  bc_base_event, 
 										  [BaseUuid, BcGame, BcPlayer]), 
-					Num + 1 
+					Num + 1
 				end, 1, SortedBcPlayers),
 	Reply = spawn_player_bases(SortedBcPlayers, BaseBcCollisions, UpdatedState),
 	{reply, Reply, UpdatedState}.
@@ -175,6 +175,8 @@ spawn_player_bases([BcPlayer|BcPlayers], [{PlayerNum, BaseBcCollision}|BaseBcCol
 			bc_entity_util:spawn_entity(BaseBcCollision, BcPlayer, 
 										BcEntitySup, BaseBcEntityConfig, 
 										PlayerNum, BcMap, BcEntities),
+			EntitiesEventPid = bc_entities:event(BcEntities),
+			
 			spawn_player_bases(BcPlayers, BaseBcCollisions, State);
 		error ->
 			{error, "Can't find entity supervisor."}

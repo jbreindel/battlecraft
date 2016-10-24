@@ -38,10 +38,10 @@ init([BaseUuid, BcGame, BcPlayer]) ->
 	NewState :: term(), Args1 :: term(), Args2 :: term(),
 	Handler2 :: Module2 | {Module2, Id :: term()},
 	Module2 :: atom().
-handle_event({entitiy_died, BcEntity}, #state{base_uuid = BaseUuid, 
+handle_event({entity_died, BcEntity}, #state{base_uuid = BaseUuid, 
 											  game = BcGame, 
 											  player = BcPlayer} = State) ->
-	case BaseUuid =:= bc_entity:uuid(BcEntity) of
+	case BaseUuid == bc_entity:uuid(BcEntity) of
 		true ->
 			GameFsmPid = bc_game:fsm(BcGame),
 			PlayerId = bc_player:id(BcPlayer),
