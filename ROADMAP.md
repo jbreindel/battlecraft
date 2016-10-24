@@ -19,7 +19,8 @@ v0.1.1
 ------
 
 * 4v4 support
-* Game center bug fixes: players table, game won event
+* Fix bugs with killing bases
+* 
 
 
 v0.2.0 - Innovation
