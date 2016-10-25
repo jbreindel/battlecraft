@@ -185,7 +185,7 @@ gameEventLogMessage gameEvent =
                         |> List.intersperse ", "
                         |> String.concat
             in
-                winners ++ " has been won the game"
+                winners ++ " have won the game"
 
         GameEvent.GamePlayerEv gamePlayerEvent ->
             gamePlayerEventLogMessage gamePlayerEvent
