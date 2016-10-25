@@ -163,7 +163,9 @@ pending(Event, From, State) ->
 	NewStateData :: atom(),
 	Timeout :: non_neg_integer() | infinity,
 	Reason :: normal | term().
-started(Event, From, State) ->
+started({player_join, _}, _From, State) ->
+	{reply, {error, "Game already started"}, started, State};
+started(_Event, _From, State) ->
 	{reply, ok, started, State}.
 
 %%%%
