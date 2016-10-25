@@ -114,9 +114,9 @@ pending({player_join, #{player_pid := PlayerPid,
 		{ok, PlayerId} ->
 			BcPlayer = bc_player:create(PlayerId, Handle, Team, PlayerPid),
 			GameEventPid = bc_game:event(BcGame),
-			gen_event:notify(GameEventPid, {player_joined, BcPlayer}),
 			gen_event:add_handler(GameEventPid, {bc_game_event, PlayerId},
 								  				{player, BcPlayer}),
+			gen_event:notify(GameEventPid, {player_joined, BcPlayer}),
 			UpdatedPlayers = 
 				dict:store(PlayerId, #{player => BcPlayer,
 									   monitor => erlang:monitor(process, PlayerPid)}, Players),
@@ -222,6 +222,15 @@ pending({player_quit, PlayerId},
 pending(Event, State) ->
 	{next_state, pending, State}.
 
+-spec started(Event :: timeout | term(), StateData :: term()) -> Result when
+	Result :: {next_state, NextStateName, NewStateData}
+			| {next_state, NextStateName, NewStateData, Timeout}
+			| {next_state, NextStateName, NewStateData, hibernate}
+			| {stop, Reason, NewStateData},
+	NextStateName :: atom(),
+	NewStateData :: term(),
+	Timeout :: non_neg_integer() | infinity,
+	Reason :: term().
 started({_, OutPlayerId}, 
 			#state{game = BcGame,
 				   players = Players} = State) ->
