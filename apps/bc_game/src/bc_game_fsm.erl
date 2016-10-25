@@ -6,18 +6,22 @@
 %% number of players to start game
 -define(TIMEOUT, 30000).
 
-%% exported funcs
+%% exported funs
 -export([start_link/5, 
 		 player_join/3, 
 		 player_quit/2, 
 		 player_out/2]).
 
 -export([init/1, 
-		 pending/2, 
+		 pending/2,
+		 started/2,
 		 pending/3, 
-		 started/2, 
+		 started/3, 
+		 handle_event/3, 
+		 handle_sync_event/4, 
+		 handle_info/3, 
 		 terminate/3, 
-		 handle_info/3]).
+		 code_change/4]).
 
 %% state rec
 -record(state, {game,
@@ -64,6 +68,16 @@ player_out(BcGameFsm, PlayerId) ->
 %% Gen_fsm callbacks 
 %%====================================================================
 
+-spec init(Args :: term()) -> Result when
+	Result :: {ok, StateName, StateData}
+			| {ok, StateName, StateData, Timeout}
+			| {ok, StateName, StateData, hibernate}
+			| {stop, Reason}
+			| ignore,
+	StateName :: atom(),
+	StateData :: term(),
+	Timeout :: non_neg_integer() | infinity,
+	Reason :: term().
 init([GameId, Privacy, MaxPlayers, GameEventPid, BcGameSup]) ->
 	BcGame = bc_game:init(GameId, Privacy, MaxPlayers, GameEventPid, self()),
 	{ok, pending, #state{game = BcGame,
@@ -72,6 +86,24 @@ init([GameId, Privacy, MaxPlayers, GameEventPid, BcGameSup]) ->
 						 team = 1,
 						 players = dict:new()}, ?TIMEOUT}.
 
+%%%%
+%% state/3
+%%%%
+
+-spec pending(Event :: term(), From :: {pid(), Tag :: term()}, StateData :: term()) -> Result when
+	Result :: {reply, Reply, NextStateName, NewStateData}
+			| {reply, Reply, NextStateName, NewStateData, Timeout}
+			| {reply, Reply, NextStateName, NewStateData, hibernate}
+			| {next_state, NextStateName, NewStateData}
+			| {next_state, NextStateName, NewStateData, Timeout}
+			| {next_state, NextStateName, NewStateData, hibernate}
+			| {stop, Reason, Reply, NewStateData}
+			| {stop, Reason, NewStateData},
+	Reply :: term(),
+	NextStateName :: atom(),
+	NewStateData :: atom(),
+	Timeout :: non_neg_integer() | infinity,
+	Reason :: normal | term().
 pending({player_join, #{player_pid := PlayerPid, 
 						handle := Handle}},
 			_From, #state{game = BcGame,
@@ -113,8 +145,40 @@ pending({player_join, #{player_pid := PlayerPid,
 			end;
 		{error, Reason} = Error ->
 			{reply, Error, pending, State}
-	end.
+	end;
+pending(Event, From, State) ->
+	{reply, ok, pending, State}.
 
+-spec started(Event :: term(), From :: {pid(), Tag :: term()}, StateData :: term()) -> Result when
+	Result :: {reply, Reply, NextStateName, NewStateData}
+			| {reply, Reply, NextStateName, NewStateData, Timeout}
+			| {reply, Reply, NextStateName, NewStateData, hibernate}
+			| {next_state, NextStateName, NewStateData}
+			| {next_state, NextStateName, NewStateData, Timeout}
+			| {next_state, NextStateName, NewStateData, hibernate}
+			| {stop, Reason, Reply, NewStateData}
+			| {stop, Reason, NewStateData},
+	Reply :: term(),
+	NextStateName :: atom(),
+	NewStateData :: atom(),
+	Timeout :: non_neg_integer() | infinity,
+	Reason :: normal | term().
+started(Event, From, State) ->
+	{reply, ok, started, State}.
+
+%%%%
+%% state/2
+%%%%
+
+-spec pending(Event :: timeout | term(), StateData :: term()) -> Result when
+	Result :: {next_state, NextStateName, NewStateData}
+			| {next_state, NextStateName, NewStateData, Timeout}
+			| {next_state, NextStateName, NewStateData, hibernate}
+			| {stop, Reason, NewStateData},
+	NextStateName :: atom(),
+	NewStateData :: term(),
+	Timeout :: non_neg_integer() | infinity,
+	Reason :: term().
 pending(timeout, #state{game = BcGame} = State) ->
 	GameId = bc_game:id(BcGame),
 	case quit_game(GameId) of
@@ -152,7 +216,9 @@ pending({player_quit, PlayerId},
 			end;
 		{error, Reason} = Error ->
 			{stop, Error, State}
-	end.
+	end;
+pending(Event, State) ->
+	{next_state, pending, State}.
 
 started({_, OutPlayerId}, 
 			#state{game = BcGame,
@@ -185,8 +251,48 @@ started({_, OutPlayerId},
 			end;
 		{error, Reason} = Error ->
 			{stop, Error, State}
-	end.
+	end;
+started(Event, State) ->
+	{next_state, started, State}.
 
+-spec handle_event(Event :: term(), StateName :: atom(), StateData :: term()) -> Result when
+	Result :: {next_state, NextStateName, NewStateData}
+			| {next_state, NextStateName, NewStateData, Timeout}
+			| {next_state, NextStateName, NewStateData, hibernate}
+			| {stop, Reason, NewStateData},
+	NextStateName :: atom(),
+	NewStateData :: term(),
+	Timeout :: non_neg_integer() | infinity,
+	Reason :: term().
+handle_event(Event, StateName, State) ->
+	{next_state, StateName, State}.
+
+-spec handle_sync_event(Event :: term(), From :: {pid(), Tag :: term()}, StateName :: atom(), StateData :: term()) -> Result when
+	Result :: {reply, Reply, NextStateName, NewStateData}
+			| {reply, Reply, NextStateName, NewStateData, Timeout}
+			| {reply, Reply, NextStateName, NewStateData, hibernate}
+			| {next_state, NextStateName, NewStateData}
+			| {next_state, NextStateName, NewStateData, Timeout}
+			| {next_state, NextStateName, NewStateData, hibernate}
+			| {stop, Reason, Reply, NewStateData}
+			| {stop, Reason, NewStateData},
+	Reply :: term(),
+	NextStateName :: atom(),
+	NewStateData :: term(),
+	Timeout :: non_neg_integer() | infinity,
+	Reason :: term().
+handle_sync_event(Event, From, StateName, StateData) ->
+	{reply, ok, StateName, StateData}.
+
+-spec handle_info(Info :: term(), StateName :: atom(), StateData :: term()) -> Result when
+	Result :: {next_state, NextStateName, NewStateData}
+			| {next_state, NextStateName, NewStateData, Timeout}
+			| {next_state, NextStateName, NewStateData, hibernate}
+			| {stop, Reason, NewStateData},
+	NextStateName :: atom(),
+	NewStateData :: term(),
+	Timeout :: non_neg_integer() | infinity,
+	Reason :: normal | term().
 handle_info({'DOWN', Ref, process, Pid, _}, StateName,
 		#state{game = BcGame,
 			   players = Players} = State) ->
@@ -205,11 +311,26 @@ handle_info({'DOWN', Ref, process, Pid, _}, StateName,
 			end;
 		_ ->
 			ok
-	end.
+	end;
+handle_info(Info, StateName, State) ->
+	{next_state, StateName, State}.
 
+-spec terminate(Reason, StateName :: atom(), StateData :: term()) -> Result :: term() when
+	Reason :: normal
+			| shutdown
+			| {shutdown, term()}
+			| term().
 terminate(Reason, StateName, State) ->
 	io:format("BcGameFsm terminates with ~p~n", [Reason]),
 	ok.
+
+-spec code_change(OldVsn, StateName :: atom(), 
+				  StateData :: term(), 
+				  Extra :: term()) -> {ok, NextStateName :: atom(), NewStateData :: term()} when
+	OldVsn :: Vsn | {down, Vsn},
+	Vsn :: term().
+code_change(OldVsn, StateName, StateData, Extra) ->
+	{ok, StateName, StateData}.
 
 %%====================================================================
 %% Internal functions
