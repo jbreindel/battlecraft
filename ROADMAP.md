@@ -20,8 +20,13 @@ v0.1.1
 
 * 4v4 support
 * Fix bugs with killing bases
-* 
 
+v0.1.2
+------
+
+* Fix small misspellings/gramatical errors
+* Disallow players to join already started games
+* Tune entity config
 
 v0.2.0 - Innovation
 ------
