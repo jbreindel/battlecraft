@@ -49,7 +49,7 @@ websocket_handle({text, Json} = Frame, Req, #state{game_id = GameId,
 					lager:info("Error occured while joining: ~p", [Error]),
 					ErrorMap = #{type => command_response,
 								 command_response => #{response_type => join_error, 
-													   error => Reason}},
+													   error => list_to_binary(Reason)}},
 					ReplyJson = jsx:encode(ErrorMap),
 					{reply, {text, ReplyJson}, Req, State}
 			end;
