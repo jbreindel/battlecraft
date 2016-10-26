@@ -6,9 +6,11 @@ module Join exposing (Effect(..),
                       update,
                       view)
 
+import String as String
 import Html exposing (..)
 import Html.App as App
 import Html.Attributes exposing (..)
+import Html.Lazy exposing (lazy)
 import Html.Events exposing (onInput, onClick)
 import Json.Encode exposing (..)
 import Effects exposing (Effects)
@@ -53,7 +55,9 @@ update msg model =
     case msg of
 
         UpdateHandle handle ->
-            Effects.return {model | handle = handle}
+            Effects.return {model |
+                                handle = handle,
+                                error = Nothing}
 
         JoinGame ->
             onJoinGame model
@@ -63,13 +67,21 @@ update msg model =
 
 onJoinGame : Model -> Effects Model Effect
 onJoinGame model =
-    -- TODO check handle length
     let
-        joinCommandJson = initJoinCommand model.handle
-            |> encodeJoinCommand
-            |> encode 0
+        handleLength = String.length model.handle
     in
-        Effects.init model [WsSendMsg joinCommandJson]
+        if (not (handleLength > 3)) || (handleLength > 8) then
+            Effects.return {model |
+                error = Just "Handle has to be between 3 and 8 characters long"}
+        else
+            let
+                joinCommandJson = initJoinCommand model.handle
+                    |> encodeJoinCommand
+                    |> encode 0
+            in
+                Effects.init {model |
+                    error = Nothing
+                } [WsSendMsg joinCommandJson]
 
 onJoinResponse : JoinResponse -> Model -> Effects Model Effect
 onJoinResponse joinResponse model =
@@ -88,18 +100,47 @@ onJoinResponse joinResponse model =
 
 view : Model -> Html Msg
 view model =
-    div [class "card join-card"] [
-        header [class "card-header"] [
-            p [class "card-header-title"] [
-                text "Select a handle"
+    lazy joinCard model
+
+joinCard : Model -> Html Msg
+joinCard model =
+    let
+        errorColumnsClass =
+            case model.error of
+
+                Just _ ->
+                    "columns"
+
+                Nothing ->
+                    "columns is-hidden"
+
+        errorMessage = Maybe.withDefault "" model.error
+    in
+        div [class "card join-card"] [
+            header [class "card-header"] [
+                p [class "card-header-title"] [
+                    text "Select a handle"
+                ]
+            ],
+            div [class "card-content"] [
+                div [class "content"] [
+                    div [class errorColumnsClass] [
+                        div [class "column"] [
+                            article [class "message is-danger"] [
+                                div [class "message-body"] [
+                                    text errorMessage
+                                ]
+                            ]
+                        ]
+                    ],
+                    div [class "columns"] [
+                        div [class "column"] [
+                            input [placeholder "Game Handle", onInput UpdateHandle] []
+                        ]
+                    ]
+                ]
+            ],
+            footer [class "card-footer"] [
+                a [class "card-footer-item", onClick JoinGame] [text "Join Game"]
             ]
-        ],
-        div [class "card-content"] [
-            div [class "content"] [
-                input [placeholder "Game Handle", onInput UpdateHandle] []
-            ]
-        ],
-        footer [class "card-footer"] [
-            a [class "card-footer-item", onClick JoinGame] [text "Join Game"]
         ]
-    ]
