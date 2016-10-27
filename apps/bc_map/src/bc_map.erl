@@ -242,10 +242,10 @@ update_collision(MapGraph, OriginalBcCollision, UpdatedBcCollision) ->
 					ets:select_delete(Tab, Ms),
 					ok;
 				false ->
-					{error, "Unable to insert new vertices."}
+					{error, no_insert}
 			end;
 		_ ->
-			{error, "Updated collision doesn't have different vertices."}
+			{error, no_vertex_diff}
 	end.
 
 -spec delete_collision(MapGraph :: map_graph(),
