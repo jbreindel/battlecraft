@@ -428,12 +428,21 @@ move_on_path(#state{entity = BcEntity,
 		true ->			
 			MoveBcVertex = lists:nth(1, PathBcVertices),
 			Direction = bc_entity_util:move_direction(BcEntity, MoveBcVertex),
-			move(Direction, State);
+			case move(Direction, State) of
+				{ok, MovedBcEntity} ->
+					on_entity_moved(MovedBcEntity, State);
+				{error, _} ->
+					sense(State#state{path = undefined,
+									  targets = []});
+				_ ->
+					sense(State#state{path = undefined,
+									  targets = []})
+			end;
 		false ->
 			sense(State#state{path = undefined,
 							  targets = []})
 	end.
-	
+
 choose_path(InRangeBcVertices, NearbyBcEntities, 
 			#state{entity = BcEntity, map = BcMap} = State) ->
 	SortedDistBcVertices = sorted_dist_vertices(InRangeBcVertices, State),
@@ -641,8 +650,7 @@ find_enemy_base(#state{entity = BcEntity,
 move(Direction, #state{entity = BcEntity, 
 					   entity_config = BcEntityConfig,		 
 					   entities = BcEntities,
-					   map = BcMap,
-					   path = Path} = State) ->
+					   map = BcMap} = State) ->
 	OriginalBcCollision = bc_entity:to_collision(BcEntity),
 	UpdatedBcCollision = bc_collision:move(Direction, OriginalBcCollision),
 	UpdatedBcVertices = bc_collision:vertices(UpdatedBcCollision),
@@ -652,20 +660,12 @@ move(Direction, #state{entity = BcEntity,
 				ok ->
 					MovedBcEntity = bc_entity:set_vertices(UpdatedBcVertices, BcEntity),
 					ReorientedBcEntity = reorient_entity(Direction, MovedBcEntity, BcEntities),
-					case update_path(UpdatedBcVertices, Path) of
-						undefined ->							
-							on_moved(State#state{entity = ReorientedBcEntity,
-												 path = undefined,
-												 targets = []});
-						UpdatedPath ->
-							on_moved(State#state{entity = ReorientedBcEntity,
-												 path = UpdatedPath})
-					end;
-				{error, _} ->
-					stand(State)
+					{ok, ReorientedBcEntity};
+				{error, _} = Error ->
+					Error
 			end;
 		false ->
-			stand(State)
+			{error, not_vertices}
 	end.
 
 stand(State) ->
@@ -690,8 +690,23 @@ update_path(UpdatedBcVertices, Path) ->
 			undefined
 	end.	
 
-on_moved(#state{entity = BcEntity,
-				entity_config = BcEntityConfig,
+on_entity_moved(MovedBcEntity, #state{entity = BcEntity, 
+									  entity_config = BcEntityConfig,
+									  entities = BcEntities,
+									  path = PathBcVertices} = State) ->	
+	UpdatedBcVertices = bc_entity:vertices(MovedBcEntity),
+	case update_path(UpdatedBcVertices, PathBcVertices) of
+		undefined ->							
+			on_moved(State#state{entity = MovedBcEntity,
+								 path = undefined,
+								 targets = []});
+		UpdatedPath ->
+			on_moved(State#state{entity = MovedBcEntity,
+								 path = UpdatedPath})
+	end.
+
+on_moved(#state{entity = BcEntity, 
+				entity_config = BcEntityConfig, 
 				entities = BcEntities} = State) ->
 	EntitiesEventPid = bc_entities:event(BcEntities),
 	gen_event:notify(EntitiesEventPid, {entity_moved, BcEntity}),
