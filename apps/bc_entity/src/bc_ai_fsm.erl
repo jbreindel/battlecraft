@@ -58,6 +58,16 @@ damage_entity(BcAiFsm, Damage) ->
 %% Behavioural functions
 %% ====================================================================
 
+-spec init(Args :: term()) -> Result when
+	Result :: {ok, StateName, StateData}
+			| {ok, StateName, StateData, Timeout}
+			| {ok, StateName, StateData, hibernate}
+			| {stop, Reason}
+			| ignore,
+	StateName :: atom(),
+	StateData :: term(),
+	Timeout :: non_neg_integer() | infinity,
+	Reason :: term().
 init([BcEntity, BcEntities, BcMap]) ->
 	UpdatedBcEntity = bc_entity:set_ai_fsm(self(), BcEntity),
 	EntityType = bc_entity:entity_type(UpdatedBcEntity),
@@ -81,22 +91,77 @@ init([BcEntity, BcEntities, BcMap]) ->
 						   targets = [],
 						   timer = TimerRef}}.
 
+-spec no_action(Event :: timeout | term(), StateData :: term()) -> Result when
+	Result :: {next_state, NextStateName, NewStateData}
+			| {next_state, NextStateName, NewStateData, Timeout}
+			| {next_state, NextStateName, NewStateData, hibernate}
+			| {stop, Reason, NewStateData},
+	NextStateName :: atom(),
+	NewStateData :: term(),
+	Timeout :: non_neg_integer() | infinity,
+	Reason :: term().
 no_action(action_complete, State) ->
+	{next_state, no_action, State};
+no_action(Event, State) ->
 	{next_state, no_action, State}.
 
+-spec standing(Event :: timeout | term(), StateData :: term()) -> Result when
+	Result :: {next_state, NextStateName, NewStateData}
+			| {next_state, NextStateName, NewStateData, Timeout}
+			| {next_state, NextStateName, NewStateData, hibernate}
+			| {stop, Reason, NewStateData},
+	NextStateName :: atom(),
+	NewStateData :: term(),
+	Timeout :: non_neg_integer() | infinity,
+	Reason :: term().
 standing(action_complete, State) ->
-	sense(State).
+	sense(State);
+standing(Event, State) ->
+	{next_state, standing, State}.
 
+-spec moving(Event :: timeout | term(), StateData :: term()) -> Result when
+	Result :: {next_state, NextStateName, NewStateData}
+			| {next_state, NextStateName, NewStateData, Timeout}
+			| {next_state, NextStateName, NewStateData, hibernate}
+			| {stop, Reason, NewStateData},
+	NextStateName :: atom(),
+	NewStateData :: term(),
+	Timeout :: non_neg_integer() | infinity,
+	Reason :: term().
 moving(action_complete, State) ->
-	sense(State).
+	sense(State);
+moving(Event, State) ->
+	{next_state, moving, State}.
 
+-spec attacking(Event :: timeout | term(), StateData :: term()) -> Result when
+	Result :: {next_state, NextStateName, NewStateData}
+			| {next_state, NextStateName, NewStateData, Timeout}
+			| {next_state, NextStateName, NewStateData, hibernate}
+			| {stop, Reason, NewStateData},
+	NextStateName :: atom(),
+	NewStateData :: term(),
+	Timeout :: non_neg_integer() | infinity,
+	Reason :: term().
 attacking(action_complete, State) ->
-	sense(State).
+	sense(State);
+attacking(Event, State) ->
+	{next_state, attacking, State}.
+
+%% TODO impl state/3
 
 %% ====================================================================
 %% All State functions
 %% ====================================================================
 
+-spec handle_event(Event :: term(), StateName :: atom(), StateData :: term()) -> Result when
+	Result :: {next_state, NextStateName, NewStateData}
+			| {next_state, NextStateName, NewStateData, Timeout}
+			| {next_state, NextStateName, NewStateData, hibernate}
+			| {stop, Reason, NewStateData},
+	NextStateName :: atom(),
+	NewStateData :: term(),
+	Timeout :: non_neg_integer() | infinity,
+	Reason :: term().
 handle_event({entity_died, EnemyBcEntity}, StateName, #state{timer = TimerRef} = State) ->
 	case StateName of
 		attacking ->
@@ -135,21 +200,53 @@ handle_event({entity_damaged, Damage}, StateName, #state{entity = BcEntity,
 handle_event(Event, StateName, StateData) ->
   {next_state, StateName, StateData}.
 
+-spec handle_sync_event(Event :: term(), From :: {pid(), Tag :: term()}, StateName :: atom(), StateData :: term()) -> Result when
+	Result :: {reply, Reply, NextStateName, NewStateData}
+			| {reply, Reply, NextStateName, NewStateData, Timeout}
+			| {reply, Reply, NextStateName, NewStateData, hibernate}
+			| {next_state, NextStateName, NewStateData}
+			| {next_state, NextStateName, NewStateData, Timeout}
+			| {next_state, NextStateName, NewStateData, hibernate}
+			| {stop, Reason, Reply, NewStateData}
+			| {stop, Reason, NewStateData},
+	Reply :: term(),
+	NextStateName :: atom(),
+	NewStateData :: term(),
+	Timeout :: non_neg_integer() | infinity,
+	Reason :: term().
 handle_sync_event(Event, From, StateName, StateData) ->
-    Reply = ok,
-    {reply, Reply, StateName, StateData}.
+    {reply, ok, StateName, StateData}.
 
 %% ====================================================================
 %% Gen_* functions
 %% ====================================================================
 
+-spec handle_info(Info :: term(), StateName :: atom(), StateData :: term()) -> Result when
+	Result :: {next_state, NextStateName, NewStateData}
+			| {next_state, NextStateName, NewStateData, Timeout}
+			| {next_state, NextStateName, NewStateData, hibernate}
+			| {stop, Reason, NewStateData},
+	NextStateName :: atom(),
+	NewStateData :: term(),
+	Timeout :: non_neg_integer() | infinity,
+	Reason :: normal | term().
 handle_info(Info, StateName, StateData) ->
     {next_state, StateName, StateData}.
 
+-spec terminate(Reason, StateName :: atom(), StateData :: term()) -> Result :: term() when
+	Reason :: normal
+			| shutdown
+			| {shutdown, term()}
+			| term().
 terminate(Reason, StateName, StatData) ->
 	lager:info("BcAiFsm crashed with reason: ~p", [Reason]),
     ok.
 
+-spec code_change(OldVsn, StateName :: atom(), 
+				  StateData :: term(), 
+				  Extra :: term()) -> {ok, NextStateName :: atom(), NewStateData :: term()} when
+	OldVsn :: Vsn | {down, Vsn},
+	Vsn :: term().
 code_change(OldVsn, StateName, StateData, Extra) ->
     {ok, StateName, StateData}.
 
@@ -161,10 +258,11 @@ sense(#state{entity = BcEntity,
 			 entity_config = BcEntityConfig,
 			 map = BcMap} = State) ->
 	NearbyBcEntities = nearby_entities(State),
-	case lists:filter(fun(NearbyBcEntity) -> 
-						bc_entity:team(NearbyBcEntity) /= 
-							bc_entity:team(BcEntity)
-					  end, NearbyBcEntities) of
+	case lists:filter(
+		 	fun(NearbyBcEntity) -> 
+				bc_entity:team(NearbyBcEntity) /= 
+					bc_entity:team(BcEntity)
+			end, NearbyBcEntities) of
 		EnemyBcEntites when length(EnemyBcEntites) > 0 ->
 			plan_enemy_actions(EnemyBcEntites, NearbyBcEntities, State);
 		_ ->
@@ -186,41 +284,42 @@ inrange_entity_dict(EnemyBcEntities, #state{entity = BcEntity,
 											map = BcMap} = State) ->
 	Range = bc_entity_config:range(BcEntityConfig),
 	lists:foldl(
-	  fun(EnemyBcEntity, AccEnemyBcVertexDict) ->
-		  EnemyBcVertices = bc_entity:vertices(EnemyBcEntity),
-		  InRangeBcVertices = 
-			  bc_map:reaching_neighbors(BcMap, EnemyBcVertices, Range),
-		  lists:foldl(
-			fun(InRangeBcVertex, AccAccEnemyBcVertexDict) -> 
-				EnemyBcEntitySet =					
-					case dict:find(InRangeBcVertex, AccAccEnemyBcVertexDict) of
-						{ok, BcEntitySet} ->
-							BcEntitySet;
-						error ->
-							sets:new()
-					end,
-				UpdatedSet = sets:add_element(EnemyBcEntity, EnemyBcEntitySet),
-				dict:store(InRangeBcVertex, UpdatedSet, AccAccEnemyBcVertexDict)
-			end, AccEnemyBcVertexDict, InRangeBcVertices)
-	  end, dict:new(), EnemyBcEntities).
+		fun(EnemyBcEntity, AccEnemyBcVertexDict) ->
+			EnemyBcVertices = bc_entity:vertices(EnemyBcEntity),
+			InRangeBcVertices = 
+				bc_map:reaching_neighbors(BcMap, EnemyBcVertices, Range),
+			lists:foldl(
+				fun(InRangeBcVertex, AccAccEnemyBcVertexDict) -> 
+					EnemyBcEntitySet =					
+						case dict:find(InRangeBcVertex, AccAccEnemyBcVertexDict) of
+							{ok, BcEntitySet} ->
+								BcEntitySet;
+							error ->
+								sets:new()
+						end,
+					UpdatedSet = sets:add_element(EnemyBcEntity, EnemyBcEntitySet),
+					dict:store(InRangeBcVertex, UpdatedSet, AccAccEnemyBcVertexDict)
+				end, AccEnemyBcVertexDict, InRangeBcVertices)
+		end, dict:new(), EnemyBcEntities).
 
 in_range_enemies(InRangeEnemyBcEntityDict, BcEntity) ->
 	BcVertices = bc_entity:vertices(BcEntity),
 	lists:foldl(
-	  fun(BcVertex, AccEnemyBcEntities) -> 
-		  case dict:find(BcVertex, InRangeEnemyBcEntityDict) of 
-			  {ok, EnemyBcEntitySet} ->
-				  EnemyBcEntities = sets:to_list(EnemyBcEntitySet),
-				  lists:append(AccEnemyBcEntities, EnemyBcEntities);
-			  error ->
-				  AccEnemyBcEntities
-		  end
-	  end, [], BcVertices).
+		fun(BcVertex, AccEnemyBcEntities) -> 
+			case dict:find(BcVertex, InRangeEnemyBcEntityDict) of 
+				{ok, EnemyBcEntitySet} ->
+					EnemyBcEntities = sets:to_list(EnemyBcEntitySet),
+					lists:append(AccEnemyBcEntities, EnemyBcEntities);
+				error ->
+					AccEnemyBcEntities
+			end
+		end, [], BcVertices).
 
 attack_entities(InRangeEnemyBcEntities, State) ->
-	case lists:filter(fun(EnemyBcEntity) ->
-						bc_entity:entity_type(EnemyBcEntity) == base
-					  end, InRangeEnemyBcEntities) of
+	case lists:filter(
+		 	fun(EnemyBcEntity) ->
+				bc_entity:entity_type(EnemyBcEntity) == base
+			end, InRangeEnemyBcEntities) of
 		InRangeEnemyBaseBcEntity when length(InRangeEnemyBaseBcEntity) > 0 ->
 			EnemyBaseBcEntity = lists:nth(1, InRangeEnemyBaseBcEntity),
 			attack_entity(EnemyBaseBcEntity, State);
@@ -228,9 +327,9 @@ attack_entities(InRangeEnemyBcEntities, State) ->
 			InRangeEnemyBcEntity = lists:nth(1, InRangeEnemyBcEntities),
 			EnemyBcEntity = 
 				lists:foldl(
-				    fun(BcEntity, AccBcEntity) ->
+					fun(BcEntity, AccBcEntity) ->
 						case bc_entity:health(BcEntity) < 
-								 bc_entity:health(AccBcEntity) of
+								bc_entity:health(AccBcEntity) of
 							true -> BcEntity;
 							false -> AccBcEntity
 						end 
@@ -345,24 +444,24 @@ choose_path(InRangeBcVertices, NearbyBcEntities,
 			end, NearbyBcEntities),
 	UnoccupiedSortedDistBcVertices =
 		lists:filter(
-		   fun({_Dist, BcVertex}) ->
-			   not lists:member(BcVertex, OccupiedBcVertices)
-		   end, SortedDistBcVertices),
+			fun({_Dist, BcVertex}) ->
+				not lists:member(BcVertex, OccupiedBcVertices)
+			end, SortedDistBcVertices),
 	lists:foldl(
-	  fun({_Dist, InRangeBcVertex}, AccPath) -> 
-		  case AccPath of 
-			  Path when is_list(Path) andalso length(Path) > 0 -> 
-				  Path;
-			  undefined ->
-				  case compute_path(BcEntity, InRangeBcVertex, 
-									OccupiedBcVertices, State) of
-					  undefined ->
-						  undefined;
-					  PathBcVertices ->
-						  PathBcVertices
-				  end
-		  end 
-	  end, undefined, UnoccupiedSortedDistBcVertices).
+		fun({_Dist, InRangeBcVertex}, AccPath) -> 
+			case AccPath of 
+				Path when is_list(Path) andalso length(Path) > 0 -> 
+					Path;
+				undefined ->
+					case compute_path(BcEntity, InRangeBcVertex, 
+									  OccupiedBcVertices, State) of
+						undefined ->
+							undefined;
+						PathBcVertices ->
+							PathBcVertices
+					end
+			end 
+		end, undefined, UnoccupiedSortedDistBcVertices).
 
 sorted_dist_vertices(InRangeBcVertices, #state{entity = BcEntity} = State) ->
 	DistBcVertices = 
@@ -372,10 +471,11 @@ sorted_dist_vertices(InRangeBcVertices, #state{entity = BcEntity} = State) ->
 					bc_entity_util:vertex_distance(BcEntity, BcVertex),
 				{Distance, BcVertex} 
 			end, InRangeBcVertices),
-	lists:sort(fun({Dist1, _}, 
-				   {Dist2, _}) ->
-				 Dist1 =< Dist2
-			   end, DistBcVertices).
+	lists:sort(
+		fun({Dist1, _}, 
+			{Dist2, _}) -> 
+				Dist1 =< Dist2
+		end, DistBcVertices).
 
 compute_path(BcEntity, BcVertex, OccupiedBcVertices, #state{map = BcMap} = State) ->
 	ClosestEntityBcVertex = 
@@ -460,9 +560,9 @@ move_enemy_base(#state{entity_config = BcEntityConfig,
 					BaseQueryRes = bc_map:query_ids(BcMap, BaseUuid),
 					BaseBcVertices = 
 						lists:map(
-						  fun(QueryRes) ->
-							maps:get(vertex, QueryRes)
-						  end, BaseQueryRes),
+							fun(QueryRes) ->
+								maps:get(vertex, QueryRes)
+							end, BaseQueryRes),
 					UpdatedBaseBcEntity = 
 						bc_entity:set_vertices(BaseBcVertices, BaseBcEntity),
 					InRangeEnemyBcEntityDict = 
@@ -478,12 +578,12 @@ move_enemy_base(#state{entity_config = BcEntityConfig,
 enemy_base_entity(#state{entities = BcEntities,
 						 targets = Targets} = State) ->
 	case lists:filter(
-		   fun(TargetBcEntity) ->
-			   Uuid = bc_entity:uuid(TargetBcEntity),
-			   EntityType = bc_entity:entity_type(TargetBcEntity),
-			   EntityType == base andalso
-				   bc_entities:exists(Uuid, BcEntities)
-		   end, Targets) of
+		 	fun(TargetBcEntity) ->
+				Uuid = bc_entity:uuid(TargetBcEntity),
+				EntityType = bc_entity:entity_type(TargetBcEntity),
+				EntityType == base andalso 
+					bc_entities:exists(Uuid, BcEntities)
+			end, Targets) of
 		BaseBcEntities when length(BaseBcEntities) > 0 ->
 			BaseBcEntity = lists:nth(1, BaseBcEntities),
 			{BaseBcEntity, State};
@@ -510,30 +610,30 @@ find_enemy_base(#state{entity = BcEntity,
 		end,
 	BaseBcEntities = bc_entities:query_type(base, BcEntities),
 	case lists:map(
-		   fun(BaseBcEntity) -> 
-			  BasePlayerNum = bc_entity:player_num(BaseBcEntity),
-			  {BasePlayerNum, BaseBcEntity}
-		   end, BaseBcEntities) of
+		 	fun(BaseBcEntity) -> 
+				BasePlayerNum = bc_entity:player_num(BaseBcEntity),
+				{BasePlayerNum, BaseBcEntity}
+		 	end, BaseBcEntities) of
 		PlayerNumBaseBcEntities when length(PlayerNumBaseBcEntities) > 0 ->
 			EnemyBaseBcEntities =
 				lists:map(
-				  fun(EnemyNum) ->
-					  case lists:keyfind(EnemyNum, 1, PlayerNumBaseBcEntities) of
-						  {BasePlayerNum, BaseBcEntity} ->
-							  BaseBcEntity;
-						  false -> 
-							  undefined
-					  end 
-				  end, EnemyNums),
+					fun(EnemyNum) ->
+						case lists:keyfind(EnemyNum, 1, PlayerNumBaseBcEntities) of
+							{BasePlayerNum, BaseBcEntity} ->
+								BaseBcEntity;
+							false -> 
+								undefined
+						end 
+					end, EnemyNums),
 			lists:foldl(
-			  fun(BaseBcEntity, AccBaseBcEntity) -> 
-				  case AccBaseBcEntity of 
-					  undefined -> 
-						  BaseBcEntity;
-					  AccBaseBcEntity ->
-						  AccBaseBcEntity
-				  end 
-			  end, undefined, EnemyBaseBcEntities);
+				fun(BaseBcEntity, AccBaseBcEntity) -> 
+					case AccBaseBcEntity of 
+						undefined -> 
+							BaseBcEntity;
+						AccBaseBcEntity ->
+							AccBaseBcEntity
+					end 
+				end, undefined, EnemyBaseBcEntities);
 		[] ->
 			undefined
 	end.
