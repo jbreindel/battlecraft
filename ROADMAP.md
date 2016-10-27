@@ -26,12 +26,11 @@ v0.1.2
 
 * Fix small misspellings/gramatical errors
 * Disallow players to join already started games
-* Tune entity config
+* Fixed entities getting stuck
 
 v0.2.0 - Innovation
 ------
 
-* Entity bug fixes
 * Asynchronous AI sensing
 * Entity Specials
 * Games Pagination
