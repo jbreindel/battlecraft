@@ -1,6 +1,6 @@
 {application, bc_web,
  [{description, "Web front end for bc"},
-  {vsn, "0.1.1"},
+  {vsn, "0.1.2"},
   {registered, []},
   {mod, { bc_web_app, []}},
   {applications,

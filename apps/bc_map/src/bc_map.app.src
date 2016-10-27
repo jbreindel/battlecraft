@@ -1,6 +1,6 @@
 {application, bc_map,
  [{description, "An OTP library"},
-  {vsn, "0.1.1"},
+  {vsn, "0.1.2"},
   {registered, []},
   {applications,
    [kernel,
