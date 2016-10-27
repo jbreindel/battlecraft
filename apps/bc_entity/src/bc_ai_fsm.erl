@@ -668,9 +668,10 @@ move(Direction, #state{entity = BcEntity,
 			{error, not_vertices}
 	end.
 
-stand(State) ->
-	{next_state, standing, State#state{timer = 
-										gen_fsm:send_event_after(100, action_complete)}}.
+stand(#state{entity_config = BcEntityConfig} = State) ->
+	Speed = bc_entity_config:move_speed(BcEntityConfig),
+	Timer = send_action_complete(Speed),
+	{next_state, standing, State#state{timer = Timer}}.
 
 update_path(_, undefined) ->
 	undefined;
