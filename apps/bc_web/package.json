@@ -16,5 +16,8 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "jake breindel",
-  "license": "ISC"
+  "license": "ISC",
+  "scripts" : {
+    "build": "npm install && gulp"
+  }
 }
