@@ -3,6 +3,8 @@ battlecraft
 
 battlecraft is a simple multiplayer browser-based game built with erlang. It is an implementation of a distributed game engine. The objective of the game is to spawn units to destroy your opponents base.
 
+![battlecraft](/apps/bc_web/priv/static/img/battlecraft-cropped-800x450.png)
+
 ## Install
 
 ### Requirements
