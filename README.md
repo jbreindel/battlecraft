@@ -34,6 +34,9 @@ battlecarft is built using [rebar3](http://www.rebar3.org/), and [gulp](http://g
 
 I wrote battlecraft to understand how to build a complete game and game engine. I wanted to divorce battlecraft from the traditional game loop and model the AI entities in an asynchronous system.
 
+## License
+
+Licensed under the Apache License, Version 2.0: http://www.apache.org/licenses/LICENSE-2.0
 
 ## Thank You
 
