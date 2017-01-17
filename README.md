@@ -15,6 +15,7 @@ Spawn units with the standard `wasd` keys and use the `arrow keys` to move the v
 
 ### Requirements
 * erlang otp 18+
+* [rebar3](http://www.rebar3.org/docs/getting-started#section-installing-binary)
 * node + npm
 
 ### Instructions
