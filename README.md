@@ -5,7 +5,7 @@ battlecraft is a simple multiplayer browser-based game built with [erlang](http:
 
 ![battlecraft](/apps/bc_web/priv/static/img/battlecraft-cropped-800x450.png)
 
-to begin a game simply create an appropriately sized game from [battlecraft.online/games](battlcraft.online/games) and share the game url with your friends.
+to begin a game simply create an appropriately sized game from the games page (/games) and share the game url with your friends.
 
 ### Controls 
 
