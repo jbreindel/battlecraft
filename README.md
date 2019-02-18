@@ -29,7 +29,7 @@ _build/default/rel/bc/bin/bc start
 
 ## Developing
 
-battlecarft is built using [rebar3](http://www.rebar3.org/), and [gulp](http://gulpjs.com/). I also highly recommend using [observer](http://erlang.org/doc/apps/observer/observer_ug.html) to inspect erlang at runtime. Any rebar3 commands and usage can also be used to debug, and [open shells](http://www.rebar3.org/docs/commands#section-shell) to battlecarft.
+battlecraft is built using [rebar3](http://www.rebar3.org/), and [gulp](http://gulpjs.com/). I also highly recommend using [observer](http://erlang.org/doc/apps/observer/observer_ug.html) to inspect erlang at runtime. Any rebar3 commands and usage can also be used to debug, and [open shells](http://www.rebar3.org/docs/commands#section-shell) to battlecraft.
 
 ## Motivations
 
