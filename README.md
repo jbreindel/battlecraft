@@ -1,6 +1,8 @@
 battlecraft
 =====
 
+**This repository is not longer maintained. I am working on the next version of battlecraft to be released at a later date. I hope to upgrade a number of features about the game (both internal and external) but keep the core gameplay intact.**
+
 battlecraft is a simple multiplayer browser-based game built with [erlang](http://www.erlang.org/) and [elm](http://elm-lang.org/). It is an implementation of a distributed game engine. The objective of the game is to spawn units to destroy your opponents base.
 
 ![battlecraft](/apps/bc_web/priv/static/img/battlecraft-cropped-800x450.png)
